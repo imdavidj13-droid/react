@@ -40,9 +40,17 @@ class _ClassicScreenState extends State<ClassicScreen> {
                         onTap: () => Navigator.of(context).pop(),
                       ),
                       const Spacer(),
-                      const _TopMetric(label: 'SCORE', value: '12', color: ReactColors.lime),
+                      const _TopMetric(
+                        label: 'SCORE',
+                        value: '12',
+                        color: ReactColors.lime,
+                      ),
                       const SizedBox(width: 18),
-                      const _TopMetric(label: 'COMBO', value: 'x4', color: ReactColors.purple),
+                      const _TopMetric(
+                        label: 'COMBO',
+                        value: 'x4',
+                        color: ReactColors.purple,
+                      ),
                     ],
                   ),
                   const Spacer(),
@@ -97,7 +105,7 @@ class _CommandOrb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context).width.clamp(250.0, 330.0);
+    final size = MediaQuery.sizeOf(context).width.clamp(250.0, 330.0).toDouble();
 
     return SizedBox.square(
       dimension: size,
