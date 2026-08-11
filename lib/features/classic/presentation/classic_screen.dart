@@ -150,7 +150,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
     _nextCommandTimer?.cancel();
 
     final next = ClassicCommand.values[
-      _random.nextInt(ClassicCommand.values.length),
+      _random.nextInt(ClassicCommand.values.length)
     ];
 
     if (!mounted) return;
