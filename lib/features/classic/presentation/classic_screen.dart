@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 
 import '../../../core/theme/react_colors.dart';
 import '../../../game/react_game.dart';
@@ -16,6 +17,11 @@ enum ClassicCommand {
   swipeRight,
   swipeUp,
   swipeDown,
+  pinch,
+  spread,
+  rotate,
+  tilt,
+  freeze,
 }
 
 extension ClassicCommandUi on ClassicCommand {
@@ -27,6 +33,11 @@ extension ClassicCommandUi on ClassicCommand {
         ClassicCommand.swipeRight => 'SWIPE\nRIGHT',
         ClassicCommand.swipeUp => 'SWIPE\nUP',
         ClassicCommand.swipeDown => 'SWIPE\nDOWN',
+        ClassicCommand.pinch => 'PINCH',
+        ClassicCommand.spread => 'SPREAD',
+        ClassicCommand.rotate => 'ROTATE',
+        ClassicCommand.tilt => 'TILT',
+        ClassicCommand.freeze => 'FREEZE',
       };
 
   String get hint => switch (this) {
@@ -37,6 +48,11 @@ extension ClassicCommandUi on ClassicCommand {
         ClassicCommand.swipeRight => 'SWIPE TO THE RIGHT',
         ClassicCommand.swipeUp => 'SWIPE UPWARD',
         ClassicCommand.swipeDown => 'SWIPE DOWNWARD',
+        ClassicCommand.pinch => 'MOVE TWO FINGERS TOGETHER',
+        ClassicCommand.spread => 'MOVE TWO FINGERS APART',
+        ClassicCommand.rotate => 'ROTATE THE PHONE',
+        ClassicCommand.tilt => 'TILT THE PHONE',
+        ClassicCommand.freeze => 'DO NOTHING',
       };
 
   IconData get icon => switch (this) {
@@ -47,6 +63,11 @@ extension ClassicCommandUi on ClassicCommand {
         ClassicCommand.swipeRight => Icons.arrow_forward_rounded,
         ClassicCommand.swipeUp => Icons.arrow_upward_rounded,
         ClassicCommand.swipeDown => Icons.arrow_downward_rounded,
+        ClassicCommand.pinch => Icons.close_fullscreen_rounded,
+        ClassicCommand.spread => Icons.open_in_full_rounded,
+        ClassicCommand.rotate => Icons.rotate_right_rounded,
+        ClassicCommand.tilt => Icons.screen_rotation_rounded,
+        ClassicCommand.freeze => Icons.pause_circle_outline_rounded,
       };
 }
 
@@ -61,14 +82,22 @@ class _ClassicScreenState extends State<ClassicScreen> {
   static const _commandDuration = Duration(milliseconds: 2200);
   static const _tickDuration = Duration(milliseconds: 40);
   static const _minimumSwipeDistance = 48.0;
+  static const _pinchThreshold = 0.72;
+  static const _spreadThreshold = 1.28;
+  static const _tiltThreshold = 3.0;
+  static const _rotationThreshold = 0.8;
 
   late final ReactGame _game;
   final Random _random = Random();
 
   Timer? _timer;
   Timer? _nextCommandTimer;
+  StreamSubscription<AccelerometerEvent>? _accelerometerSub;
+  StreamSubscription<GyroscopeEvent>? _gyroscopeSub;
+
   ClassicCommand _command = ClassicCommand.tap;
   DateTime _commandStartedAt = DateTime.now();
+  DateTime? _lastGyroAt;
   double _timeRemaining = 1;
   int _score = 0;
   int _combo = 0;
@@ -79,33 +108,50 @@ class _ClassicScreenState extends State<ClassicScreen> {
   bool _finished = false;
   String? _feedback;
   int? _feedbackPoints;
+
   Offset _dragDelta = Offset.zero;
+  bool _multiTouchSeen = false;
+  bool _scaleResolved = false;
+  double? _tiltBaseX;
+  double? _tiltBaseY;
+  double? _tiltBaseZ;
+  double _rotationAccumulated = 0;
 
   @override
   void initState() {
     super.initState();
     _game = ReactGame();
-    _startCommand(initial: true);
+    _listenToSensors();
+    _startCommand();
+  }
+
+  void _listenToSensors() {
+    _accelerometerSub = accelerometerEventStream().listen(
+      _handleAccelerometer,
+      onError: (_) {},
+    );
+    _gyroscopeSub = gyroscopeEventStream().listen(
+      _handleGyroscope,
+      onError: (_) {},
+    );
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     _nextCommandTimer?.cancel();
+    _accelerometerSub?.cancel();
+    _gyroscopeSub?.cancel();
     super.dispose();
   }
 
-  void _startCommand({bool initial = false}) {
+  void _startCommand() {
     _timer?.cancel();
     _nextCommandTimer?.cancel();
 
-    ClassicCommand next =
-        ClassicCommand.values[_random.nextInt(ClassicCommand.values.length)];
-    if (!initial && ClassicCommand.values.length > 1) {
-      while (next == _command) {
-        next = ClassicCommand.values[_random.nextInt(ClassicCommand.values.length)];
-      }
-    }
+    final next = ClassicCommand.values[
+      _random.nextInt(ClassicCommand.values.length),
+    ];
 
     if (!mounted) return;
     setState(() {
@@ -116,16 +162,29 @@ class _ClassicScreenState extends State<ClassicScreen> {
       _feedback = null;
       _feedbackPoints = null;
       _dragDelta = Offset.zero;
+      _multiTouchSeen = false;
+      _scaleResolved = false;
+      _tiltBaseX = null;
+      _tiltBaseY = null;
+      _tiltBaseZ = null;
+      _rotationAccumulated = 0;
+      _lastGyroAt = null;
     });
 
     _timer = Timer.periodic(_tickDuration, (_) {
       if (!mounted || _finished || !_acceptingInput) return;
-      final elapsed =
-          DateTime.now().difference(_commandStartedAt).inMilliseconds;
+      final elapsed = DateTime.now().difference(_commandStartedAt).inMilliseconds;
       final progress = 1 - (elapsed / _commandDuration.inMilliseconds);
 
       if (progress <= 0) {
-        _failRun();
+        if (_command == ClassicCommand.freeze) {
+          _completeCommand(
+            responseMs: _commandDuration.inMilliseconds,
+            feedbackOverride: 'FROZEN',
+          );
+        } else {
+          _failRun();
+        }
         return;
       }
 
@@ -137,14 +196,18 @@ class _ClassicScreenState extends State<ClassicScreen> {
 
   void _handleGesture(ClassicCommand performed) {
     if (!_acceptingInput || _finished) return;
-
     if (performed != _command) {
       _failRun();
       return;
     }
+    _completeCommand();
+  }
 
+  void _completeCommand({int? responseMs, String? feedbackOverride}) {
+    if (!_acceptingInput || _finished) return;
     _timer?.cancel();
-    final responseMs =
+
+    final actualResponseMs = responseMs ??
         DateTime.now().difference(_commandStartedAt).inMilliseconds;
     final newCombo = _combo + 1;
 
@@ -154,46 +217,103 @@ class _ClassicScreenState extends State<ClassicScreen> {
       _combo = newCombo;
       _bestCombo = max(_bestCombo, newCombo);
       _reactions += 1;
-      _totalResponseMs += responseMs;
+      _totalResponseMs += actualResponseMs;
       _feedbackPoints = 1;
-      _feedback = responseMs <= 750
-          ? 'PERFECT'
-          : responseMs <= 1400
-              ? 'GREAT'
-              : 'GOOD';
+      _feedback = feedbackOverride ??
+          (actualResponseMs <= 750
+              ? 'PERFECT'
+              : actualResponseMs <= 1400
+                  ? 'GREAT'
+                  : 'GOOD');
     });
 
-    _nextCommandTimer =
-        Timer(const Duration(milliseconds: 520), _startCommand);
+    _nextCommandTimer = Timer(
+      const Duration(milliseconds: 520),
+      _startCommand,
+    );
   }
 
-  void _handlePanStart(DragStartDetails details) {
+  void _handleScaleStart(ScaleStartDetails details) {
     if (!_acceptingInput || _finished) return;
     _dragDelta = Offset.zero;
+    _multiTouchSeen = details.pointerCount >= 2;
+    _scaleResolved = false;
   }
 
-  void _handlePanUpdate(DragUpdateDetails details) {
-    if (!_acceptingInput || _finished) return;
-    _dragDelta += details.delta;
+  void _handleScaleUpdate(ScaleUpdateDetails details) {
+    if (!_acceptingInput || _finished || _scaleResolved) return;
+
+    if (details.pointerCount >= 2) {
+      _multiTouchSeen = true;
+      if (details.scale <= _pinchThreshold) {
+        _scaleResolved = true;
+        _handleGesture(ClassicCommand.pinch);
+      } else if (details.scale >= _spreadThreshold) {
+        _scaleResolved = true;
+        _handleGesture(ClassicCommand.spread);
+      }
+      return;
+    }
+
+    if (!_multiTouchSeen) {
+      _dragDelta += details.focalPointDelta;
+    }
   }
 
-  void _handlePanEnd(DragEndDetails details) {
-    if (!_acceptingInput || _finished) return;
+  void _handleScaleEnd(ScaleEndDetails details) {
+    if (!_acceptingInput || _finished || _multiTouchSeen || _scaleResolved) {
+      return;
+    }
 
     final dx = _dragDelta.dx;
     final dy = _dragDelta.dy;
     final horizontal = dx.abs() >= dy.abs();
     final primaryDistance = horizontal ? dx.abs() : dy.abs();
-
-    if (primaryDistance < _minimumSwipeDistance) {
-      return;
-    }
+    if (primaryDistance < _minimumSwipeDistance) return;
 
     final performed = horizontal
         ? (dx < 0 ? ClassicCommand.swipeLeft : ClassicCommand.swipeRight)
         : (dy < 0 ? ClassicCommand.swipeUp : ClassicCommand.swipeDown);
-
     _handleGesture(performed);
+  }
+
+  void _handleAccelerometer(AccelerometerEvent event) {
+    if (!_acceptingInput || _finished || _command != ClassicCommand.tilt) return;
+
+    if (_tiltBaseX == null) {
+      _tiltBaseX = event.x;
+      _tiltBaseY = event.y;
+      _tiltBaseZ = event.z;
+      return;
+    }
+
+    final dx = event.x - _tiltBaseX!;
+    final dy = event.y - _tiltBaseY!;
+    final dz = event.z - _tiltBaseZ!;
+    final delta = sqrt((dx * dx) + (dy * dy) + (dz * dz));
+    if (delta >= _tiltThreshold) {
+      _handleGesture(ClassicCommand.tilt);
+    }
+  }
+
+  void _handleGyroscope(GyroscopeEvent event) {
+    if (!_acceptingInput || _finished || _command != ClassicCommand.rotate) return;
+
+    final now = DateTime.now();
+    final previous = _lastGyroAt;
+    _lastGyroAt = now;
+    if (previous == null) return;
+
+    final dt = now.difference(previous).inMicroseconds / 1000000;
+    final speed = sqrt(
+      (event.x * event.x) + (event.y * event.y) + (event.z * event.z),
+    );
+    if (speed < 0.25) return;
+
+    _rotationAccumulated += speed * dt;
+    if (_rotationAccumulated >= _rotationThreshold) {
+      _handleGesture(ClassicCommand.rotate);
+    }
   }
 
   void _failRun() {
@@ -275,13 +395,11 @@ class _ClassicScreenState extends State<ClassicScreen> {
                           child: GestureDetector(
                             behavior: HitTestBehavior.opaque,
                             onTap: () => _handleGesture(ClassicCommand.tap),
-                            onDoubleTap: () =>
-                                _handleGesture(ClassicCommand.doubleTap),
-                            onLongPress: () =>
-                                _handleGesture(ClassicCommand.hold),
-                            onPanStart: _handlePanStart,
-                            onPanUpdate: _handlePanUpdate,
-                            onPanEnd: _handlePanEnd,
+                            onDoubleTap: () => _handleGesture(ClassicCommand.doubleTap),
+                            onLongPress: () => _handleGesture(ClassicCommand.hold),
+                            onScaleStart: _handleScaleStart,
+                            onScaleUpdate: _handleScaleUpdate,
+                            onScaleEnd: _handleScaleEnd,
                             child: _CommandDisplay(
                               command: _command,
                               progress: _timeRemaining,
@@ -295,9 +413,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 160),
                           child: _feedback == null
-                              ? const _InstructionCopy(
-                                  key: ValueKey('instruction'),
-                                )
+                              ? const _InstructionCopy(key: ValueKey('instruction'))
                               : _SuccessFeedback(
                                   key: ValueKey('$_feedback-$_reactions'),
                                   feedback: _feedback!,
@@ -399,11 +515,7 @@ class _CommandDisplay extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  command.icon,
-                  color: ReactColors.electricBlueBright,
-                  size: 54,
-                ),
+                Icon(command.icon, color: ReactColors.electricBlueBright, size: 54),
                 const SizedBox(height: 14),
                 Text(
                   command.title,
@@ -419,6 +531,7 @@ class _CommandDisplay extends StatelessWidget {
                 const SizedBox(height: 11),
                 Text(
                   command.hint,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: ReactColors.textSecondary,
                     fontSize: 8,
@@ -537,12 +650,12 @@ class _CommandHints extends StatelessWidget {
         _HintDot(color: ReactColors.electricBlueBright),
         SizedBox(width: 8),
         Text(
-          '7 COMMANDS ACTIVE  •  TAP  •  DOUBLE TAP  •  HOLD  •  SWIPE ×4',
+          '12 COMMANDS ACTIVE',
           style: TextStyle(
             color: ReactColors.textSecondary,
             fontSize: 8,
             fontWeight: FontWeight.w800,
-            letterSpacing: .55,
+            letterSpacing: 1.0,
           ),
         ),
         SizedBox(width: 8),
