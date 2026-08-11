@@ -24,11 +24,11 @@ class _ClassicScreenState extends State<ClassicScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ReactColors.background,
       body: Stack(
         fit: StackFit.expand,
         children: [
           GameWidget(game: _game),
-          const _ClassicBackdrop(),
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -157,9 +157,9 @@ class _CommandDisplay extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: ReactColors.electricBlue.withValues(alpha: .24),
-                  blurRadius: 70,
-                  spreadRadius: 10,
+                  color: ReactColors.electricBlue.withValues(alpha: .14),
+                  blurRadius: 42,
+                  spreadRadius: 2,
                 ),
               ],
             ),
@@ -189,15 +189,12 @@ class _CommandDisplay extends StatelessWidget {
             height: size - 84,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: const RadialGradient(
-                colors: [Color(0xFF0C1728), Color(0xFF070B15)],
-              ),
+              color: const Color(0xFF070B15),
               border: Border.all(color: const Color(0xFF17345C)),
               boxShadow: [
                 BoxShadow(
-                  color: ReactColors.electricBlue.withValues(alpha: .16),
-                  blurRadius: 32,
-                  spreadRadius: 2,
+                  color: ReactColors.electricBlue.withValues(alpha: .10),
+                  blurRadius: 24,
                 ),
               ],
             ),
@@ -350,23 +347,6 @@ class _HudMetric extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ClassicBackdrop extends StatelessWidget {
-  const _ClassicBackdrop();
-
-  @override
-  Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: RadialGradient(
-          center: Alignment(0, -.05),
-          radius: 1.05,
-          colors: [Color(0xFF07152A), ReactColors.background, Color(0xFF02040B)],
-        ),
-      ),
     );
   }
 }
