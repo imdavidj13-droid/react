@@ -335,38 +335,28 @@ class _PlayDial extends StatelessWidget {
           painter: _DialPainter(),
           child: Center(
             child: Container(
-              width: size * .52,
-              height: size * .52,
+              width: size * .50,
+              height: size * .50,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const RadialGradient(
-                  colors: [
-                    Color(0xFF143D67),
-                    Color(0xFF071525),
-                    Color(0xFF030914),
-                  ],
-                ),
+                color: ReactColors.background,
                 border: Border.all(
-                  color: ReactColors.electricBlueBright,
-                  width: 3,
+                  color: const Color(0xFF42D8FF),
+                  width: 2.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: ReactColors.electricBlue.withValues(alpha: .28),
-                    blurRadius: 26,
-                  ),
-                  BoxShadow(
-                    color: ReactColors.electricBlueBright.withValues(alpha: .12),
-                    blurRadius: 46,
+                    color: ReactColors.electricBlue.withValues(alpha: .13),
+                    blurRadius: 18,
                   ),
                 ],
               ),
               child: const Icon(
                 Icons.play_arrow_rounded,
                 color: Color(0xFF39D8FF),
-                size: 76,
+                size: 74,
                 shadows: [
-                  Shadow(color: ReactColors.electricBlue, blurRadius: 20),
+                  Shadow(color: ReactColors.electricBlue, blurRadius: 14),
                 ],
               ),
             ),
@@ -384,7 +374,7 @@ class _DialPainter extends CustomPainter {
     final radius = size.width / 2;
     final base = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
+      ..strokeWidth = 1.5
       ..color = const Color(0xFF14263E);
 
     canvas.drawCircle(center, radius - 3, base);
@@ -395,13 +385,13 @@ class _DialPainter extends CustomPainter {
       final glow = Paint()
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
-        ..strokeWidth = 11
-        ..color = color.withValues(alpha: .11)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 11);
+        ..strokeWidth = 9
+        ..color = color.withValues(alpha: .08)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 9);
       final line = Paint()
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
-        ..strokeWidth = 5
+        ..strokeWidth = 4.5
         ..color = color;
       final rect = Rect.fromCircle(center: center, radius: r);
       canvas.drawArc(rect, start, sweep, false, glow);
@@ -427,14 +417,14 @@ class _DialPainter extends CustomPainter {
       radius * .87,
     );
 
-    final tick = Paint()..strokeWidth = 1.5;
+    final tick = Paint()..strokeWidth = 1.4;
     for (var i = 0; i < 52; i++) {
       final a = i * math.pi * 2 / 52;
       tick.color = i < 18
-          ? ReactColors.electricBlue.withValues(alpha: .6)
+          ? ReactColors.electricBlue.withValues(alpha: .58)
           : i < 35
-              ? ReactColors.lime.withValues(alpha: .48)
-              : ReactColors.purple.withValues(alpha: .45);
+              ? ReactColors.lime.withValues(alpha: .46)
+              : ReactColors.purple.withValues(alpha: .43);
       final p1 = center + Offset(math.cos(a), math.sin(a)) * (radius * .91);
       final p2 = center + Offset(math.cos(a), math.sin(a)) * (radius * .95);
       canvas.drawLine(p1, p2, tick);
@@ -581,11 +571,6 @@ class _CommandsPanel extends StatelessWidget {
                 icon: Icons.zoom_in_map_rounded,
                 label: 'PINCH',
                 color: ReactColors.lime,
-              ),
-              _Command(
-                icon: Icons.vibration_rounded,
-                label: 'SHAKE',
-                color: ReactColors.coral,
               ),
               _Command(
                 icon: Icons.sync_rounded,
