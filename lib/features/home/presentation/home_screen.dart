@@ -114,7 +114,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 18),
-                    Row(
+                    const Row(
                       children: [
                         Expanded(
                           child: _ModePlaceholder(
@@ -124,7 +124,7 @@ class HomeScreen extends StatelessWidget {
                             accent: ReactColors.purple,
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        SizedBox(width: 14),
                         Expanded(
                           child: _ModePlaceholder(
                             icon: Icons.all_inclusive_rounded,
