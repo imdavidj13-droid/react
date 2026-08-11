@@ -6,11 +6,27 @@ import '../../classic/presentation/classic_screen.dart';
 import '../../home/presentation/home_screen.dart';
 
 class ResultsScreen extends StatelessWidget {
-  const ResultsScreen({super.key});
+  const ResultsScreen({
+    super.key,
+    this.score = 0,
+    this.reactions = 0,
+    this.bestCombo = 0,
+    this.averageTimeSeconds = 0,
+    this.failedCommand = 'TAP',
+    this.failedCommandIcon = Icons.touch_app_rounded,
+  });
+
+  final int score;
+  final int reactions;
+  final int bestCombo;
+  final double averageTimeSeconds;
+  final String failedCommand;
+  final IconData failedCommandIcon;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ReactColors.background,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -18,27 +34,30 @@ class ResultsScreen extends StatelessWidget {
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(22, 20, 22, 26),
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight - 46,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight - 46),
                 child: Column(
                   children: [
                     const _ResultsHeader(),
                     SizedBox(height: compact ? 24 : 34),
-                    const _ScoreHero(),
+                    _ScoreHero(score: score),
                     SizedBox(height: compact ? 22 : 30),
-                    const _StatsStrip(),
+                    _StatsStrip(
+                      reactions: reactions,
+                      bestCombo: bestCombo,
+                      averageTimeSeconds: averageTimeSeconds,
+                    ),
                     const SizedBox(height: 16),
-                    const _MissedCommandCard(),
+                    _MissedCommandCard(
+                      command: failedCommand,
+                      icon: failedCommandIcon,
+                    ),
                     SizedBox(height: compact ? 24 : 32),
                     NeonButton(
                       label: 'PLAY AGAIN',
                       icon: Icons.replay_rounded,
                       onPressed: () {
                         Navigator.of(context).pushReplacement(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const ClassicScreen(),
-                          ),
+                          MaterialPageRoute<void>(builder: (_) => const ClassicScreen()),
                         );
                       },
                     ),
@@ -49,9 +68,7 @@ class ResultsScreen extends StatelessWidget {
                       child: TextButton.icon(
                         onPressed: () {
                           Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const HomeScreen(),
-                            ),
+                            MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
                             (route) => false,
                           );
                         },
@@ -85,32 +102,17 @@ class _ResultsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Row(
       children: [
-        Text(
-          'CLASSIC',
-          style: TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.8,
-          ),
-        ),
+        Text('CLASSIC', style: TextStyle(color: ReactColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.8)),
         Spacer(),
-        Text(
-          'RUN COMPLETE',
-          style: TextStyle(
-            color: ReactColors.coral,
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.8,
-          ),
-        ),
+        Text('RUN COMPLETE', style: TextStyle(color: ReactColors.coral, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.8)),
       ],
     );
   }
 }
 
 class _ScoreHero extends StatelessWidget {
-  const _ScoreHero();
+  const _ScoreHero({required this.score});
+  final int score;
 
   @override
   Widget build(BuildContext context) {
@@ -122,61 +124,21 @@ class _ScoreHero extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: const Color(0xFF0A101D),
-            border: Border.all(
-              color: ReactColors.coral.withValues(alpha: .62),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: ReactColors.coral.withValues(alpha: .14),
-                blurRadius: 24,
-              ),
-            ],
+            border: Border.all(color: ReactColors.coral.withValues(alpha: .62)),
           ),
-          child: const Icon(
-            Icons.bolt_rounded,
-            color: ReactColors.coral,
-            size: 34,
-          ),
+          child: const Icon(Icons.bolt_rounded, color: ReactColors.coral, size: 34),
         ),
         const SizedBox(height: 18),
-        const Text(
-          'FINAL SCORE',
-          style: TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-          ),
-        ),
+        const Text('FINAL SCORE', style: TextStyle(color: ReactColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)),
         const SizedBox(height: 6),
-        const Text(
-          '42',
-          style: TextStyle(
+        Text(
+          '$score',
+          style: const TextStyle(
             color: ReactColors.lime,
             fontSize: 82,
             height: .95,
             fontWeight: FontWeight.w900,
             letterSpacing: -3.2,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: ReactColors.lime.withValues(alpha: .08),
-            border: Border.all(
-              color: ReactColors.lime.withValues(alpha: .34),
-            ),
-          ),
-          child: const Text(
-            'NEW PERSONAL BEST',
-            style: TextStyle(
-              color: ReactColors.lime,
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.3,
-            ),
           ),
         ),
       ],
@@ -185,7 +147,10 @@ class _ScoreHero extends StatelessWidget {
 }
 
 class _StatsStrip extends StatelessWidget {
-  const _StatsStrip();
+  const _StatsStrip({required this.reactions, required this.bestCombo, required this.averageTimeSeconds});
+  final int reactions;
+  final int bestCombo;
+  final double averageTimeSeconds;
 
   @override
   Widget build(BuildContext context) {
@@ -196,31 +161,13 @@ class _StatsStrip extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0xFF17304E)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Expanded(
-            child: _ResultStat(
-              label: 'REACTIONS',
-              value: '42',
-              color: ReactColors.electricBlueBright,
-            ),
-          ),
-          _StatDivider(),
-          Expanded(
-            child: _ResultStat(
-              label: 'BEST COMBO',
-              value: '×9',
-              color: ReactColors.purple,
-            ),
-          ),
-          _StatDivider(),
-          Expanded(
-            child: _ResultStat(
-              label: 'AVG TIME',
-              value: '0.64s',
-              color: ReactColors.textPrimary,
-            ),
-          ),
+          Expanded(child: _ResultStat(label: 'REACTIONS', value: '$reactions', color: ReactColors.electricBlueBright)),
+          const _StatDivider(),
+          Expanded(child: _ResultStat(label: 'BEST COMBO', value: '×$bestCombo', color: ReactColors.purple)),
+          const _StatDivider(),
+          Expanded(child: _ResultStat(label: 'AVG TIME', value: '${averageTimeSeconds.toStringAsFixed(2)}s', color: ReactColors.textPrimary)),
         ],
       ),
     );
@@ -228,7 +175,9 @@ class _StatsStrip extends StatelessWidget {
 }
 
 class _MissedCommandCard extends StatelessWidget {
-  const _MissedCommandCard();
+  const _MissedCommandCard({required this.command, required this.icon});
+  final String command;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -238,9 +187,7 @@ class _MissedCommandCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF0A0D18),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: ReactColors.coral.withValues(alpha: .62),
-        ),
+        border: Border.all(color: ReactColors.coral.withValues(alpha: .62)),
       ),
       child: Row(
         children: [
@@ -250,48 +197,22 @@ class _MissedCommandCard extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: ReactColors.coral.withValues(alpha: .08),
-              border: Border.all(
-                color: ReactColors.coral.withValues(alpha: .28),
-              ),
+              border: Border.all(color: ReactColors.coral.withValues(alpha: .28)),
             ),
-            child: const Icon(
-              Icons.swipe_left_rounded,
-              color: ReactColors.coral,
-              size: 26,
-            ),
+            child: Icon(icon, color: ReactColors.coral, size: 26),
           ),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'MISSED COMMAND',
-                  style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.3,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'SWIPE LEFT',
-                  style: TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -.2,
-                  ),
-                ),
+                const Text('MISSED COMMAND', style: TextStyle(color: ReactColors.textSecondary, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
+                const SizedBox(height: 4),
+                Text(command, style: const TextStyle(color: ReactColors.textPrimary, fontSize: 19, fontWeight: FontWeight.w900, letterSpacing: -.2)),
               ],
             ),
           ),
-          const Icon(
-            Icons.close_rounded,
-            color: ReactColors.coral,
-            size: 20,
-          ),
+          const Icon(Icons.close_rounded, color: ReactColors.coral, size: 20),
         ],
       ),
     );
@@ -299,12 +220,7 @@ class _MissedCommandCard extends StatelessWidget {
 }
 
 class _ResultStat extends StatelessWidget {
-  const _ResultStat({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
+  const _ResultStat({required this.label, required this.value, required this.color});
   final String label;
   final String value;
   final Color color;
@@ -313,26 +229,9 @@ class _ResultStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 21,
-            fontWeight: FontWeight.w900,
-            height: 1,
-          ),
-        ),
+        Text(value, style: TextStyle(color: color, fontSize: 21, fontWeight: FontWeight.w900, height: 1)),
         const SizedBox(height: 6),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 8,
-            fontWeight: FontWeight.w900,
-            letterSpacing: .8,
-          ),
-        ),
+        Text(label, textAlign: TextAlign.center, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: .8)),
       ],
     );
   }
@@ -343,10 +242,6 @@ class _StatDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 34,
-      color: const Color(0xFF1A2B45),
-    );
+    return Container(width: 1, height: 34, color: const Color(0xFF1A2B45));
   }
 }
