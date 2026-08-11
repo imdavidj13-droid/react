@@ -126,7 +126,7 @@ class _CommandOrb extends StatelessWidget {
           ),
           SizedBox.square(
             dimension: size - 14,
-            child: CircularProgressIndicator(
+            child: const CircularProgressIndicator(
               value: 0.72,
               strokeWidth: 8,
               strokeCap: StrokeCap.round,
