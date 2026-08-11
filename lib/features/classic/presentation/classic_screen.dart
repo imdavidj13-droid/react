@@ -51,7 +51,9 @@ class _ClassicScreenState extends State<ClassicScreen> {
   double _timeRemaining = 1;
   int _score = 0;
   int _combo = 0;
+  int _bestCombo = 0;
   int _reactions = 0;
+  int _totalResponseMs = 0;
   bool _acceptingInput = true;
   bool _finished = false;
   String? _feedback;
@@ -118,17 +120,16 @@ class _ClassicScreenState extends State<ClassicScreen> {
 
     _timer?.cancel();
     final responseMs = DateTime.now().difference(_commandStartedAt).inMilliseconds;
-    final speedBonus = ((1 - responseMs / _commandDuration.inMilliseconds) * 80)
-        .clamp(0, 80)
-        .round();
-    final points = 100 + speedBonus + (_combo * 5);
+    final newCombo = _combo + 1;
 
     setState(() {
       _acceptingInput = false;
-      _score += points;
-      _combo += 1;
+      _score += 1;
+      _combo = newCombo;
+      _bestCombo = max(_bestCombo, newCombo);
       _reactions += 1;
-      _feedbackPoints = points;
+      _totalResponseMs += responseMs;
+      _feedbackPoints = 1;
       _feedback = responseMs <= 750 ? 'PERFECT' : responseMs <= 1400 ? 'GREAT' : 'GOOD';
     });
 
@@ -141,10 +142,24 @@ class _ClassicScreenState extends State<ClassicScreen> {
     _acceptingInput = false;
     _timer?.cancel();
     _nextCommandTimer?.cancel();
+    _openResults();
+  }
+
+  void _openResults() {
+    final averageTimeSeconds = _reactions == 0
+        ? 0.0
+        : (_totalResponseMs / _reactions) / 1000;
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) => const ResultsScreen(),
+        builder: (_) => ResultsScreen(
+          score: _score,
+          reactions: _reactions,
+          bestCombo: _bestCombo,
+          averageTimeSeconds: averageTimeSeconds,
+          failedCommand: _command.title.replaceAll('\n', ' '),
+          failedCommandIcon: _command.icon,
+        ),
       ),
     );
   }
@@ -234,11 +249,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
                           onPressed: () {
                             _timer?.cancel();
                             _nextCommandTimer?.cancel();
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const ResultsScreen(),
-                              ),
-                            );
+                            _openResults();
                           },
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFF5E6D88),
@@ -319,11 +330,7 @@ class _CommandDisplay extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  command.icon,
-                  color: ReactColors.electricBlueBright,
-                  size: 48,
-                ),
+                Icon(command.icon, color: ReactColors.electricBlueBright, size: 48),
                 const SizedBox(height: 14),
                 Text(
                   command.title,
@@ -383,24 +390,9 @@ class _InstructionCopy extends StatelessWidget {
     return const Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          'PERFORM THE COMMAND',
-          style: TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.8,
-          ),
-        ),
+        Text('PERFORM THE COMMAND', style: TextStyle(color: ReactColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.8)),
         SizedBox(height: 5),
-        Text(
-          'Complete it before the timer ring expires',
-          style: TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        Text('Complete it before the timer ring expires', style: TextStyle(color: ReactColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -417,24 +409,9 @@ class _SuccessFeedback extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          '+$points',
-          style: const TextStyle(
-            color: ReactColors.lime,
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
+        Text('+$points', style: const TextStyle(color: ReactColors.lime, fontSize: 20, fontWeight: FontWeight.w900)),
         const SizedBox(height: 2),
-        Text(
-          feedback,
-          style: const TextStyle(
-            color: ReactColors.electricBlueBright,
-            fontSize: 11,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2.2,
-          ),
-        ),
+        Text(feedback, style: const TextStyle(color: ReactColors.electricBlueBright, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 2.2)),
       ],
     );
   }
@@ -450,15 +427,7 @@ class _CommandHints extends StatelessWidget {
       children: [
         _HintDot(color: ReactColors.electricBlueBright),
         SizedBox(width: 8),
-        Text(
-          '3 COMMANDS ACTIVE  •  TAP  •  DOUBLE TAP  •  HOLD',
-          style: TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 8,
-            fontWeight: FontWeight.w800,
-            letterSpacing: .7,
-          ),
-        ),
+        Text('3 COMMANDS ACTIVE  •  TAP  •  DOUBLE TAP  •  HOLD', style: TextStyle(color: ReactColors.textSecondary, fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: .7)),
         SizedBox(width: 8),
         _HintDot(color: ReactColors.purple),
       ],
@@ -475,11 +444,7 @@ class _HintDot extends StatelessWidget {
     return Container(
       width: 5,
       height: 5,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: color, blurRadius: 8)],
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle, boxShadow: [BoxShadow(color: color, blurRadius: 8)]),
     );
   }
 }
@@ -516,25 +481,9 @@ class _HudMetric extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 8,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.3,
-          ),
-        ),
+        Text(label, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
         const SizedBox(height: 3),
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-            height: 1,
-          ),
-        ),
+        Text(value, style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w900, height: 1)),
       ],
     );
   }
