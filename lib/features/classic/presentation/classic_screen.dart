@@ -1,9 +1,34 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
 import '../../../game/react_game.dart';
 import '../../results/presentation/results_screen.dart';
+
+enum ClassicCommand { tap, doubleTap, hold }
+
+extension ClassicCommandUi on ClassicCommand {
+  String get title => switch (this) {
+        ClassicCommand.tap => 'TAP',
+        ClassicCommand.doubleTap => 'DOUBLE\nTAP',
+        ClassicCommand.hold => 'HOLD',
+      };
+
+  String get hint => switch (this) {
+        ClassicCommand.tap => 'TAP ONCE',
+        ClassicCommand.doubleTap => 'TAP TWICE QUICKLY',
+        ClassicCommand.hold => 'PRESS AND HOLD',
+      };
+
+  IconData get icon => switch (this) {
+        ClassicCommand.tap => Icons.touch_app_rounded,
+        ClassicCommand.doubleTap => Icons.ads_click_rounded,
+        ClassicCommand.hold => Icons.pan_tool_alt_rounded,
+      };
+}
 
 class ClassicScreen extends StatefulWidget {
   const ClassicScreen({super.key});
@@ -13,12 +38,115 @@ class ClassicScreen extends StatefulWidget {
 }
 
 class _ClassicScreenState extends State<ClassicScreen> {
+  static const _commandDuration = Duration(milliseconds: 2200);
+  static const _tickDuration = Duration(milliseconds: 40);
+
   late final ReactGame _game;
+  final Random _random = Random();
+
+  Timer? _timer;
+  Timer? _nextCommandTimer;
+  ClassicCommand _command = ClassicCommand.tap;
+  DateTime _commandStartedAt = DateTime.now();
+  double _timeRemaining = 1;
+  int _score = 0;
+  int _combo = 0;
+  int _reactions = 0;
+  bool _acceptingInput = true;
+  bool _finished = false;
+  String? _feedback;
+  int? _feedbackPoints;
 
   @override
   void initState() {
     super.initState();
     _game = ReactGame();
+    _startCommand(initial: true);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _nextCommandTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startCommand({bool initial = false}) {
+    _timer?.cancel();
+    _nextCommandTimer?.cancel();
+
+    ClassicCommand next = ClassicCommand.values[_random.nextInt(ClassicCommand.values.length)];
+    if (!initial && ClassicCommand.values.length > 1) {
+      while (next == _command) {
+        next = ClassicCommand.values[_random.nextInt(ClassicCommand.values.length)];
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _command = next;
+      _commandStartedAt = DateTime.now();
+      _timeRemaining = 1;
+      _acceptingInput = true;
+      _feedback = null;
+      _feedbackPoints = null;
+    });
+
+    _timer = Timer.periodic(_tickDuration, (_) {
+      if (!mounted || _finished || !_acceptingInput) return;
+      final elapsed = DateTime.now().difference(_commandStartedAt).inMilliseconds;
+      final progress = 1 - (elapsed / _commandDuration.inMilliseconds);
+
+      if (progress <= 0) {
+        _failRun();
+        return;
+      }
+
+      setState(() {
+        _timeRemaining = progress.clamp(0.0, 1.0);
+      });
+    });
+  }
+
+  void _handleGesture(ClassicCommand performed) {
+    if (!_acceptingInput || _finished) return;
+
+    if (performed != _command) {
+      _failRun();
+      return;
+    }
+
+    _timer?.cancel();
+    final responseMs = DateTime.now().difference(_commandStartedAt).inMilliseconds;
+    final speedBonus = ((1 - responseMs / _commandDuration.inMilliseconds) * 80)
+        .clamp(0, 80)
+        .round();
+    final points = 100 + speedBonus + (_combo * 5);
+
+    setState(() {
+      _acceptingInput = false;
+      _score += points;
+      _combo += 1;
+      _reactions += 1;
+      _feedbackPoints = points;
+      _feedback = responseMs <= 750 ? 'PERFECT' : responseMs <= 1400 ? 'GREAT' : 'GOOD';
+    });
+
+    _nextCommandTimer = Timer(const Duration(milliseconds: 520), _startCommand);
+  }
+
+  void _failRun() {
+    if (_finished) return;
+    _finished = true;
+    _acceptingInput = false;
+    _timer?.cancel();
+    _nextCommandTimer?.cancel();
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => const ResultsScreen(),
+      ),
+    );
   }
 
   @override
@@ -44,15 +172,15 @@ class _ClassicScreenState extends State<ClassicScreen> {
                             onTap: () => Navigator.of(context).pop(),
                           ),
                           const Spacer(),
-                          const _HudMetric(
+                          _HudMetric(
                             label: 'SCORE',
-                            value: '12',
+                            value: '$_score',
                             color: ReactColors.lime,
                           ),
                           const SizedBox(width: 22),
-                          const _HudMetric(
+                          _HudMetric(
                             label: 'COMBO',
-                            value: 'x4',
+                            value: 'x$_combo',
                             color: ReactColors.purple,
                           ),
                         ],
@@ -68,39 +196,44 @@ class _ClassicScreenState extends State<ClassicScreen> {
                         ),
                       ),
                       SizedBox(height: compact ? 18 : 28),
-                      const Expanded(
+                      Expanded(
                         child: Center(
-                          child: _CommandDisplay(),
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _handleGesture(ClassicCommand.tap),
+                            onDoubleTap: () => _handleGesture(ClassicCommand.doubleTap),
+                            onLongPress: () => _handleGesture(ClassicCommand.hold),
+                            child: _CommandDisplay(
+                              command: _command,
+                              progress: _timeRemaining,
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'PERFORM THE COMMAND',
-                        style: TextStyle(
-                          color: ReactColors.textPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.8,
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        height: 52,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 160),
+                          child: _feedback == null
+                              ? const _InstructionCopy(key: ValueKey('instruction'))
+                              : _SuccessFeedback(
+                                  key: ValueKey('$_feedback-$_reactions'),
+                                  feedback: _feedback!,
+                                  points: _feedbackPoints!,
+                                ),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Complete it before the timer ring expires',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: ReactColors.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 12),
                       const _CommandHints(),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
-                        height: 48,
+                        height: 44,
                         child: OutlinedButton.icon(
                           onPressed: () {
+                            _timer?.cancel();
+                            _nextCommandTimer?.cancel();
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute<void>(
                                 builder: (_) => const ResultsScreen(),
@@ -114,11 +247,11 @@ class _ClassicScreenState extends State<ClassicScreen> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          icon: const Icon(Icons.flag_outlined, size: 16),
+                          icon: const Icon(Icons.flag_outlined, size: 15),
                           label: const Text(
                             'PREVIEW RESULT',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 9,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1.2,
                             ),
@@ -138,50 +271,41 @@ class _ClassicScreenState extends State<ClassicScreen> {
 }
 
 class _CommandDisplay extends StatelessWidget {
-  const _CommandDisplay();
+  const _CommandDisplay({required this.command, required this.progress});
+
+  final ClassicCommand command;
+  final double progress;
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final size = width.clamp(300.0, 360.0).toDouble();
+    final seconds = (_ClassicScreenState._commandDuration.inMilliseconds * progress / 1000)
+        .clamp(0, 9.9);
 
     return SizedBox.square(
       dimension: size,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Container(
-            width: size - 20,
-            height: size - 20,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: ReactColors.electricBlue.withValues(alpha: .14),
-                  blurRadius: 42,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-          ),
           SizedBox.square(
             dimension: size - 20,
-            child: const CircularProgressIndicator(
-              value: .72,
-              strokeWidth: 4,
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 5,
               strokeCap: StrokeCap.round,
-              backgroundColor: Color(0xFF13213A),
-              color: ReactColors.electricBlueBright,
+              backgroundColor: const Color(0xFF13213A),
+              color: progress < .28 ? ReactColors.coral : ReactColors.electricBlueBright,
             ),
           ),
           SizedBox.square(
             dimension: size - 52,
             child: CircularProgressIndicator(
-              value: .84,
+              value: progress,
               strokeWidth: 2,
               strokeCap: StrokeCap.round,
               backgroundColor: const Color(0xFF172033),
-              color: ReactColors.electricBlue.withValues(alpha: .6),
+              color: ReactColors.electricBlue.withValues(alpha: .55),
             ),
           ),
           Container(
@@ -191,26 +315,20 @@ class _CommandDisplay extends StatelessWidget {
               shape: BoxShape.circle,
               color: const Color(0xFF070B15),
               border: Border.all(color: const Color(0xFF17345C)),
-              boxShadow: [
-                BoxShadow(
-                  color: ReactColors.electricBlue.withValues(alpha: .10),
-                  blurRadius: 24,
-                ),
-              ],
             ),
-            child: const Column(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.touch_app_rounded,
+                  command.icon,
                   color: ReactColors.electricBlueBright,
-                  size: 46,
+                  size: 48,
                 ),
-                SizedBox(height: 14),
+                const SizedBox(height: 14),
                 Text(
-                  'DOUBLE\nTAP',
+                  command.title,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: ReactColors.textPrimary,
                     fontSize: 36,
                     fontWeight: FontWeight.w900,
@@ -218,22 +336,32 @@ class _CommandDisplay extends StatelessWidget {
                     height: .92,
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 11),
                 Text(
-                  '1.8',
+                  command.hint,
+                  style: const TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  seconds.toStringAsFixed(1),
                   style: TextStyle(
-                    color: ReactColors.electricBlueBright,
-                    fontSize: 24,
+                    color: progress < .28 ? ReactColors.coral : ReactColors.electricBlueBright,
+                    fontSize: 23,
                     fontWeight: FontWeight.w900,
                     height: 1,
                   ),
                 ),
-                SizedBox(height: 2),
-                Text(
+                const SizedBox(height: 2),
+                const Text(
                   'SECONDS',
                   style: TextStyle(
                     color: ReactColors.textSecondary,
-                    fontSize: 8,
+                    fontSize: 7,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.4,
                   ),
@@ -243,6 +371,71 @@ class _CommandDisplay extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _InstructionCopy extends StatelessWidget {
+  const _InstructionCopy({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'PERFORM THE COMMAND',
+          style: TextStyle(
+            color: ReactColors.textPrimary,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.8,
+          ),
+        ),
+        SizedBox(height: 5),
+        Text(
+          'Complete it before the timer ring expires',
+          style: TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SuccessFeedback extends StatelessWidget {
+  const _SuccessFeedback({required this.feedback, required this.points, super.key});
+
+  final String feedback;
+  final int points;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          '+$points',
+          style: const TextStyle(
+            color: ReactColors.lime,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          feedback,
+          style: const TextStyle(
+            color: ReactColors.electricBlueBright,
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2.2,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -258,12 +451,12 @@ class _CommandHints extends StatelessWidget {
         _HintDot(color: ReactColors.electricBlueBright),
         SizedBox(width: 8),
         Text(
-          '10 COMMANDS ACTIVE',
+          '3 COMMANDS ACTIVE  •  TAP  •  DOUBLE TAP  •  HOLD',
           style: TextStyle(
             color: ReactColors.textSecondary,
-            fontSize: 9,
+            fontSize: 8,
             fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
+            letterSpacing: .7,
           ),
         ),
         SizedBox(width: 8),
@@ -312,11 +505,7 @@ class _RoundControl extends StatelessWidget {
 }
 
 class _HudMetric extends StatelessWidget {
-  const _HudMetric({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  const _HudMetric({required this.label, required this.value, required this.color});
 
   final String label;
   final String value;
