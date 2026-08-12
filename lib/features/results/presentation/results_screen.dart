@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
@@ -18,6 +20,8 @@ class ResultsScreen extends StatefulWidget {
 }
 
 class _ResultsScreenState extends State<ResultsScreen> {
+  bool _newBest = false;
+
   ReactRunResult get result => widget.result;
 
   Color get _modeColor => switch (result.mode) {
@@ -31,7 +35,13 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   void initState() {
     super.initState();
-    LocalPlayerStats.recordResult(result);
+    unawaited(_recordResult());
+  }
+
+  Future<void> _recordResult() async {
+    final newBest = await LocalPlayerStats.recordResult(result);
+    if (!mounted || !newBest) return;
+    setState(() => _newBest = true);
   }
 
   @override
@@ -50,7 +60,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   children: [
                     _ResultsHeader(result: result, color: _modeColor),
                     SizedBox(height: compact ? 24 : 34),
-                    _ScoreHero(score: result.score, color: _modeColor),
+                    _ScoreHero(
+                      result: result,
+                      color: _modeColor,
+                      newBest: _newBest,
+                    ),
                     SizedBox(height: compact ? 22 : 30),
                     _StatsStrip(result: result),
                     const SizedBox(height: 16),
@@ -177,13 +191,20 @@ class _ResultsHeader extends StatelessWidget {
 }
 
 class _ScoreHero extends StatelessWidget {
-  const _ScoreHero({required this.score, required this.color});
+  const _ScoreHero({
+    required this.result,
+    required this.color,
+    required this.newBest,
+  });
 
-  final int score;
+  final ReactRunResult result;
   final Color color;
+  final bool newBest;
 
   @override
   Widget build(BuildContext context) {
+    final isPassIt = result.mode == ReactGameMode.passIt;
+
     return Column(
       children: [
         Container(
@@ -194,12 +215,16 @@ class _ScoreHero extends StatelessWidget {
             color: const Color(0xFF0A101D),
             border: Border.all(color: color.withValues(alpha: .62)),
           ),
-          child: Icon(Icons.bolt_rounded, color: color, size: 34),
+          child: Icon(
+            isPassIt ? Icons.groups_2_rounded : Icons.bolt_rounded,
+            color: color,
+            size: 34,
+          ),
         ),
         const SizedBox(height: 18),
-        const Text(
-          'FINAL SCORE',
-          style: TextStyle(
+        Text(
+          isPassIt ? 'COMMANDS CLEARED' : 'FINAL SCORE',
+          style: const TextStyle(
             color: ReactColors.textSecondary,
             fontSize: 10,
             fontWeight: FontWeight.w900,
@@ -208,7 +233,7 @@ class _ScoreHero extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          '$score',
+          '${result.score}',
           style: const TextStyle(
             color: ReactColors.lime,
             fontSize: 82,
@@ -217,6 +242,33 @@ class _ScoreHero extends StatelessWidget {
             letterSpacing: -3.2,
           ),
         ),
+        if (newBest) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+            decoration: BoxDecoration(
+              color: ReactColors.lime.withValues(alpha: .09),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: ReactColors.lime.withValues(alpha: .55)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.workspace_premium_rounded, color: ReactColors.lime, size: 17),
+                SizedBox(width: 7),
+                Text(
+                  'NEW BEST',
+                  style: TextStyle(
+                    color: ReactColors.lime,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
