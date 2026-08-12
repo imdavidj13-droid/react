@@ -27,6 +27,11 @@ class ModeTimingRules {
   final int? runDurationMs;
   final int missTimePenaltyMs;
 
+  // Compatibility for screens still being moved onto score-aware transition
+  // timing. This always returns the starting delay; use successDelayMsForScore
+  // for the audited ramp.
+  int get successDelayMs => startSuccessDelayMs;
+
   int commandDurationMsForScore(int score) {
     if (commandSpeedStepMs <= 0 || commandSpeedStepEveryPoints <= 0) {
       return startCommandMs;
