@@ -22,7 +22,7 @@ class _EndlessScreenState extends State<EndlessScreen> {
   }
 
   Future<void> _loadBest() async {
-    final best = await LocalPlayerStats.bestScore(ReactGameMode.endless);
+    final best = await LocalPlayerStats.bestFor(ReactGameMode.endless);
     if (mounted) setState(() => _best = best);
   }
 
