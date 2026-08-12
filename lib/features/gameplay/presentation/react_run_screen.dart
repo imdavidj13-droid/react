@@ -93,7 +93,13 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _game = ReactGame();
+
+    _game = ReactGame()
+      ..configure(
+        accent: _modeColor(widget.mode),
+        intensity: _initialFlameIntensity(widget.mode),
+      );
+
     final now = DateTime.now();
     final seed = now.year * 10000 + now.month * 100 + now.day;
     _random = widget.mode == ReactGameMode.daily ? Random(seed) : Random();
@@ -199,6 +205,9 @@ class _ReactRunScreenState extends State<ReactRunScreen>
               : '+1  GOOD';
     });
 
+    _game.triggerSuccess();
+    _syncFlameIntensity();
+
     if (widget.mode == ReactGameMode.passIt) {
       _advancePlayerAndHandoff();
       return;
@@ -213,6 +222,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   void _miss() {
     if (!_acceptingInput || _finished) return;
     _commandTimer?.cancel();
+    _game.triggerMiss();
 
     switch (widget.mode) {
       case ReactGameMode.classic:
@@ -277,6 +287,17 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     }
   }
 
+  void _syncFlameIntensity() {
+    final intensity = switch (widget.mode) {
+      ReactGameMode.classic => (.18 + _score * .008).clamp(.18, .48),
+      ReactGameMode.blitz => (.45 + _score * .006).clamp(.45, .72),
+      ReactGameMode.endless => (.24 + _score * .035).clamp(.24, 1.0),
+      ReactGameMode.daily => .28,
+      ReactGameMode.passIt => .30,
+    };
+    _game.setIntensity(intensity.toDouble());
+  }
+
   void _advancePlayerAndHandoff() {
     if (_alivePlayers <= 1) {
       final winner = _playerLives.indexWhere((lives) => lives > 0) + 1;
@@ -313,6 +334,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     if (value) {
       _commandTimer?.cancel();
       _nextTimer?.cancel();
+      _game.pauseEngine();
       if (widget.mode == ReactGameMode.blitz) {
         _pausedBlitzRemaining = Duration(milliseconds: _blitzMsRemaining);
       }
@@ -326,6 +348,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     if (widget.mode == ReactGameMode.blitz) {
       _blitzDeadline = DateTime.now().add(_pausedBlitzRemaining);
     }
+    _game.resumeEngine();
     setState(() => _paused = false);
     if (!_handoff) _startCommand();
   }
@@ -481,6 +504,14 @@ Color _modeColor(ReactGameMode mode) => switch (mode) {
       ReactGameMode.endless => ReactColors.lime,
       ReactGameMode.daily => ReactColors.electricBlueBright,
       ReactGameMode.passIt => ReactColors.purple,
+    };
+
+double _initialFlameIntensity(ReactGameMode mode) => switch (mode) {
+      ReactGameMode.classic => .18,
+      ReactGameMode.blitz => .45,
+      ReactGameMode.endless => .24,
+      ReactGameMode.daily => .28,
+      ReactGameMode.passIt => .30,
     };
 
 class _Header extends StatelessWidget {
@@ -899,8 +930,11 @@ class _PauseOverlay extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.pause_circle_outline_rounded,
-                    color: ReactColors.electricBlueBright, size: 52),
+                const Icon(
+                  Icons.pause_circle_outline_rounded,
+                  color: ReactColors.electricBlueBright,
+                  size: 52,
+                ),
                 const SizedBox(height: 12),
                 const Text(
                   'PAUSED',
@@ -942,8 +976,11 @@ class _HandoffOverlay extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.phone_android_rounded,
-                    color: ReactColors.purple, size: 66),
+                const Icon(
+                  Icons.phone_android_rounded,
+                  color: ReactColors.purple,
+                  size: 66,
+                ),
                 const SizedBox(height: 18),
                 Text(
                   'PASS TO PLAYER $player',
