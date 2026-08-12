@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
 import '../../classic/presentation/classic_screen.dart';
+import '../../daily/presentation/daily_screen.dart';
+import '../../leaderboard/presentation/leaderboard_screen.dart';
 import '../../modes/presentation/modes_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -39,10 +41,12 @@ class HomeScreen extends StatelessWidget {
                     SizedBox(height: compact ? 4 : 8),
                     _PlayDial(
                       size: dialSize,
-                      onTap: () => _openClassic(context),
+                      onTap: () => _open(context, const ClassicScreen()),
                     ),
                     SizedBox(height: compact ? 8 : 12),
-                    _PlayButton(onTap: () => _openClassic(context)),
+                    _PlayButton(
+                      onTap: () => _open(context, const ClassicScreen()),
+                    ),
                     SizedBox(height: compact ? 12 : 16),
                     Row(
                       children: [
@@ -51,27 +55,28 @@ class HomeScreen extends StatelessWidget {
                             icon: Icons.view_in_ar_rounded,
                             label: 'MODES',
                             color: const Color(0xFF27D8F6),
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const ModesScreen(),
-                              ),
-                            ),
+                            onTap: () => _open(context, const ModesScreen()),
                           ),
                         ),
                         const SizedBox(width: 10),
-                        const Expanded(
+                        Expanded(
                           child: _NavTile(
                             icon: Icons.calendar_month_rounded,
                             label: 'DAILY',
                             color: ReactColors.lime,
+                            onTap: () => _open(context, const DailyScreen()),
                           ),
                         ),
                         const SizedBox(width: 10),
-                        const Expanded(
+                        Expanded(
                           child: _NavTile(
                             icon: Icons.leaderboard_rounded,
                             label: 'LEADERBOARD',
                             color: ReactColors.purple,
+                            onTap: () => _open(
+                              context,
+                              const LeaderboardScreen(),
+                            ),
                           ),
                         ),
                       ],
@@ -86,9 +91,9 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  void _openClassic(BuildContext context) {
+  void _open(BuildContext context, Widget screen) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ClassicScreen()),
+      MaterialPageRoute<void>(builder: (_) => screen),
     );
   }
 }
