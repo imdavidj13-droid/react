@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
+import '../core/settings/react_settings.dart';
 import '../core/theme/react_colors.dart';
 
 class ReactGame extends FlameGame {
@@ -13,6 +14,9 @@ class ReactGame extends FlameGame {
   double intensity = .18;
 
   final Random _random = Random();
+
+  bool get effectsEnabled => ReactSettings.visualEffectsEnabled;
+  double get effectiveIntensity => effectsEnabled ? intensity : 0;
 
   @override
   Color backgroundColor() => ReactColors.background;
@@ -34,6 +38,7 @@ class ReactGame extends FlameGame {
   }
 
   void triggerSuccess() {
+    if (!effectsEnabled) return;
     add(
       _ReactionBurst(
         game: this,
@@ -53,6 +58,7 @@ class ReactGame extends FlameGame {
   }
 
   void triggerMiss() {
+    if (!effectsEnabled) return;
     add(
       _ReactionBurst(
         game: this,
@@ -112,12 +118,12 @@ class _AmbientParticleField extends Component {
   @override
   void update(double dt) {
     super.update(dt);
-    if (game.size.x <= 0 || game.size.y <= 0) return;
+    if (!game.effectsEnabled || game.size.x <= 0 || game.size.y <= 0) return;
 
-    final speedMultiplier = .7 + game.intensity * 2.1;
+    final speedMultiplier = .7 + game.effectiveIntensity * 2.1;
     for (var i = 0; i < _particles.length; i++) {
       final particle = _particles[i];
-      particle.phase += dt * (1.2 + game.intensity * 3.0);
+      particle.phase += dt * (1.2 + game.effectiveIntensity * 3.0);
       particle.y -= particle.speed * speedMultiplier * dt;
       particle.x += sin(particle.phase) * particle.drift * dt;
 
@@ -132,7 +138,8 @@ class _AmbientParticleField extends Component {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    final baseAlpha = .04 + game.intensity * .065;
+    if (!game.effectsEnabled) return;
+    final baseAlpha = .04 + game.effectiveIntensity * .065;
 
     for (final particle in _particles) {
       final shimmer = .72 + sin(particle.phase) * .28;
@@ -156,15 +163,21 @@ class _PressureField extends Component {
   @override
   void update(double dt) {
     super.update(dt);
-    _phase += dt * (1.1 + game.intensity * 4.4);
+    _phase += dt * (1.1 + game.effectiveIntensity * 4.4);
   }
 
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    if (game.size.x <= 0 || game.size.y <= 0 || game.intensity < .38) return;
+    if (!game.effectsEnabled ||
+        game.size.x <= 0 ||
+        game.size.y <= 0 ||
+        game.effectiveIntensity < .38) {
+      return;
+    }
 
-    final pressure = ((game.intensity - .38) / .62).clamp(0.0, 1.0).toDouble();
+    final pressure =
+        ((game.effectiveIntensity - .38) / .62).clamp(0.0, 1.0).toDouble();
     final pulse = .65 + sin(_phase) * .35;
     final alpha = (.025 + pressure * .09) * pulse;
     final paint = Paint()
