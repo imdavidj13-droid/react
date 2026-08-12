@@ -25,11 +25,11 @@ class ReactGame extends FlameGame {
 
   void configure({required Color accent, required double intensity}) {
     this.accent = accent;
-    this.intensity = intensity.clamp(0, 1);
+    this.intensity = intensity.clamp(0.0, 1.0).toDouble();
   }
 
   void setIntensity(double value) {
-    intensity = value.clamp(0, 1);
+    intensity = value.clamp(0.0, 1.0).toDouble();
   }
 
   void triggerSuccess() {
@@ -116,10 +116,8 @@ class _AmbientParticleField extends Component {
 
     for (final particle in _particles) {
       final shimmer = .72 + sin(particle.phase) * .28;
-      final paint = Paint()
-        ..color = game.accent.withValues(
-          alpha: (baseAlpha * shimmer).clamp(0, .12),
-        );
+      final alpha = (baseAlpha * shimmer).clamp(0.0, .12).toDouble();
+      final paint = Paint()..color = game.accent.withValues(alpha: alpha);
       canvas.drawCircle(
         Offset(particle.x, particle.y),
         particle.radius,
@@ -197,14 +195,14 @@ class _ReactionBurst extends Component {
     final drag = pow(.06, dt).toDouble();
     for (final particle in _particles) {
       particle.position += particle.velocity * dt;
-      particle.velocity *= drag;
+      particle.velocity = particle.velocity * drag;
     }
   }
 
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    final life = (1 - (_age / _lifetime)).clamp(0.0, 1.0);
+    final life = (1 - (_age / _lifetime)).clamp(0.0, 1.0).toDouble();
     final paint = Paint()..style = PaintingStyle.fill;
 
     for (final particle in _particles) {
