@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
 import '../../classic/presentation/classic_screen.dart';
+import '../../modes/presentation/modes_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -38,40 +39,35 @@ class HomeScreen extends StatelessWidget {
                     SizedBox(height: compact ? 4 : 8),
                     _PlayDial(
                       size: dialSize,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const ClassicScreen(),
-                        ),
-                      ),
+                      onTap: () => _openClassic(context),
                     ),
                     SizedBox(height: compact ? 8 : 12),
-                    _PlayButton(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const ClassicScreen(),
-                        ),
-                      ),
-                    ),
+                    _PlayButton(onTap: () => _openClassic(context)),
                     SizedBox(height: compact ? 12 : 16),
-                    const Row(
+                    Row(
                       children: [
                         Expanded(
                           child: _NavTile(
                             icon: Icons.view_in_ar_rounded,
                             label: 'MODES',
-                            color: Color(0xFF27D8F6),
+                            color: const Color(0xFF27D8F6),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const ModesScreen(),
+                              ),
+                            ),
                           ),
                         ),
-                        SizedBox(width: 10),
-                        Expanded(
+                        const SizedBox(width: 10),
+                        const Expanded(
                           child: _NavTile(
                             icon: Icons.calendar_month_rounded,
                             label: 'DAILY',
                             color: ReactColors.lime,
                           ),
                         ),
-                        SizedBox(width: 10),
-                        Expanded(
+                        const SizedBox(width: 10),
+                        const Expanded(
                           child: _NavTile(
                             icon: Icons.leaderboard_rounded,
                             label: 'LEADERBOARD',
@@ -89,6 +85,12 @@ class HomeScreen extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+
+  void _openClassic(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ClassicScreen()),
     );
   }
 }
@@ -121,10 +123,7 @@ class _TopSection extends StatelessWidget {
             ],
           ),
         ),
-        const Align(
-          alignment: Alignment.topRight,
-          child: _ProfileButton(),
-        ),
+        const Align(alignment: Alignment.topRight, child: _ProfileButton()),
       ],
     );
   }
@@ -210,11 +209,7 @@ class _BestScore extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          Icon(
-            Icons.workspace_premium_outlined,
-            color: ReactColors.lime,
-            size: 20,
-          ),
+          Icon(Icons.workspace_premium_outlined, color: ReactColors.lime, size: 20),
           SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -331,10 +326,7 @@ class _PlayDial extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: ReactColors.background,
-                border: Border.all(
-                  color: const Color(0xFF42D8FF),
-                  width: 2.5,
-                ),
+                border: Border.all(color: const Color(0xFF42D8FF), width: 2.5),
               ),
               child: const Icon(
                 Icons.play_arrow_rounded,
@@ -369,39 +361,29 @@ class _DialPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..strokeWidth = 4.5
         ..color = color;
-      final rect = Rect.fromCircle(center: center, radius: r);
-      canvas.drawArc(rect, start, sweep, false, line);
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: r),
+        start,
+        sweep,
+        false,
+        line,
+      );
     }
 
-    arc(
-      math.pi * .72,
-      math.pi * .54,
-      ReactColors.electricBlueBright,
-      radius * .83,
-    );
-    arc(
-      math.pi * 1.54,
-      math.pi * .43,
-      ReactColors.lime,
-      radius * .76,
-    );
-    arc(
-      math.pi * .08,
-      math.pi * .42,
-      const Color(0xFFFF6D8B),
-      radius * .87,
-    );
+    arc(math.pi * .72, math.pi * .54, ReactColors.electricBlueBright, radius * .83);
+    arc(math.pi * 1.54, math.pi * .43, ReactColors.lime, radius * .76);
+    arc(math.pi * .08, math.pi * .42, const Color(0xFFFF6D8B), radius * .87);
 
     final tick = Paint()..strokeWidth = 1.4;
     for (var i = 0; i < 52; i++) {
-      final a = i * math.pi * 2 / 52;
+      final angle = i * math.pi * 2 / 52;
       tick.color = i < 18
           ? ReactColors.electricBlue.withValues(alpha: .58)
           : i < 35
               ? ReactColors.lime.withValues(alpha: .46)
               : ReactColors.purple.withValues(alpha: .43);
-      final p1 = center + Offset(math.cos(a), math.sin(a)) * (radius * .91);
-      final p2 = center + Offset(math.cos(a), math.sin(a)) * (radius * .95);
+      final p1 = center + Offset(math.cos(angle), math.sin(angle)) * (radius * .91);
+      final p2 = center + Offset(math.cos(angle), math.sin(angle)) * (radius * .95);
       canvas.drawLine(p1, p2, tick);
     }
   }
@@ -453,38 +435,48 @@ class _PlayButton extends StatelessWidget {
 }
 
 class _NavTile extends StatelessWidget {
-  const _NavTile({required this.icon, required this.label, required this.color});
+  const _NavTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.onTap,
+  });
 
   final IconData icon;
   final String label;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 84,
-      decoration: BoxDecoration(
-        color: const Color(0xCC07111D),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF2A3A52)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 25),
-          const SizedBox(height: 7),
-          FittedBox(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: ReactColors.textSecondary,
-                fontSize: 9.5,
-                fontWeight: FontWeight.w800,
-                letterSpacing: .7,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        height: 84,
+        decoration: BoxDecoration(
+          color: const Color(0xCC07111D),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFF2A3A52)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 25),
+            const SizedBox(height: 7),
+            FittedBox(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: ReactColors.textSecondary,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: .7,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -526,26 +518,10 @@ class _CommandsPanel extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _Command(
-                icon: Icons.touch_app_rounded,
-                label: 'TAP',
-                color: Color(0xFF55B8FF),
-              ),
-              _Command(
-                icon: Icons.double_arrow_rounded,
-                label: 'SWIPE',
-                color: ReactColors.electricBlue,
-              ),
-              _Command(
-                icon: Icons.zoom_in_map_rounded,
-                label: 'PINCH',
-                color: ReactColors.lime,
-              ),
-              _Command(
-                icon: Icons.pause_circle_outline_rounded,
-                label: 'FREEZE',
-                color: ReactColors.purple,
-              ),
+              _Command(icon: Icons.touch_app_rounded, label: 'TAP', color: Color(0xFF55B8FF)),
+              _Command(icon: Icons.double_arrow_rounded, label: 'SWIPE', color: ReactColors.electricBlue),
+              _Command(icon: Icons.zoom_in_map_rounded, label: 'PINCH', color: ReactColors.lime),
+              _Command(icon: Icons.pause_circle_outline_rounded, label: 'FREEZE', color: ReactColors.purple),
             ],
           ),
         ],
