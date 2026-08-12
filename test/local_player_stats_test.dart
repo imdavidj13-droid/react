@@ -115,6 +115,45 @@ void main() {
     );
   });
 
+  test('recent run history is newest first', () async {
+    await LocalPlayerStats.recordResult(
+      result(mode: ReactGameMode.classic, score: 4),
+    );
+    await LocalPlayerStats.recordResult(
+      result(mode: ReactGameMode.blitz, score: 9),
+    );
+
+    final history = await LocalPlayerStats.recentRuns();
+
+    expect(history, hasLength(2));
+    expect(history[0].mode, ReactGameMode.blitz);
+    expect(history[0].score, 9);
+    expect(history[1].mode, ReactGameMode.classic);
+    expect(history[1].score, 4);
+  });
+
+  test('recent run history is capped at twelve entries', () async {
+    for (var i = 0; i < 15; i++) {
+      await LocalPlayerStats.recordResult(
+        result(mode: ReactGameMode.classic, score: i),
+      );
+    }
+
+    final history = await LocalPlayerStats.recentRuns();
+
+    expect(history, hasLength(12));
+    expect(history.first.score, 14);
+    expect(history.last.score, 3);
+  });
+
+  test('recent run history ignores corrupt stored entries', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'recent_run_history': <String>['not-json'],
+    });
+
+    expect(await LocalPlayerStats.recentRuns(), isEmpty);
+  });
+
   test('Daily attempt can be consumed before a result exists', () async {
     expect(await LocalPlayerStats.hasPlayedDailyToday(), isFalse);
 
@@ -153,7 +192,7 @@ void main() {
     expect(await LocalPlayerStats.bestFor(ReactGameMode.daily), 10);
   });
 
-  test('reset clears progress, detailed stats, and daily state', () async {
+  test('reset clears progress, detailed stats, history, and daily state', () async {
     await LocalPlayerStats.recordResult(
       result(mode: ReactGameMode.classic, score: 14),
     );
@@ -170,6 +209,7 @@ void main() {
     expect(await LocalPlayerStats.runsFor(ReactGameMode.classic), 0);
     expect(await LocalPlayerStats.successfulCommandsFor(ReactGameMode.classic), 0);
     expect(await LocalPlayerStats.averageReactionSecondsFor(ReactGameMode.classic), 0);
+    expect(await LocalPlayerStats.recentRuns(), isEmpty);
     expect(await LocalPlayerStats.dailyStreak(), 0);
     expect(await LocalPlayerStats.hasPlayedDailyToday(), isFalse);
   });
