@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -23,6 +21,11 @@ class ReactGestureSurface extends StatefulWidget {
 
 class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   static const _minimumSwipeDistance = 48.0;
+
+  // Pinch/spread now uses the actual distance between two pointers rather than
+  // GestureDetector's scale ratio. Both an absolute and proportional movement
+  // are required, which keeps it responsive without making small finger jitter
+  // count as a completed command.
   static const _minimumPinchSpreadDelta = 22.0;
   static const _pinchRatio = 0.84;
   static const _spreadRatio = 1.16;
@@ -35,7 +38,7 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   bool _multiTouchResolved = false;
 
   void _emit(ReactCommand command) {
-    if (!widget.enabled || _multiTouchResolved) return;
+    if (!widget.enabled || _multiTouchSeen || _multiTouchResolved) return;
     widget.onCommand(command);
   }
 
@@ -84,9 +87,16 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
     if (_pointers.length < 2) {
       _twoFingerStartDistance = null;
     }
+
+    // Keep _multiTouchSeen true until every finger has left the surface. This
+    // prevents a completed pinch/spread from subsequently being interpreted as
+    // a single tap by GestureDetector.
     if (_pointers.isEmpty) {
-      _multiTouchSeen = false;
-      _multiTouchResolved = false;
+      Future<void>.microtask(() {
+        if (!mounted || _pointers.isNotEmpty) return;
+        _multiTouchSeen = false;
+        _multiTouchResolved = false;
+      });
     }
   }
 
@@ -131,15 +141,10 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       onPointerCancel: _onPointerUp,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: widget.enabled && !_multiTouchSeen
-            ? () => _emit(ReactCommand.tap)
-            : null,
-        onDoubleTap: widget.enabled && !_multiTouchSeen
-            ? () => _emit(ReactCommand.doubleTap)
-            : null,
-        onLongPress: widget.enabled && !_multiTouchSeen
-            ? () => _emit(ReactCommand.hold)
-            : null,
+        onTap: widget.enabled ? () => _emit(ReactCommand.tap) : null,
+        onDoubleTap:
+            widget.enabled ? () => _emit(ReactCommand.doubleTap) : null,
+        onLongPress: widget.enabled ? () => _emit(ReactCommand.hold) : null,
         onPanStart: _onPanStart,
         onPanUpdate: _onPanUpdate,
         onPanEnd: _onPanEnd,
