@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
 import '../../classic/presentation/classic_screen.dart';
+import '../../daily/presentation/daily_screen.dart';
+import '../../leaderboard/presentation/leaderboard_screen.dart';
+import '../../pass_it/presentation/pass_it_screen.dart';
 import '../../training/presentation/training_screen.dart';
 
 class ModesScreen extends StatelessWidget {
@@ -9,6 +12,12 @@ class ModesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void open(Widget screen) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => screen),
+      );
+    }
+
     return Scaffold(
       backgroundColor: ReactColors.background,
       body: SafeArea(
@@ -43,12 +52,10 @@ class ModesScreen extends StatelessWidget {
                 subtitle: 'Survive as long as you can.',
                 icon: Icons.bolt_rounded,
                 color: ReactColors.electricBlueBright,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const ClassicScreen()),
-                ),
+                onTap: () => open(const ClassicScreen()),
               ),
               const SizedBox(height: 12),
-              const Row(
+              Row(
                 children: [
                   Expanded(
                     child: _SmallModeCard(
@@ -56,21 +63,23 @@ class ModesScreen extends StatelessWidget {
                       subtitle: 'Fast. Short. Brutal.',
                       icon: Icons.timer_rounded,
                       color: ReactColors.coral,
+                      onTap: null,
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: _SmallModeCard(
                       title: 'ENDLESS',
                       subtitle: 'No finish line.',
                       icon: Icons.all_inclusive_rounded,
                       color: ReactColors.lime,
+                      onTap: null,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              const Row(
+              Row(
                 children: [
                   Expanded(
                     child: _SmallModeCard(
@@ -78,15 +87,17 @@ class ModesScreen extends StatelessWidget {
                       subtitle: 'Local multiplayer.',
                       icon: Icons.groups_2_outlined,
                       color: ReactColors.purple,
+                      onTap: () => open(const PassItScreen()),
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: _SmallModeCard(
                       title: 'DAILY',
                       subtitle: 'One global challenge.',
                       icon: Icons.calendar_month_rounded,
                       color: ReactColors.lime,
+                      onTap: () => open(const DailyScreen()),
                     ),
                   ),
                 ],
@@ -97,9 +108,15 @@ class ModesScreen extends StatelessWidget {
                 subtitle: 'Learn every command before you compete.',
                 icon: Icons.school_outlined,
                 color: ReactColors.electricBlue,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const TrainingScreen()),
-                ),
+                onTap: () => open(const TrainingScreen()),
+              ),
+              const SizedBox(height: 12),
+              _ModeCard(
+                title: 'LEADERBOARD',
+                subtitle: 'Compare scores and seasonal rank.',
+                icon: Icons.leaderboard_rounded,
+                color: ReactColors.purple,
+                onTap: () => open(const LeaderboardScreen()),
               ),
               const SizedBox(height: 18),
               const _CommandSummary(),
@@ -224,47 +241,57 @@ class _SmallModeCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.color,
+    required this.onTap,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 150,
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF293B54)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 30),
-          const Spacer(),
-          Text(
-            title,
-            style: const TextStyle(
-              color: ReactColors.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        height: 150,
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: const Color(0xFF07111D),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: onTap == null
+                ? const Color(0xFF293B54)
+                : color.withValues(alpha: .55),
           ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 10,
-              height: 1.3,
-              fontWeight: FontWeight.w600,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 30),
+            const Spacer(),
+            Text(
+              title,
+              style: const TextStyle(
+                color: ReactColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 10,
+                height: 1.3,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
