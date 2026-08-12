@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
+import '../../blitz/presentation/blitz_screen.dart';
 import '../../classic/presentation/classic_screen.dart';
 import '../../daily/presentation/daily_screen.dart';
+import '../../endless/presentation/endless_screen.dart';
 import '../../leaderboard/presentation/leaderboard_screen.dart';
 import '../../pass_it/presentation/pass_it_screen.dart';
 import '../../training/presentation/training_screen.dart';
@@ -63,7 +65,7 @@ class ModesScreen extends StatelessWidget {
                       subtitle: 'Fast. Short. Brutal.',
                       icon: Icons.timer_rounded,
                       color: ReactColors.coral,
-                      onTap: null,
+                      onTap: () => open(const BlitzScreen()),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -73,7 +75,7 @@ class ModesScreen extends StatelessWidget {
                       subtitle: 'No finish line.',
                       icon: Icons.all_inclusive_rounded,
                       color: ReactColors.lime,
-                      onTap: null,
+                      onTap: () => open(const EndlessScreen()),
                     ),
                   ),
                 ],
@@ -247,7 +249,7 @@ class _SmallModeCard extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final Color color;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -260,16 +262,18 @@ class _SmallModeCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF07111D),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: onTap == null
-                ? const Color(0xFF293B54)
-                : color.withValues(alpha: .55),
-          ),
+          border: Border.all(color: color.withValues(alpha: .55)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 30),
+            Row(
+              children: [
+                Icon(icon, color: color, size: 30),
+                const Spacer(),
+                Icon(Icons.chevron_right_rounded, color: color, size: 20),
+              ],
+            ),
             const Spacer(),
             Text(
               title,
