@@ -18,6 +18,10 @@ class ReactGame extends FlameGame {
   bool get effectsEnabled => ReactSettings.visualEffectsEnabled;
   double get effectiveIntensity => effectsEnabled ? intensity : 0;
 
+  bool get isBlitz => accent == ReactColors.coral;
+  bool get isEndless => accent == ReactColors.lime;
+  bool get isPassIt => accent == ReactColors.purple;
+
   @override
   Color backgroundColor() => ReactColors.background;
 
@@ -26,6 +30,7 @@ class ReactGame extends FlameGame {
     await super.onLoad();
     add(_AmbientParticleField(game: this));
     add(_PressureField(game: this));
+    add(_ModeSignatureField(game: this));
   }
 
   void configure({required Color accent, required double intensity}) {
@@ -206,14 +211,106 @@ class _PressureField extends Component {
     final length = 18 + pressure * 44;
     final travel = (_phase * 64) % max(1, game.size.y);
 
-    for (var i = 0; i < 5; i++) {
-      final y = (travel + i * game.size.y / 5) % max(1, game.size.y);
+    final count = game.isEndless ? 8 : 5;
+    for (var i = 0; i < count; i++) {
+      final y = (travel + i * game.size.y / count) % max(1, game.size.y);
       canvas.drawLine(Offset(8, y), Offset(8 + length, y), streakPaint);
       canvas.drawLine(
         Offset(game.size.x - 8, game.size.y - y),
         Offset(game.size.x - 8 - length, game.size.y - y),
         streakPaint,
       );
+    }
+  }
+}
+
+class _ModeSignatureField extends Component {
+  _ModeSignatureField({required this.game});
+
+  final ReactGame game;
+  double _phase = 0;
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    final speed = game.isBlitz
+        ? 5.8
+        : game.isEndless
+            ? 2.5 + game.effectiveIntensity * 5.5
+            : game.isPassIt
+                ? 1.7
+                : .8;
+    _phase += dt * speed;
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    if (!game.effectsEnabled || game.size.x <= 0 || game.size.y <= 0) return;
+
+    if (game.isBlitz) {
+      _renderBlitz(canvas);
+    } else if (game.isEndless) {
+      _renderEndless(canvas);
+    } else if (game.isPassIt) {
+      _renderPassIt(canvas);
+    }
+  }
+
+  void _renderBlitz(Canvas canvas) {
+    final center = Offset(game.size.x / 2, game.size.y / 2);
+    final radius = min(game.size.x, game.size.y) * .46;
+    final alpha = (.025 + game.effectiveIntensity * .035).clamp(0.0, .055).toDouble();
+    final paint = Paint()
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 1.7
+      ..color = game.accent.withValues(alpha: alpha);
+
+    for (var i = 0; i < 4; i++) {
+      final angle = _phase + i * pi / 2;
+      final inner = center + Offset(cos(angle), sin(angle)) * (radius * .76);
+      final outer = center + Offset(cos(angle), sin(angle)) * radius;
+      canvas.drawLine(inner, outer, paint);
+    }
+  }
+
+  void _renderEndless(Canvas canvas) {
+    if (game.effectiveIntensity < .45) return;
+
+    final pressure =
+        ((game.effectiveIntensity - .45) / .55).clamp(0.0, 1.0).toDouble();
+    final paint = Paint()
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 1 + pressure * 1.5
+      ..color = game.accent.withValues(alpha: (.025 + pressure * .07).toDouble());
+
+    final spacing = 64 - pressure * 28;
+    final travel = (_phase * 34) % spacing;
+    final length = 24 + pressure * 58;
+
+    for (double y = -spacing + travel; y < game.size.y + spacing; y += spacing) {
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(length, y - length * .30),
+        paint,
+      );
+      canvas.drawLine(
+        Offset(game.size.x, game.size.y - y),
+        Offset(game.size.x - length, game.size.y - y + length * .30),
+        paint,
+      );
+    }
+  }
+
+  void _renderPassIt(Canvas canvas) {
+    final center = Offset(game.size.x / 2, game.size.y / 2);
+    final radius = min(game.size.x, game.size.y) * .40;
+    final paint = Paint()..color = game.accent.withValues(alpha: .10);
+
+    for (var i = 0; i < 3; i++) {
+      final angle = _phase + i * (pi * 2 / 3);
+      final point = center + Offset(cos(angle), sin(angle)) * radius;
+      canvas.drawCircle(point, 2.2, paint);
     }
   }
 }
