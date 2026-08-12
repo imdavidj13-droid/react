@@ -6,10 +6,10 @@ class LeaderboardScreen extends StatelessWidget {
   const LeaderboardScreen({super.key});
 
   static const _leaders = [
-    ('4', 'BEAT_BLAZER', '32,410', 'A', ReactColors.purple),
-    ('5', 'SYNAPSE_42', '28,990', 'B+', Color(0xFF5EE55A)),
-    ('6', 'QUICK_FINGERS', '27,840', 'B+', Color(0xFF58C5FF)),
-    ('7', 'FLASHPOINT', '25,610', 'B', Color(0xFFFF8A66)),
+    ('4', 'BEAT_BLAZER', '111', ReactColors.purple),
+    ('5', 'SYNAPSE_42', '103', Color(0xFF5EE55A)),
+    ('6', 'QUICK_FINGERS', '97', Color(0xFF58C5FF)),
+    ('7', 'FLASHPOINT', '91', Color(0xFFFF8A66)),
   ];
 
   @override
@@ -28,11 +28,11 @@ class LeaderboardScreen extends StatelessWidget {
                   _Header(onBack: () => Navigator.of(context).pop()),
                   const SizedBox(height: 18),
                   const _ModeTabs(),
-                  const SizedBox(height: 20),
-                  const _SeasonBanner(),
-                  const SizedBox(height: 20),
-                  const _Podium(),
                   const SizedBox(height: 18),
+                  const _SeasonBanner(),
+                  const SizedBox(height: 18),
+                  const _Podium(),
+                  const SizedBox(height: 16),
                   const _YouCard(),
                   const SizedBox(height: 18),
                   const _SectionLabel('GLOBAL TOP SCORES'),
@@ -179,11 +179,7 @@ class _SeasonBanner extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          Icon(
-            Icons.emoji_events_outlined,
-            color: ReactColors.lime,
-            size: 28,
-          ),
+          Icon(Icons.emoji_events_outlined, color: ReactColors.lime, size: 28),
           SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -200,7 +196,7 @@ class _SeasonBanner extends StatelessWidget {
                 ),
                 SizedBox(height: 3),
                 Text(
-                  'BEST CLASSIC SCORE WINS THE RANK',
+                  'BEST CLASSIC SCORE SETS YOUR RANK',
                   style: TextStyle(
                     color: ReactColors.textSecondary,
                     fontSize: 8,
@@ -231,18 +227,18 @@ class _Podium extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 238,
+    return const SizedBox(
+      height: 220,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
-        children: const [
+        children: [
           Expanded(
             child: _PodiumPlayer(
               rank: 2,
               name: 'REFLEX_KING',
-              score: '43,890',
+              score: '128',
               color: ReactColors.electricBlueBright,
-              height: 160,
+              blockHeight: 62,
             ),
           ),
           SizedBox(width: 8),
@@ -250,9 +246,9 @@ class _Podium extends StatelessWidget {
             child: _PodiumPlayer(
               rank: 1,
               name: 'NEON_NINJA',
-              score: '54,320',
+              score: '142',
               color: ReactColors.lime,
-              height: 205,
+              blockHeight: 88,
               crown: true,
             ),
           ),
@@ -261,9 +257,9 @@ class _Podium extends StatelessWidget {
             child: _PodiumPlayer(
               rank: 3,
               name: 'TAP_MASTER',
-              score: '38,670',
+              score: '119',
               color: Color(0xFFFFA23C),
-              height: 142,
+              blockHeight: 50,
             ),
           ),
         ],
@@ -278,7 +274,7 @@ class _PodiumPlayer extends StatelessWidget {
     required this.name,
     required this.score,
     required this.color,
-    required this.height,
+    required this.blockHeight,
     this.crown = false,
   });
 
@@ -286,72 +282,71 @@ class _PodiumPlayer extends StatelessWidget {
   final String name;
   final String score;
   final Color color;
-  final double height;
+  final double blockHeight;
   final bool crown;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 238,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          if (crown)
-            Icon(Icons.workspace_premium_rounded, color: color, size: 24),
-          if (crown) const SizedBox(height: 3),
-          Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF091423),
-              border: Border.all(color: color, width: 2),
-            ),
-            child: Icon(Icons.person_rounded, color: color, size: 30),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        SizedBox(
+          height: 26,
+          child: crown
+              ? Icon(Icons.workspace_premium_rounded, color: color, size: 22)
+              : null,
+        ),
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF091423),
+            border: Border.all(color: color, width: 2),
           ),
-          const SizedBox(height: 7),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              name,
-              style: const TextStyle(
-                color: ReactColors.textPrimary,
-                fontSize: 9,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            score,
-            style: TextStyle(
-              color: color,
-              fontSize: 14,
+          child: Icon(Icons.person_rounded, color: color, size: 27),
+        ),
+        const SizedBox(height: 6),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            name,
+            style: const TextStyle(
+              color: ReactColors.textPrimary,
+              fontSize: 8.5,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 7),
-          Container(
-            height: height - 100,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: const Color(0xFF07111D),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-              border: Border.all(color: color.withValues(alpha: .6)),
-            ),
-            child: Center(
-              child: Text(
-                '$rank',
-                style: TextStyle(
-                  color: color,
-                  fontSize: rank == 1 ? 42 : 32,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          score,
+          style: TextStyle(
+            color: color,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          height: blockHeight,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: const Color(0xFF07111D),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            border: Border.all(color: color.withValues(alpha: .6)),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            '$rank',
+            style: TextStyle(
+              color: color,
+              fontSize: rank == 1 ? 36 : 28,
+              fontWeight: FontWeight.w900,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -372,12 +367,12 @@ class _YouCard extends StatelessWidget {
       child: const Row(
         children: [
           CircleAvatar(
-            radius: 29,
+            radius: 28,
             backgroundColor: Color(0xFF07111D),
             child: Icon(
               Icons.person_outline_rounded,
               color: ReactColors.electricBlueBright,
-              size: 32,
+              size: 31,
             ),
           ),
           SizedBox(width: 13),
@@ -399,18 +394,57 @@ class _YouCard extends StatelessWidget {
                   '#1,248',
                   style: TextStyle(
                     color: ReactColors.electricBlueBright,
-                    fontSize: 26,
+                    fontSize: 25,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ],
             ),
           ),
-          _MiniMetric(label: 'BEST', value: '12,850', color: ReactColors.lime),
-          SizedBox(width: 16),
-          _MiniMetric(label: 'GRADE', value: 'A-', color: ReactColors.purple),
+          _MiniMetric(label: 'YOUR BEST', value: '42', color: ReactColors.lime),
+          SizedBox(width: 14),
+          _MiniMetric(label: 'TOP SCORE', value: '142', color: ReactColors.purple),
         ],
       ),
+    );
+  }
+}
+
+class _MiniMetric extends StatelessWidget {
+  const _MiniMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 6.5,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .7,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -446,7 +480,7 @@ class _SectionLabel extends StatelessWidget {
 class _LeaderRow extends StatelessWidget {
   const _LeaderRow({required this.data});
 
-  final (String, String, String, String, Color) data;
+  final (String, String, String, Color) data;
 
   @override
   Widget build(BuildContext context) {
@@ -456,7 +490,7 @@ class _LeaderRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF081522),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: data.$5.withValues(alpha: .22)),
+        border: Border.all(color: data.$4.withValues(alpha: .22)),
       ),
       child: Row(
         children: [
@@ -466,12 +500,12 @@ class _LeaderRow extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: data.$5.withValues(alpha: .65)),
+              border: Border.all(color: data.$4.withValues(alpha: .65)),
             ),
             child: Text(
               data.$1,
               style: TextStyle(
-                color: data.$5,
+                color: data.$4,
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
               ),
@@ -488,27 +522,13 @@ class _LeaderRow extends StatelessWidget {
               ),
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                data.$3,
-                style: TextStyle(
-                  color: data.$5,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                data.$4,
-                style: const TextStyle(
-                  color: ReactColors.textSecondary,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
+          Text(
+            data.$3,
+            style: TextStyle(
+              color: data.$4,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ],
       ),
@@ -547,7 +567,7 @@ class _RankProgressCard extends StatelessWidget {
               ),
               Spacer(),
               Text(
-                '+1,940',
+                '+5',
                 style: TextStyle(
                   color: ReactColors.lime,
                   fontSize: 11,
@@ -560,53 +580,23 @@ class _RankProgressCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.all(Radius.circular(10)),
             child: LinearProgressIndicator(
-              value: .67,
+              value: .74,
               minHeight: 7,
               backgroundColor: Color(0xFF13233A),
               color: ReactColors.electricBlueBright,
             ),
           ),
+          SizedBox(height: 8),
+          Text(
+            'A score of 47 would currently move you into the top 1,000.',
+            style: TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
-    );
-  }
-}
-
-class _MiniMetric extends StatelessWidget {
-  const _MiniMetric({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 7,
-            fontWeight: FontWeight.w900,
-            letterSpacing: .8,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 13,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ],
     );
   }
 }
