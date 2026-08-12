@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../domain/react_command.dart';
@@ -25,231 +24,212 @@ class ReactGestureSurface extends StatefulWidget {
 
 class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   static const _minimumSwipeDistance = 48.0;
-  static const _maximumTapMovement = 18.0;
   static const _minimumPinchSpreadDelta = 22.0;
   static const _pinchRatio = 0.84;
   static const _spreadRatio = 1.16;
-  static const _holdDuration = Duration(milliseconds: 420);
-  static const _doubleTapWindow = Duration(milliseconds: 300);
-  static const _maximumDoubleTapDistance = 42.0;
+  static const _doubleTapWindow = Duration(milliseconds: 285);
+  static const _holdDuration = Duration(milliseconds: 360);
 
   final Map<int, Offset> _pointers = <int, Offset>{};
 
-  int? _primaryPointer;
   Offset? _primaryStart;
-  Offset? _primaryLast;
+  Offset _primaryDelta = Offset.zero;
   double? _twoFingerStartDistance;
-  bool _resolved = false;
-  bool _multiTouchSeen = false;
-
-  int _tapCount = 0;
-  Offset? _firstTapPosition;
-  Timer? _holdTimer;
+  DateTime? _primaryDownAt;
+  DateTime? _firstTapAt;
   Timer? _doubleTapTimer;
-
-  @override
-  void didUpdateWidget(covariant ReactGestureSurface oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!widget.enabled ||
-        oldWidget.expectedCommand != widget.expectedCommand ||
-        oldWidget.enabled != widget.enabled) {
-      _resetGestureState();
-    }
-  }
+  Timer? _holdTimer;
+  int? _primaryPointer;
+  bool _multiTouchSeen = false;
+  bool _resolved = false;
 
   @override
   void dispose() {
-    _holdTimer?.cancel();
     _doubleTapTimer?.cancel();
+    _holdTimer?.cancel();
     super.dispose();
   }
 
-  void _resetGestureState() {
-    _holdTimer?.cancel();
-    _doubleTapTimer?.cancel();
-    _pointers.clear();
-    _primaryPointer = null;
-    _primaryStart = null;
-    _primaryLast = null;
-    _twoFingerStartDistance = null;
-    _resolved = false;
-    _multiTouchSeen = false;
-    _tapCount = 0;
-    _firstTapPosition = null;
-  }
-
-  void _resolve(ReactCommand command) {
+  void _emit(ReactCommand command) {
     if (!widget.enabled || _resolved) return;
     _resolved = true;
-    _holdTimer?.cancel();
     _doubleTapTimer?.cancel();
+    _holdTimer?.cancel();
     widget.onCommand(command);
   }
 
   void _onPointerDown(PointerDownEvent event) {
-    if (!widget.enabled || _resolved) return;
+    if (!widget.enabled) return;
 
     _pointers[event.pointer] = event.localPosition;
 
     if (_pointers.length == 1) {
       _primaryPointer = event.pointer;
       _primaryStart = event.localPosition;
-      _primaryLast = event.localPosition;
-      _scheduleHold();
+      _primaryDelta = Offset.zero;
+      _primaryDownAt = DateTime.now();
+      _resolved = false;
+
+      if (widget.expectedCommand == ReactCommand.hold) {
+        _holdTimer?.cancel();
+        _holdTimer = Timer(_holdDuration, () {
+          if (!mounted || !widget.enabled || _resolved || _multiTouchSeen) {
+            return;
+          }
+          if (_pointers.containsKey(_primaryPointer)) {
+            _emit(ReactCommand.hold);
+          }
+        });
+      }
       return;
     }
 
-    if (_pointers.length == 2) {
+    if (_pointers.length >= 2) {
       _multiTouchSeen = true;
       _holdTimer?.cancel();
+      _doubleTapTimer?.cancel();
       _twoFingerStartDistance = _currentTwoFingerDistance();
     }
   }
 
-  void _scheduleHold() {
-    _holdTimer?.cancel();
-    _holdTimer = Timer(_holdDuration, () {
-      if (!mounted || _resolved || _multiTouchSeen || _pointers.length != 1) {
+  void _onPointerMove(PointerMoveEvent event) {
+    if (!widget.enabled || !_pointers.containsKey(event.pointer) || _resolved) {
+      return;
+    }
+
+    final previous = _pointers[event.pointer]!;
+    _pointers[event.pointer] = event.localPosition;
+
+    if (_pointers.length >= 2) {
+      final startDistance = _twoFingerStartDistance;
+      final currentDistance = _currentTwoFingerDistance();
+      if (startDistance == null || currentDistance == null || startDistance < 24) {
         return;
       }
-      final start = _primaryStart;
-      final last = _primaryLast;
-      if (start == null || last == null) return;
-      if ((last - start).distance <= _maximumTapMovement) {
-        _resolve(ReactCommand.hold);
-      }
-    });
-  }
 
-  void _onPointerMove(PointerMoveEvent event) {
-    if (!widget.enabled || _resolved || !_pointers.containsKey(event.pointer)) {
+      final distanceDelta = currentDistance - startDistance;
+      final ratio = currentDistance / startDistance;
+
+      if (distanceDelta <= -_minimumPinchSpreadDelta && ratio <= _pinchRatio) {
+        _emit(ReactCommand.pinch);
+        return;
+      }
+
+      if (distanceDelta >= _minimumPinchSpreadDelta && ratio >= _spreadRatio) {
+        _emit(ReactCommand.spread);
+      }
       return;
     }
 
-    _pointers[event.pointer] = event.localPosition;
     if (event.pointer == _primaryPointer) {
-      _primaryLast = event.localPosition;
-      final start = _primaryStart;
-      if (start != null &&
-          (event.localPosition - start).distance > _maximumTapMovement) {
+      _primaryDelta += event.localPosition - previous;
+      if (_primaryDelta.distance > 12) {
         _holdTimer?.cancel();
       }
-    }
-
-    if (_pointers.length < 2) return;
-
-    final startDistance = _twoFingerStartDistance;
-    final currentDistance = _currentTwoFingerDistance();
-    if (startDistance == null || currentDistance == null || startDistance < 24) {
-      return;
-    }
-
-    final delta = currentDistance - startDistance;
-    final ratio = currentDistance / startDistance;
-
-    if (delta <= -_minimumPinchSpreadDelta && ratio <= _pinchRatio) {
-      _resolve(ReactCommand.pinch);
-      return;
-    }
-
-    if (delta >= _minimumPinchSpreadDelta && ratio >= _spreadRatio) {
-      _resolve(ReactCommand.spread);
     }
   }
 
   void _onPointerUp(PointerEvent event) {
-    if (!widget.enabled) return;
+    if (!widget.enabled) {
+      _pointers.remove(event.pointer);
+      return;
+    }
 
     final wasPrimary = event.pointer == _primaryPointer;
-    final start = _primaryStart;
-    final end = event.localPosition;
     _pointers.remove(event.pointer);
 
-    if (_resolved) {
-      if (_pointers.isEmpty) _clearPointersOnly();
+    if (_pointers.length < 2) {
+      _twoFingerStartDistance = null;
+    }
+
+    if (!wasPrimary || _resolved || _multiTouchSeen) {
+      if (_pointers.isEmpty) _resetGestureState();
       return;
     }
 
-    if (_multiTouchSeen) {
-      if (_pointers.isEmpty) {
-        // Two fingers were used but no valid pinch/spread threshold was met.
-        // Treat that as a wrong two-finger gesture by resolving the opposite
-        // multi-touch command to the expected one when possible.
-        final fallback = widget.expectedCommand == ReactCommand.pinch
-            ? ReactCommand.spread
-            : ReactCommand.pinch;
-        _resolve(fallback);
-        _clearPointersOnly();
-      }
-      return;
-    }
-
-    if (!wasPrimary || start == null) return;
     _holdTimer?.cancel();
 
-    final delta = end - start;
-    if (delta.distance >= _minimumSwipeDistance) {
-      final horizontal = delta.dx.abs() >= delta.dy.abs();
-      _resolve(
-        horizontal
-            ? (delta.dx < 0 ? ReactCommand.swipeLeft : ReactCommand.swipeRight)
-            : (delta.dy < 0 ? ReactCommand.swipeUp : ReactCommand.swipeDown),
-      );
-      _clearPointersOnly();
+    final dx = _primaryDelta.dx;
+    final dy = _primaryDelta.dy;
+    final horizontal = dx.abs() >= dy.abs();
+    final distance = horizontal ? dx.abs() : dy.abs();
+
+    if (distance >= _minimumSwipeDistance) {
+      final command = horizontal
+          ? (dx < 0 ? ReactCommand.swipeLeft : ReactCommand.swipeRight)
+          : (dy < 0 ? ReactCommand.swipeUp : ReactCommand.swipeDown);
+      _emit(command);
+      _resetGestureState();
       return;
     }
 
-    if (delta.distance <= _maximumTapMovement) {
-      _handleTap(end);
-    }
-
-    if (_pointers.isEmpty) _clearPointersOnly(preserveTapSequence: true);
-  }
-
-  void _handleTap(Offset position) {
-    if (widget.expectedCommand != ReactCommand.doubleTap) {
-      _resolve(ReactCommand.tap);
+    final downAt = _primaryDownAt;
+    if (downAt == null) {
+      _resetGestureState();
       return;
     }
 
-    if (_tapCount == 0) {
-      _tapCount = 1;
-      _firstTapPosition = position;
+    if (widget.expectedCommand == ReactCommand.tap) {
+      _emit(ReactCommand.tap);
+      _resetGestureState();
+      return;
+    }
+
+    if (widget.expectedCommand == ReactCommand.doubleTap) {
+      final now = DateTime.now();
+      final firstTapAt = _firstTapAt;
+
+      if (firstTapAt != null && now.difference(firstTapAt) <= _doubleTapWindow) {
+        _firstTapAt = null;
+        _emit(ReactCommand.doubleTap);
+        _resetGestureState();
+        return;
+      }
+
+      _firstTapAt = now;
       _doubleTapTimer?.cancel();
       _doubleTapTimer = Timer(_doubleTapWindow, () {
-        if (!mounted || _resolved) return;
-        _resolve(ReactCommand.tap);
+        if (!mounted || _resolved || !widget.enabled) return;
+        _firstTapAt = null;
+        _emit(ReactCommand.tap);
       });
+      _resetGestureState(preserveDoubleTap: true);
       return;
     }
 
-    final first = _firstTapPosition;
-    if (first != null &&
-        (position - first).distance <= _maximumDoubleTapDistance) {
-      _resolve(ReactCommand.doubleTap);
+    if (DateTime.now().difference(downAt) >= _holdDuration) {
+      _emit(ReactCommand.hold);
     } else {
-      _resolve(ReactCommand.tap);
+      _emit(ReactCommand.tap);
     }
+    _resetGestureState();
   }
 
-  void _clearPointersOnly({bool preserveTapSequence = false}) {
-    _pointers.clear();
-    _primaryPointer = null;
-    _primaryStart = null;
-    _primaryLast = null;
-    _twoFingerStartDistance = null;
-    _multiTouchSeen = false;
-    _holdTimer?.cancel();
-    if (!preserveTapSequence) {
-      _tapCount = 0;
-      _firstTapPosition = null;
-    }
+  void _onPointerCancel(PointerCancelEvent event) {
+    _pointers.remove(event.pointer);
+    if (_pointers.isEmpty) _resetGestureState();
   }
 
   double? _currentTwoFingerDistance() {
     if (_pointers.length < 2) return null;
     final positions = _pointers.values.take(2).toList(growable: false);
     return (positions[0] - positions[1]).distance;
+  }
+
+  void _resetGestureState({bool preserveDoubleTap = false}) {
+    _primaryPointer = null;
+    _primaryStart = null;
+    _primaryDelta = Offset.zero;
+    _primaryDownAt = null;
+    _multiTouchSeen = false;
+    _holdTimer?.cancel();
+    if (!preserveDoubleTap) {
+      _firstTapAt = null;
+      _doubleTapTimer?.cancel();
+    }
+    if (_pointers.isEmpty) {
+      _resolved = false;
+    }
   }
 
   @override
@@ -259,7 +239,7 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       onPointerDown: _onPointerDown,
       onPointerMove: _onPointerMove,
       onPointerUp: _onPointerUp,
-      onPointerCancel: _onPointerUp,
+      onPointerCancel: _onPointerCancel,
       child: widget.child,
     );
   }
