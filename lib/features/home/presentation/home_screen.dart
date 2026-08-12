@@ -76,8 +76,6 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    const _CommandsPanel(),
                   ],
                 ),
               ),
@@ -123,7 +121,10 @@ class _TopSection extends StatelessWidget {
             ],
           ),
         ),
-        const Align(alignment: Alignment.topRight, child: _ProfileButton()),
+        const Align(
+          alignment: Alignment.topRight,
+          child: _ProfileButton(),
+        ),
       ],
     );
   }
@@ -209,7 +210,11 @@ class _BestScore extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          Icon(Icons.workspace_premium_outlined, color: ReactColors.lime, size: 20),
+          Icon(
+            Icons.workspace_premium_outlined,
+            color: ReactColors.lime,
+            size: 20,
+          ),
           SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -267,7 +272,10 @@ class _Streak extends StatelessWidget {
             height: 62,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFFF7A72), width: 3.5),
+              border: Border.all(
+                color: const Color(0xFFFF7A72),
+                width: 3.5,
+              ),
             ),
             child: const Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -326,7 +334,10 @@ class _PlayDial extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: ReactColors.background,
-                border: Border.all(color: const Color(0xFF42D8FF), width: 2.5),
+                border: Border.all(
+                  color: const Color(0xFF42D8FF),
+                  width: 2.5,
+                ),
               ),
               child: const Icon(
                 Icons.play_arrow_rounded,
@@ -370,9 +381,24 @@ class _DialPainter extends CustomPainter {
       );
     }
 
-    arc(math.pi * .72, math.pi * .54, ReactColors.electricBlueBright, radius * .83);
-    arc(math.pi * 1.54, math.pi * .43, ReactColors.lime, radius * .76);
-    arc(math.pi * .08, math.pi * .42, const Color(0xFFFF6D8B), radius * .87);
+    arc(
+      math.pi * .72,
+      math.pi * .54,
+      ReactColors.electricBlueBright,
+      radius * .83,
+    );
+    arc(
+      math.pi * 1.54,
+      math.pi * .43,
+      ReactColors.lime,
+      radius * .76,
+    );
+    arc(
+      math.pi * .08,
+      math.pi * .42,
+      const Color(0xFFFF6D8B),
+      radius * .87,
+    );
 
     final tick = Paint()..strokeWidth = 1.4;
     for (var i = 0; i < 52; i++) {
@@ -382,8 +408,10 @@ class _DialPainter extends CustomPainter {
           : i < 35
               ? ReactColors.lime.withValues(alpha: .46)
               : ReactColors.purple.withValues(alpha: .43);
-      final p1 = center + Offset(math.cos(angle), math.sin(angle)) * (radius * .91);
-      final p2 = center + Offset(math.cos(angle), math.sin(angle)) * (radius * .95);
+      final p1 = center +
+          Offset(math.cos(angle), math.sin(angle)) * (radius * .91);
+      final p2 = center +
+          Offset(math.cos(angle), math.sin(angle)) * (radius * .95);
       canvas.drawLine(p1, p2, tick);
     }
   }
@@ -411,12 +439,19 @@ class _PlayButton extends StatelessWidget {
             end: Alignment.bottomCenter,
             colors: [Color(0xFF24AFFF), Color(0xFF0D78F6)],
           ),
-          border: Border.all(color: const Color(0xFF74E8FF), width: 2),
+          border: Border.all(
+            color: const Color(0xFF74E8FF),
+            width: 2,
+          ),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
+            Icon(
+              Icons.play_arrow_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
             SizedBox(width: 14),
             Text(
               'PLAY',
@@ -478,80 +513,6 @@ class _NavTile extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _CommandsPanel extends StatelessWidget {
-  const _CommandsPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 11, 12, 14),
-      decoration: BoxDecoration(
-        color: const Color(0xCC07111D),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF263851)),
-      ),
-      child: const Column(
-        children: [
-          Row(
-            children: [
-              Expanded(child: Divider(color: Color(0xFF263851))),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  'COMMANDS',
-                  style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-              Expanded(child: Divider(color: Color(0xFF263851))),
-            ],
-          ),
-          SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _Command(icon: Icons.touch_app_rounded, label: 'TAP', color: Color(0xFF55B8FF)),
-              _Command(icon: Icons.double_arrow_rounded, label: 'SWIPE', color: ReactColors.electricBlue),
-              _Command(icon: Icons.zoom_in_map_rounded, label: 'PINCH', color: ReactColors.lime),
-              _Command(icon: Icons.pause_circle_outline_rounded, label: 'FREEZE', color: ReactColors.purple),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Command extends StatelessWidget {
-  const _Command({required this.icon, required this.label, required this.color});
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 8.5,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
     );
   }
 }
