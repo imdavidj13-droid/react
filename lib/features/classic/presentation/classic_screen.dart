@@ -116,9 +116,8 @@ class _ClassicScreenState extends State<ClassicScreen> {
     _timer?.cancel();
     _nextCommandTimer?.cancel();
 
-    // Independent random selection: consecutive duplicates are allowed.
     final next = ClassicCommand.values[
-      _random.nextInt(ClassicCommand.values.length),
+      _random.nextInt(ClassicCommand.values.length)
     ];
 
     if (!mounted) return;
@@ -152,20 +151,16 @@ class _ClassicScreenState extends State<ClassicScreen> {
         return;
       }
 
-      setState(() {
-        _timeRemaining = progress.clamp(0.0, 1.0);
-      });
+      setState(() => _timeRemaining = progress.clamp(0.0, 1.0));
     });
   }
 
   void _handleGesture(ClassicCommand performed) {
     if (!_acceptingInput || _finished) return;
-
     if (performed != _command) {
       _failRun();
       return;
     }
-
     _completeCommand();
   }
 
@@ -211,7 +206,6 @@ class _ClassicScreenState extends State<ClassicScreen> {
 
     if (details.pointerCount >= 2) {
       _multiTouchSeen = true;
-
       if (details.scale <= _pinchThreshold) {
         _scaleResolved = true;
         _handleGesture(ClassicCommand.pinch);
@@ -236,13 +230,11 @@ class _ClassicScreenState extends State<ClassicScreen> {
     final dy = _dragDelta.dy;
     final horizontal = dx.abs() >= dy.abs();
     final primaryDistance = horizontal ? dx.abs() : dy.abs();
-
     if (primaryDistance < _minimumSwipeDistance) return;
 
     final performed = horizontal
         ? (dx < 0 ? ClassicCommand.swipeLeft : ClassicCommand.swipeRight)
         : (dy < 0 ? ClassicCommand.swipeUp : ClassicCommand.swipeDown);
-
     _handleGesture(performed);
   }
 
@@ -285,7 +277,6 @@ class _ClassicScreenState extends State<ClassicScreen> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final compact = constraints.maxHeight < 760;
-
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 22),
                   child: Column(
@@ -606,7 +597,6 @@ class _CommandHints extends StatelessWidget {
 
 class _HintDot extends StatelessWidget {
   const _HintDot({required this.color});
-
   final Color color;
 
   @override
@@ -625,7 +615,6 @@ class _HintDot extends StatelessWidget {
 
 class _RoundControl extends StatelessWidget {
   const _RoundControl({required this.icon, required this.onTap});
-
   final IconData icon;
   final VoidCallback onTap;
 
