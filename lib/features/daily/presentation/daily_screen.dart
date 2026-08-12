@@ -4,6 +4,7 @@ import '../../../core/theme/react_colors.dart';
 import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import '../../modes/presentation/mode_run_screen.dart';
+import '../domain/daily_challenge.dart';
 
 class DailyScreen extends StatefulWidget {
   const DailyScreen({super.key});
@@ -48,7 +49,7 @@ class _DailyScreenState extends State<DailyScreen> {
         child: FutureBuilder<_DailyState>(
           future: _state,
           builder: (context, snapshot) {
-            final state = snapshot.data ?? const _DailyState();
+            final state = snapshot.data ?? _DailyState.empty();
             return LayoutBuilder(
               builder: (context, constraints) {
                 final pad = constraints.maxWidth < 380 ? 16.0 : 20.0;
@@ -78,6 +79,8 @@ class _DailyScreenState extends State<DailyScreen> {
                         ),
                       ),
                       const SizedBox(height: 18),
+                      _ChallengeIdentity(challenge: state.challenge),
+                      const SizedBox(height: 12),
                       _ChallengeCard(
                         state: state,
                         onTap: state.playedToday ? null : _start,
@@ -105,35 +108,9 @@ class _DailyScreenState extends State<DailyScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(15),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF07111D),
-                          borderRadius: BorderRadius.circular(19),
-                          border: Border.all(color: const Color(0xFF293B54)),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(
-                              Icons.cloud_off_rounded,
-                              color: ReactColors.textSecondary,
-                              size: 23,
-                            ),
-                            SizedBox(width: 11),
-                            Expanded(
-                              child: Text(
-                                'OFFLINE MODE • DAILY RESULTS ARE STORED ON THIS DEVICE',
-                                style: TextStyle(
-                                  color: ReactColors.textSecondary,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: .8,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      _LocalDailyInfo(
+                        playedToday: state.playedToday,
+                        challenge: state.challenge,
                       ),
                     ],
                   ),
@@ -148,19 +125,29 @@ class _DailyScreenState extends State<DailyScreen> {
 }
 
 class _DailyState {
-  const _DailyState({this.playedToday = false, this.streak = 0, this.best = 0});
+  const _DailyState({
+    required this.challenge,
+    this.playedToday = false,
+    this.streak = 0,
+    this.best = 0,
+  });
 
+  final DailyChallenge challenge;
   final bool playedToday;
   final int streak;
   final int best;
 
+  factory _DailyState.empty() => _DailyState(challenge: DailyChallenge.today());
+
   static Future<_DailyState> load() async {
+    final challenge = DailyChallenge.today();
     final values = await Future.wait<Object>([
       LocalPlayerStats.hasPlayedDailyToday(),
       LocalPlayerStats.dailyStreak(),
       LocalPlayerStats.bestFor(ReactGameMode.daily),
     ]);
     return _DailyState(
+      challenge: challenge,
       playedToday: values[0] as bool,
       streak: values[1] as int,
       best: values[2] as int,
@@ -198,6 +185,70 @@ class _Header extends StatelessWidget {
         const Spacer(),
         const SizedBox(width: 40),
       ],
+    );
+  }
+}
+
+class _ChallengeIdentity extends StatelessWidget {
+  const _ChallengeIdentity({required this.challenge});
+
+  final DailyChallenge challenge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: const Color(0xFF24405E)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.fingerprint_rounded,
+            color: ReactColors.electricBlueBright,
+            size: 23,
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'CHALLENGE #${challenge.id}',
+                  style: const TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .8,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  challenge.dateLabel,
+                  style: const TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: .8,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Text(
+            'FIXED SEED',
+            style: TextStyle(
+              color: ReactColors.lime,
+              fontSize: 7.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .8,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -249,7 +300,7 @@ class _ChallengeCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      '20 COMMANDS • SAME SEED FOR THIS DEVICE TODAY',
+                      '20 COMMANDS • SAME ORDER ALL DAY',
                       style: TextStyle(
                         color: ReactColors.lime,
                         fontSize: 8,
@@ -339,6 +390,70 @@ class _ChallengeCard extends StatelessWidget {
                   letterSpacing: 1.5,
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LocalDailyInfo extends StatelessWidget {
+  const _LocalDailyInfo({
+    required this.playedToday,
+    required this.challenge,
+  });
+
+  final bool playedToday;
+  final DailyChallenge challenge;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = playedToday ? 'NEXT CHALLENGE TOMORROW' : 'LOCAL DAILY MODE';
+    final detail = playedToday
+        ? 'A NEW CHALLENGE ID AND COMMAND ORDER unlock at local midnight.'
+        : 'This offline build uses your device date to generate one fixed challenge for the day.';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: const Color(0xFF293B54)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            playedToday ? Icons.schedule_rounded : Icons.cloud_off_rounded,
+            color: playedToday ? ReactColors.lime : ReactColors.textSecondary,
+            size: 23,
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .7,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  detail,
+                  style: const TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 8.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
