@@ -12,23 +12,29 @@ class LeaderboardScreen extends StatefulWidget {
 }
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
-  late Future<List<(ReactGameMode, int)>> _scores;
+  late Future<List<_ModeStats>> _stats;
 
   @override
   void initState() {
     super.initState();
-    _scores = _loadScores();
+    _stats = _loadStats();
   }
 
-  Future<List<(ReactGameMode, int)>> _loadScores() async {
-    final modes = [
-      ReactGameMode.classic,
-      ReactGameMode.blitz,
-      ReactGameMode.endless,
-      ReactGameMode.daily,
-    ];
-    final values = await Future.wait(modes.map(LocalPlayerStats.bestFor));
-    return [for (var i = 0; i < modes.length; i++) (modes[i], values[i])];
+  Future<List<_ModeStats>> _loadStats() async {
+    final items = <_ModeStats>[];
+    for (final mode in ReactGameMode.values) {
+      items.add(
+        _ModeStats(
+          mode: mode,
+          best: await LocalPlayerStats.bestFor(mode),
+          runs: await LocalPlayerStats.runsFor(mode),
+          commands: await LocalPlayerStats.successfulCommandsFor(mode),
+          averageReactionSeconds:
+              await LocalPlayerStats.averageReactionSecondsFor(mode),
+        ),
+      );
+    }
+    return items;
   }
 
   @override
@@ -36,26 +42,24 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     return Scaffold(
       backgroundColor: ReactColors.background,
       body: SafeArea(
-        child: FutureBuilder<List<(ReactGameMode, int)>>(
-          future: _scores,
+        child: FutureBuilder<List<_ModeStats>>(
+          future: _stats,
           builder: (context, snapshot) {
-            final scores = snapshot.data ?? const [];
+            final stats = snapshot.data ?? const <_ModeStats>[];
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
               child: Column(
                 children: [
                   _Header(onBack: () => Navigator.of(context).pop()),
                   const SizedBox(height: 20),
-                  const _RecordsBanner(),
+                  _RecordsBanner(stats: stats),
                   const SizedBox(height: 20),
-                  const _SectionLabel('YOUR BEST SCORES'),
+                  const _SectionLabel('YOUR MODE STATS'),
                   const SizedBox(height: 10),
-                  for (final entry in scores) ...[
-                    _ScoreRow(mode: entry.$1, score: entry.$2),
+                  for (final item in stats) ...[
+                    _ModeStatsCard(stats: item),
                     const SizedBox(height: 10),
                   ],
-                  const SizedBox(height: 10),
-                  const _PassItNote(),
                 ],
               ),
             );
@@ -64,6 +68,22 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       ),
     );
   }
+}
+
+class _ModeStats {
+  const _ModeStats({
+    required this.mode,
+    required this.best,
+    required this.runs,
+    required this.commands,
+    required this.averageReactionSeconds,
+  });
+
+  final ReactGameMode mode;
+  final int best;
+  final int runs;
+  final int commands;
+  final double averageReactionSeconds;
 }
 
 class _Header extends StatelessWidget {
@@ -115,10 +135,15 @@ class _Header extends StatelessWidget {
 }
 
 class _RecordsBanner extends StatelessWidget {
-  const _RecordsBanner();
+  const _RecordsBanner({required this.stats});
+
+  final List<_ModeStats> stats;
 
   @override
   Widget build(BuildContext context) {
+    final totalRuns = stats.fold<int>(0, (sum, item) => sum + item.runs);
+    final totalCommands = stats.fold<int>(0, (sum, item) => sum + item.commands);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -127,36 +152,66 @@ class _RecordsBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0xFF29405D)),
       ),
-      child: const Row(
+      child: Column(
         children: [
-          Icon(Icons.workspace_premium_outlined, color: ReactColors.lime, size: 30),
-          SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'PERSONAL RECORDS',
-                  style: TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .9,
-                  ),
+          const Row(
+            children: [
+              Icon(
+                Icons.workspace_premium_outlined,
+                color: ReactColors.lime,
+                size: 30,
+              ),
+              SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'YOUR REACTION RECORD',
+                      style: TextStyle(
+                        color: ReactColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .9,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'REAL STATS FROM RUNS PLAYED ON THIS DEVICE',
+                      style: TextStyle(
+                        color: ReactColors.textSecondary,
+                        fontSize: 8,
+                        height: 1.4,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: .8,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 4),
-                Text(
-                  'YOUR BEST RESULT IN EACH SOLO MODE ON THIS DEVICE',
-                  style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 8,
-                    height: 1.4,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: .8,
-                  ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Divider(color: Color(0xFF213650)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _BannerMetric(
+                  label: 'TOTAL RUNS',
+                  value: '$totalRuns',
+                  color: ReactColors.electricBlueBright,
                 ),
-              ],
-            ),
+              ),
+              const _BannerDivider(),
+              Expanded(
+                child: _BannerMetric(
+                  label: 'COMMANDS',
+                  value: '$totalCommands',
+                  color: ReactColors.lime,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -188,21 +243,20 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-class _ScoreRow extends StatelessWidget {
-  const _ScoreRow({required this.mode, required this.score});
+class _ModeStatsCard extends StatelessWidget {
+  const _ModeStatsCard({required this.stats});
 
-  final ReactGameMode mode;
-  final int score;
+  final _ModeStats stats;
 
-  Color get color => switch (mode) {
+  Color get color => switch (stats.mode) {
         ReactGameMode.classic => ReactColors.electricBlueBright,
         ReactGameMode.blitz => ReactColors.coral,
         ReactGameMode.endless => ReactColors.lime,
         ReactGameMode.daily => ReactColors.purple,
-        ReactGameMode.passIt => ReactColors.purple,
+        ReactGameMode.passIt => const Color(0xFFFFB85A),
       };
 
-  IconData get icon => switch (mode) {
+  IconData get icon => switch (stats.mode) {
         ReactGameMode.classic => Icons.bolt_rounded,
         ReactGameMode.blitz => Icons.timer_rounded,
         ReactGameMode.endless => Icons.all_inclusive_rounded,
@@ -214,58 +268,107 @@ class _ScoreRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withValues(alpha: .38)),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF050A13),
-              border: Border.all(color: color, width: 1.5),
-            ),
-            child: Icon(icon, color: color, size: 26),
-          ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  mode.label,
-                  style: const TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .7,
-                  ),
+          Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF050A13),
+                  border: Border.all(color: color, width: 1.5),
                 ),
-                const SizedBox(height: 3),
-                const Text(
-                  'PERSONAL BEST',
-                  style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 7.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: .8,
-                  ),
+                child: Icon(icon, color: color, size: 26),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      stats.mode.label,
+                      style: const TextStyle(
+                        color: ReactColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .7,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      stats.mode == ReactGameMode.passIt
+                          ? 'LOCAL MATCH STATS'
+                          : 'PERSONAL PERFORMANCE',
+                      style: const TextStyle(
+                        color: ReactColors.textSecondary,
+                        fontSize: 7.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: .8,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              if (stats.mode != ReactGameMode.passIt)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'BEST',
+                      style: TextStyle(
+                        color: ReactColors.textSecondary,
+                        fontSize: 7,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      '${stats.best}',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 27,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
           ),
-          Text(
-            '$score',
-            style: TextStyle(
-              color: color,
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-            ),
+          const SizedBox(height: 13),
+          const Divider(color: Color(0xFF1D314A)),
+          const SizedBox(height: 11),
+          Row(
+            children: [
+              Expanded(
+                child: _CardMetric(
+                  label: 'RUNS',
+                  value: '${stats.runs}',
+                ),
+              ),
+              const _BannerDivider(),
+              Expanded(
+                child: _CardMetric(
+                  label: 'COMMANDS',
+                  value: '${stats.commands}',
+                ),
+              ),
+              const _BannerDivider(),
+              Expanded(
+                child: _CardMetric(
+                  label: 'AVG REACTION',
+                  value: stats.averageReactionSeconds == 0
+                      ? '--'
+                      : '${stats.averageReactionSeconds.toStringAsFixed(2)}s',
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -273,37 +376,89 @@ class _ScoreRow extends StatelessWidget {
   }
 }
 
-class _PassItNote extends StatelessWidget {
-  const _PassItNote();
+class _BannerMetric extends StatelessWidget {
+  const _BannerMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          label,
+          style: const TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 7.5,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .8,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CardMetric extends StatelessWidget {
+  const _CardMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: ReactColors.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        FittedBox(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 6.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BannerDivider extends StatelessWidget {
+  const _BannerDivider();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: ReactColors.purple.withValues(alpha: .30)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.groups_2_rounded, color: ReactColors.purple, size: 24),
-          SizedBox(width: 11),
-          Expanded(
-            child: Text(
-              'PASS IT RECORDS THE WINNER PER MATCH INSTEAD OF A PERSONAL HIGH SCORE',
-              style: TextStyle(
-                color: ReactColors.textSecondary,
-                fontSize: 8,
-                height: 1.4,
-                fontWeight: FontWeight.w800,
-                letterSpacing: .6,
-              ),
-            ),
-          ),
-        ],
-      ),
+      width: 1,
+      height: 34,
+      color: const Color(0xFF213650),
     );
   }
 }
