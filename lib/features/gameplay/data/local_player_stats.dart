@@ -50,6 +50,18 @@ class LocalPlayerStats {
     }
   }
 
+  static Future<void> resetProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    for (final mode in ReactGameMode.values) {
+      await prefs.remove(_bestKey(mode));
+    }
+
+    await prefs.remove(_runsKey);
+    await prefs.remove(_dailyLastPlayedKey);
+    await prefs.remove(_dailyStreakKey);
+  }
+
   static Future<void> _recordDaily(SharedPreferences prefs) async {
     final today = DateTime.now();
     final todayKey = _dateKey(today);
