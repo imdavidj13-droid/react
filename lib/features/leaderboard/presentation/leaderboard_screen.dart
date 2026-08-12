@@ -26,7 +26,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       ReactGameMode.blitz,
       ReactGameMode.endless,
       ReactGameMode.daily,
-      ReactGameMode.passIt,
     ];
     final values = await Future.wait(modes.map(LocalPlayerStats.bestFor));
     return [for (var i = 0; i < modes.length; i++) (modes[i], values[i])];
@@ -55,6 +54,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     _ScoreRow(mode: entry.$1, score: entry.$2),
                     const SizedBox(height: 10),
                   ],
+                  const SizedBox(height: 10),
+                  const _PassItNote(),
                   const SizedBox(height: 10),
                   const _FutureOnlineCard(),
                 ],
@@ -200,7 +201,7 @@ class _ScoreRow extends StatelessWidget {
         ReactGameMode.blitz => ReactColors.coral,
         ReactGameMode.endless => ReactColors.lime,
         ReactGameMode.daily => ReactColors.purple,
-        ReactGameMode.passIt => const Color(0xFFFFB85A),
+        ReactGameMode.passIt => ReactColors.purple,
       };
 
   IconData get icon => switch (mode) {
@@ -266,6 +267,41 @@ class _ScoreRow extends StatelessWidget {
               color: color,
               fontSize: 28,
               fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PassItNote extends StatelessWidget {
+  const _PassItNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: ReactColors.purple.withValues(alpha: .30)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.groups_2_rounded, color: ReactColors.purple, size: 24),
+          SizedBox(width: 11),
+          Expanded(
+            child: Text(
+              'PASS IT IS A MATCH MODE • WINNERS ARE SHOWN PER GAME, NOT AS A PERSONAL SCORE RECORD',
+              style: TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 8,
+                height: 1.4,
+                fontWeight: FontWeight.w800,
+                letterSpacing: .6,
+              ),
             ),
           ),
         ],
