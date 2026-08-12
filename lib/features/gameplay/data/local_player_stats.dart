@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/react_run_history_entry.dart';
 import '../domain/react_run_result.dart';
 
 class LocalPlayerStats {
@@ -13,6 +14,8 @@ class LocalPlayerStats {
   static const _runsKey = 'runs_played';
   static const _dailyLastPlayedKey = 'daily_last_played';
   static const _dailyStreakKey = 'daily_streak';
+  static const _historyKey = 'recent_run_history';
+  static const _historyLimit = 12;
 
   static Future<int> bestFor(ReactGameMode mode) async {
     if (mode == ReactGameMode.passIt) return 0;
@@ -51,6 +54,17 @@ class LocalPlayerStats {
       total += prefs.getInt(_modeCommandsKey(mode)) ?? 0;
     }
     return total;
+  }
+
+  static Future<List<ReactRunHistoryEntry>> recentRuns() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawEntries = prefs.getStringList(_historyKey) ?? const <String>[];
+
+    return rawEntries
+        .map(ReactRunHistoryEntry.tryDecode)
+        .whereType<ReactRunHistoryEntry>()
+        .take(_historyLimit)
+        .toList(growable: false);
   }
 
   static Future<int> dailyStreak() async {
@@ -102,6 +116,8 @@ class LocalPlayerStats {
       );
     }
 
+    await _recordHistory(prefs, result);
+
     if (result.mode == ReactGameMode.daily) {
       await _recordDaily(prefs);
     }
@@ -122,6 +138,20 @@ class LocalPlayerStats {
     await prefs.remove(_runsKey);
     await prefs.remove(_dailyLastPlayedKey);
     await prefs.remove(_dailyStreakKey);
+    await prefs.remove(_historyKey);
+  }
+
+  static Future<void> _recordHistory(
+    SharedPreferences prefs,
+    ReactRunResult result,
+  ) async {
+    final current = prefs.getStringList(_historyKey) ?? const <String>[];
+    final next = <String>[
+      ReactRunHistoryEntry.fromResult(result).encode(),
+      ...current,
+    ].take(_historyLimit).toList(growable: false);
+
+    await prefs.setStringList(_historyKey, next);
   }
 
   static Future<void> _recordDaily(SharedPreferences prefs) async {
