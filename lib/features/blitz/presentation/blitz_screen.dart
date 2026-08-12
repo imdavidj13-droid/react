@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
-import '../../classic/presentation/classic_screen.dart';
+import '../../modes/presentation/mode_run_screen.dart';
 
 class BlitzScreen extends StatelessWidget {
   const BlitzScreen({super.key});
 
   void _start(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ClassicScreen()),
+      MaterialPageRoute<void>(
+        builder: (_) => const ModeRunScreen(mode: ReactRunMode.blitz),
+      ),
     );
   }
 
@@ -32,21 +34,15 @@ class BlitzScreen extends StatelessWidget {
                     children: [
                       Expanded(child: _RuleCard(icon: Icons.timer_outlined, label: '60 SEC', detail: 'One minute run')),
                       SizedBox(width: 9),
-                      Expanded(child: _RuleCard(icon: Icons.speed_rounded, label: 'FAST', detail: 'Shorter timers')),
+                      Expanded(child: _RuleCard(icon: Icons.speed_rounded, label: '1.4 SEC', detail: 'Fast commands')),
                       SizedBox(width: 9),
-                      Expanded(child: _RuleCard(icon: Icons.bolt_rounded, label: '10', detail: 'All commands')),
+                      Expanded(child: _RuleCard(icon: Icons.refresh_rounded, label: 'KEEP GOING', detail: 'Misses do not end it')),
                     ],
                   ),
                   const SizedBox(height: 16),
                   const _ScorePreview(),
                   const SizedBox(height: 16),
                   _StartButton(onTap: () => _start(context)),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'FIRST PASS USES CLASSIC TIMING • BLITZ TIMER NEXT',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: ReactColors.textSecondary, fontSize: 7.5, fontWeight: FontWeight.w800, letterSpacing: .8),
-                  ),
                 ],
               ),
             );
@@ -117,7 +113,7 @@ class _Hero extends StatelessWidget {
                 SizedBox(height: 5),
                 Text('FAST. SHORT. BRUTAL.', style: TextStyle(color: ReactColors.coral, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
                 SizedBox(height: 9),
-                Text('Score as many successful commands as you can before the clock wins.', style: TextStyle(color: ReactColors.textSecondary, fontSize: 10.5, height: 1.35, fontWeight: FontWeight.w600)),
+                Text('Score as many successful commands as you can in 60 seconds. A miss resets your combo, not the run.', style: TextStyle(color: ReactColors.textSecondary, fontSize: 10.5, height: 1.35, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -148,7 +144,7 @@ class _RuleCard extends StatelessWidget {
         children: [
           Icon(icon, color: ReactColors.coral, size: 24),
           const SizedBox(height: 7),
-          Text(label, style: const TextStyle(color: ReactColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w900)),
+          FittedBox(child: Text(label, style: const TextStyle(color: ReactColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w900))),
           const SizedBox(height: 3),
           Text(detail, textAlign: TextAlign.center, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 8, fontWeight: FontWeight.w600)),
         ],
