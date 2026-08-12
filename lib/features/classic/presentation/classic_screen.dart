@@ -75,6 +75,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
   static const _minimumSwipeDistance = 48.0;
   static const _pinchThreshold = 0.72;
   static const _spreadThreshold = 1.28;
+  static const _placeholderBestScore = 12850;
 
   late final ReactGame _game;
   final Random _random = Random();
@@ -97,6 +98,9 @@ class _ClassicScreenState extends State<ClassicScreen> {
   Offset _dragDelta = Offset.zero;
   bool _multiTouchSeen = false;
   bool _scaleResolved = false;
+
+  double get _averageTimeSeconds =>
+      _reactions == 0 ? 0 : (_totalResponseMs / _reactions) / 1000;
 
   @override
   void initState() {
@@ -248,16 +252,13 @@ class _ClassicScreenState extends State<ClassicScreen> {
   }
 
   void _openResults() {
-    final averageTimeSeconds =
-        _reactions == 0 ? 0.0 : (_totalResponseMs / _reactions) / 1000;
-
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => ResultsScreen(
           score: _score,
           reactions: _reactions,
           bestCombo: _bestCombo,
-          averageTimeSeconds: averageTimeSeconds,
+          averageTimeSeconds: _averageTimeSeconds,
           failedCommand: _command.title,
           failedCommandIcon: _command.icon,
         ),
@@ -289,7 +290,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
                         combo: _combo,
                         onClose: () => Navigator.of(context).pop(),
                       ),
-                      SizedBox(height: compact ? 12 : 18),
+                      SizedBox(height: compact ? 10 : 16),
                       Expanded(
                         child: Center(
                           child: GestureDetector(
@@ -310,27 +311,23 @@ class _ClassicScreenState extends State<ClassicScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: compact ? 4 : 8),
-                      SizedBox(
-                        height: 58,
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 160),
-                          child: _feedback == null
-                              ? const _InstructionCopy(
-                                  key: ValueKey('instruction'),
-                                )
-                              : _SuccessFeedback(
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 160),
+                        child: _feedback == null
+                            ? const SizedBox.shrink()
+                            : Padding(
+                                padding: const EdgeInsets.only(top: 4, bottom: 8),
+                                child: _SuccessFeedback(
                                   key: ValueKey('$_feedback-$_reactions'),
                                   feedback: _feedback!,
                                   points: _feedbackPoints!,
                                 ),
-                        ),
+                              ),
                       ),
-                      SizedBox(height: compact ? 8 : 12),
-                      _RunStatusPanel(
-                        reactions: _reactions,
-                        combo: _combo,
-                        bestCombo: _bestCombo,
+                      _PacePanel(
+                        score: _score,
+                        bestScore: max(_placeholderBestScore, _score),
+                        averageTimeSeconds: _averageTimeSeconds,
                       ),
                     ],
                   ),
@@ -578,7 +575,7 @@ class _CommandArena extends StatelessWidget {
                   Text(
                     seconds.toStringAsFixed(2),
                     style: TextStyle(
-                      color: progress < .28
+                      color: progress < .2
                           ? ReactColors.coral
                           : ReactColors.electricBlueBright,
                       fontSize: 20,
@@ -675,7 +672,7 @@ class _SegmentedRingPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 8
         ..strokeCap = StrokeCap.round
-        ..color = segments[i].withValues(alpha: .78);
+        ..color = segments[i].withValues(alpha: .72);
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
         start,
@@ -686,23 +683,24 @@ class _SegmentedRingPainter extends CustomPainter {
       start += segmentSweep + gap;
     }
 
+    final timerRadius = radius + 14;
     final timerTrack = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
+      ..strokeWidth = 12
       ..strokeCap = StrokeCap.round
-      ..color = const Color(0xFF11233C);
-    canvas.drawCircle(center, radius + 14, timerTrack);
+      ..color = const Color(0xFF10243D);
+    canvas.drawCircle(center, timerRadius, timerTrack);
 
     final timerPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
+      ..strokeWidth = 12
       ..strokeCap = StrokeCap.round
-      ..color = progress < .2
+      ..color = progress < .18
           ? ReactColors.coral
           : ReactColors.electricBlueBright;
 
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius + 14),
+      Rect.fromCircle(center: center, radius: timerRadius),
       -pi / 2,
       pi * 2 * progress,
       false,
@@ -717,9 +715,9 @@ class _SegmentedRingPainter extends CustomPainter {
           : i < 43
               ? ReactColors.lime
               : ReactColors.coral;
-      tickPaint.color = c.withValues(alpha: .55);
-      final p1 = center + Offset(cos(angle), sin(angle)) * (radius + 27);
-      final p2 = center + Offset(cos(angle), sin(angle)) * (radius + 31);
+      tickPaint.color = c.withValues(alpha: .5);
+      final p1 = center + Offset(cos(angle), sin(angle)) * (radius + 30);
+      final p2 = center + Offset(cos(angle), sin(angle)) * (radius + 34);
       canvas.drawLine(p1, p2, tickPaint);
     }
   }
@@ -727,37 +725,6 @@ class _SegmentedRingPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _SegmentedRingPainter oldDelegate) {
     return oldDelegate.progress != progress;
-  }
-}
-
-class _InstructionCopy extends StatelessWidget {
-  const _InstructionCopy({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'PERFORM THE COMMAND',
-          style: TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 11,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.8,
-          ),
-        ),
-        SizedBox(height: 5),
-        Text(
-          'Complete it before the timer expires',
-          style: TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
   }
 }
 
@@ -774,7 +741,7 @@ class _SuccessFeedback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           '+$points',
@@ -785,7 +752,7 @@ class _SuccessFeedback extends StatelessWidget {
             height: 1,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Text(
           feedback,
           style: const TextStyle(
@@ -800,21 +767,21 @@ class _SuccessFeedback extends StatelessWidget {
   }
 }
 
-class _RunStatusPanel extends StatelessWidget {
-  const _RunStatusPanel({
-    required this.reactions,
-    required this.combo,
-    required this.bestCombo,
+class _PacePanel extends StatelessWidget {
+  const _PacePanel({
+    required this.score,
+    required this.bestScore,
+    required this.averageTimeSeconds,
   });
 
-  final int reactions;
-  final int combo;
-  final int bestCombo;
+  final int score;
+  final int bestScore;
+  final double averageTimeSeconds;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 62,
+      height: 68,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
@@ -828,59 +795,106 @@ class _RunStatusPanel extends StatelessWidget {
             color: ReactColors.electricBlueBright,
             size: 21,
           ),
-          const SizedBox(width: 9),
+          const SizedBox(width: 8),
           const Text(
             'CLASSIC',
             style: TextStyle(
               color: ReactColors.electricBlueBright,
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: FontWeight.w900,
               letterSpacing: 1,
             ),
           ),
           const Spacer(),
-          _RunMetric(label: 'REACTIONS', value: '$reactions'),
-          const SizedBox(width: 16),
-          _RunMetric(label: 'COMBO', value: 'x$combo'),
-          const SizedBox(width: 16),
-          _RunMetric(label: 'BEST', value: 'x$bestCombo'),
+          _PaceMetric(label: 'SCORE', value: '$score'),
+          const _MetricDivider(),
+          _PaceMetric(
+            label: 'YOUR BEST RESULT',
+            value: _formatScore(bestScore),
+            highlight: true,
+          ),
+          const _MetricDivider(),
+          _PaceMetric(
+            label: 'AVG TIME',
+            value: averageTimeSeconds == 0
+                ? '--'
+                : '${averageTimeSeconds.toStringAsFixed(2)}s',
+          ),
         ],
       ),
     );
   }
+
+  static String _formatScore(int value) {
+    final text = value.toString();
+    if (text.length <= 3) return text;
+    final buffer = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      if (i > 0 && (text.length - i) % 3 == 0) buffer.write(',');
+      buffer.write(text[i]);
+    }
+    return buffer.toString();
+  }
 }
 
-class _RunMetric extends StatelessWidget {
-  const _RunMetric({required this.label, required this.value});
-
-  final String label;
-  final String value;
+class _MetricDivider extends StatelessWidget {
+  const _MetricDivider();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 6.5,
-            fontWeight: FontWeight.w800,
-            letterSpacing: .8,
+    return Container(
+      width: 1,
+      height: 32,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      color: const Color(0xFF1B304A),
+    );
+  }
+}
+
+class _PaceMetric extends StatelessWidget {
+  const _PaceMetric({
+    required this.label,
+    required this.value,
+    this.highlight = false,
+  });
+
+  final String label;
+  final String value;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Flexible(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 6.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: .7,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          style: const TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 13,
-            fontWeight: FontWeight.w900,
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: highlight ? ReactColors.lime : ReactColors.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
