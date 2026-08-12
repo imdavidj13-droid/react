@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
 import '../../../game/react_game.dart';
+import '../../modes/domain/mode_timing_rules.dart';
 import '../../results/presentation/results_screen.dart';
 
 enum ClassicCommand {
@@ -70,7 +71,6 @@ class ClassicScreen extends StatefulWidget {
 }
 
 class _ClassicScreenState extends State<ClassicScreen> {
-  static const _commandDuration = Duration(milliseconds: 2200);
   static const _tickDuration = Duration(milliseconds: 40);
   static const _minimumSwipeDistance = 48.0;
   static const _pinchThreshold = 0.72;
@@ -98,6 +98,9 @@ class _ClassicScreenState extends State<ClassicScreen> {
   Offset _dragDelta = Offset.zero;
   bool _multiTouchSeen = false;
   bool _scaleResolved = false;
+
+  int get _commandDurationMs =>
+      ReactModeTiming.classic.commandDurationMsForScore(_score);
 
   double get _averageTimeSeconds =>
       _reactions == 0 ? 0 : (_totalResponseMs / _reactions) / 1000;
@@ -140,12 +143,12 @@ class _ClassicScreenState extends State<ClassicScreen> {
 
       final elapsed =
           DateTime.now().difference(_commandStartedAt).inMilliseconds;
-      final progress = 1 - (elapsed / _commandDuration.inMilliseconds);
+      final progress = 1 - (elapsed / _commandDurationMs);
 
       if (progress <= 0) {
         if (_command == ClassicCommand.freeze) {
           _completeCommand(
-            responseMs: _commandDuration.inMilliseconds,
+            responseMs: _commandDurationMs,
             feedbackOverride: 'FROZEN',
           );
         } else {
@@ -191,7 +194,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
     });
 
     _nextCommandTimer = Timer(
-      const Duration(milliseconds: 500),
+      Duration(milliseconds: ReactModeTiming.classic.successDelayMs),
       _startCommand,
     );
   }
@@ -217,7 +220,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
     }
 
     _nextCommandTimer = Timer(
-      const Duration(milliseconds: 520),
+      Duration(milliseconds: ReactModeTiming.classic.missDelayMs),
       _startCommand,
     );
   }
@@ -257,8 +260,8 @@ class _ClassicScreenState extends State<ClassicScreen> {
     final dx = _dragDelta.dx;
     final dy = _dragDelta.dy;
     final horizontal = dx.abs() >= dy.abs();
-    final primaryDistance = horizontal ? dx.abs() : dy.abs();
-    if (primaryDistance < _minimumSwipeDistance) return;
+    final distance = horizontal ? dx.abs() : dy.abs();
+    if (distance < _minimumSwipeDistance) return;
 
     final performed = horizontal
         ? (dx < 0 ? ClassicCommand.swipeLeft : ClassicCommand.swipeRight)
@@ -329,31 +332,32 @@ class _ClassicScreenState extends State<ClassicScreen> {
                               size: arenaSize,
                               command: _command,
                               progress: _timeRemaining,
+                              commandDurationMs: _commandDurationMs,
                             ),
                           ),
                         ),
                       ),
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 150),
-                        child: _feedback == null
-                            ? const SizedBox.shrink()
-                            : Padding(
-                                padding:
-                                    const EdgeInsets.only(top: 4, bottom: 8),
-                                child: Text(
-                                  _feedback == 'MISS'
-                                      ? 'MISS  •  $_lives LIVES LEFT'
-                                      : '+1  $_feedback',
-                                  style: TextStyle(
-                                    color: _feedback == 'MISS'
-                                        ? ReactColors.coral
-                                        : ReactColors.electricBlueBright,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 2.2,
-                                  ),
-                                ),
+                      SizedBox(
+                        height: 44,
+                        child: Center(
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 120),
+                            opacity: _feedback == null ? 0 : 1,
+                            child: Text(
+                              _feedback == 'MISS'
+                                  ? 'MISS  •  $_lives LIVES LEFT'
+                                  : '+1  ${_feedback ?? ''}',
+                              style: TextStyle(
+                                color: _feedback == 'MISS'
+                                    ? ReactColors.coral
+                                    : ReactColors.electricBlueBright,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 2.2,
                               ),
+                            ),
+                          ),
+                        ),
                       ),
                       _PacePanel(
                         score: _score,
@@ -417,21 +421,9 @@ class _GameplayHeader extends StatelessWidget {
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(
-              child: _HudCard(
-                label: 'SCORE',
-                value: '$score',
-                color: ReactColors.lime,
-              ),
-            ),
+            Expanded(child: _HudCard(label: 'SCORE', value: '$score', color: ReactColors.lime)),
             const SizedBox(width: 10),
-            Expanded(
-              child: _HudCard(
-                label: 'COMBO',
-                value: 'x$combo',
-                color: ReactColors.purple,
-              ),
-            ),
+            Expanded(child: _HudCard(label: 'COMBO', value: 'x$combo', color: ReactColors.purple)),
             const SizedBox(width: 10),
             Expanded(
               child: _HudCard(
@@ -504,17 +496,17 @@ class _CommandArena extends StatelessWidget {
     required this.size,
     required this.command,
     required this.progress,
+    required this.commandDurationMs,
   });
 
   final double size;
   final ClassicCommand command;
   final double progress;
+  final int commandDurationMs;
 
   @override
   Widget build(BuildContext context) {
-    final seconds =
-        (_ClassicScreenState._commandDuration.inMilliseconds * progress / 1000)
-            .clamp(0, 9.9);
+    final seconds = (commandDurationMs * progress / 1000).clamp(0, 9.9);
 
     return SizedBox.square(
       dimension: size,
@@ -531,10 +523,7 @@ class _CommandArena extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF050A13),
-              border: Border.all(
-                color: const Color(0xFF153B65),
-                width: 1.5,
-              ),
+              border: Border.all(color: const Color(0xFF153B65), width: 1.5),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -553,10 +542,7 @@ class _CommandArena extends StatelessWidget {
                 Icon(
                   command.icon,
                   color: ReactColors.electricBlueBright,
-                  size: command == ClassicCommand.pinch ||
-                          command == ClassicCommand.spread
-                      ? 88
-                      : 96,
+                  size: command == ClassicCommand.pinch || command == ClassicCommand.spread ? 88 : 96,
                 ),
                 const SizedBox(height: 15),
                 Text(
@@ -580,10 +566,7 @@ class _CommandArena extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: const Color(0xFF07111D),
-                border: Border.all(
-                  color: const Color(0xFF31577E),
-                  width: 2,
-                ),
+                border: Border.all(color: const Color(0xFF31577E), width: 2),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -631,6 +614,7 @@ class _SegmentedRingPainter extends CustomPainter {
     final base = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 9
+      ..strokeCap = StrokeCap.round
       ..color = const Color(0xFF122038);
     canvas.drawCircle(center, radius, base);
 
@@ -663,43 +647,30 @@ class _SegmentedRingPainter extends CustomPainter {
     final track = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12
+      ..strokeCap = StrokeCap.round
       ..color = const Color(0xFF10243D);
     canvas.drawCircle(center, timerRadius, track);
 
-    final timer = Paint()
+    final timerPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12
       ..strokeCap = StrokeCap.round
       ..color = progress < .18
           ? ReactColors.coral
           : ReactColors.electricBlueBright;
+
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: timerRadius),
       -pi / 2,
       pi * 2 * progress,
       false,
-      timer,
+      timerPaint,
     );
-
-    final tickPaint = Paint()..strokeWidth = 1.4;
-    for (var i = 0; i < 64; i++) {
-      final angle = i * pi * 2 / 64;
-      final color = i < 22
-          ? ReactColors.electricBlueBright
-          : i < 43
-              ? ReactColors.lime
-              : ReactColors.coral;
-      tickPaint.color = color.withValues(alpha: .5);
-      final p1 = center + Offset(cos(angle), sin(angle)) * (radius + 30);
-      final p2 = center + Offset(cos(angle), sin(angle)) * (radius + 34);
-      canvas.drawLine(p1, p2, tickPaint);
-    }
   }
 
   @override
-  bool shouldRepaint(covariant _SegmentedRingPainter oldDelegate) {
-    return oldDelegate.progress != progress;
-  }
+  bool shouldRepaint(covariant _SegmentedRingPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
 class _PacePanel extends StatelessWidget {
@@ -725,11 +696,7 @@ class _PacePanel extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.bolt_rounded,
-            color: ReactColors.electricBlueBright,
-            size: 21,
-          ),
+          const Icon(Icons.bolt_rounded, color: ReactColors.electricBlueBright, size: 21),
           const SizedBox(width: 8),
           const Text(
             'CLASSIC',
@@ -743,17 +710,11 @@ class _PacePanel extends StatelessWidget {
           const Spacer(),
           _PaceMetric(label: 'SCORE', value: '$score'),
           const _MetricDivider(),
-          _PaceMetric(
-            label: 'YOUR BEST RESULT',
-            value: '$bestScore',
-            highlight: true,
-          ),
+          _PaceMetric(label: 'YOUR BEST RESULT', value: '$bestScore', highlight: true),
           const _MetricDivider(),
           _PaceMetric(
             label: 'AVG TIME',
-            value: averageTimeSeconds == 0
-                ? '--'
-                : '${averageTimeSeconds.toStringAsFixed(2)}s',
+            value: averageTimeSeconds == 0 ? '--' : '${averageTimeSeconds.toStringAsFixed(2)}s',
           ),
         ],
       ),
@@ -765,14 +726,12 @@ class _MetricDivider extends StatelessWidget {
   const _MetricDivider();
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 32,
-      margin: const EdgeInsets.symmetric(horizontal: 9),
-      color: const Color(0xFF1B304A),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+        width: 1,
+        height: 32,
+        margin: const EdgeInsets.symmetric(horizontal: 10),
+        color: const Color(0xFF1B304A),
+      );
 }
 
 class _PaceMetric extends StatelessWidget {
@@ -801,7 +760,7 @@ class _PaceMetric extends StatelessWidget {
                 color: ReactColors.textSecondary,
                 fontSize: 6.5,
                 fontWeight: FontWeight.w800,
-                letterSpacing: .6,
+                letterSpacing: .7,
               ),
             ),
           ),
@@ -811,9 +770,7 @@ class _PaceMetric extends StatelessWidget {
             child: Text(
               value,
               style: TextStyle(
-                color: highlight
-                    ? ReactColors.lime
-                    : ReactColors.textPrimary,
+                color: highlight ? ReactColors.lime : ReactColors.textPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.w900,
               ),
