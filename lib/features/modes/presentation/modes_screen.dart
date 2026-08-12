@@ -118,8 +118,6 @@ class ModesScreen extends StatelessWidget {
                 color: ReactColors.purple,
                 onTap: () => open(const LeaderboardScreen()),
               ),
-              const SizedBox(height: 18),
-              const _CommandSummary(),
             ],
           ),
         ),
@@ -130,6 +128,7 @@ class ModesScreen extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   const _Header({required this.onBack});
+
   final VoidCallback onBack;
 
   @override
@@ -292,40 +291,6 @@ class _SmallModeCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _CommandSummary extends StatelessWidget {
-  const _CommandSummary();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF293B54)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.bolt_rounded, color: ReactColors.electricBlueBright),
-          SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              '10 LIVE COMMANDS  •  RANDOM ORDER  •  NO HAPTICS',
-              style: TextStyle(
-                color: ReactColors.textSecondary,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                letterSpacing: .8,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
