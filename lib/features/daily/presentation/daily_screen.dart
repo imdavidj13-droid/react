@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
-import '../../modes/presentation/mode_run_screen.dart';
+import '../../gameplay/presentation/react_run_screen.dart';
 import '../domain/daily_challenge.dart';
 
 class DailyScreen extends StatefulWidget {
@@ -34,7 +34,7 @@ class _DailyScreenState extends State<DailyScreen> {
 
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => const ModeRunScreen(mode: ReactRunMode.daily),
+        builder: (_) => const ReactRunScreen(mode: ReactGameMode.daily),
       ),
     );
     if (!mounted) return;
@@ -411,8 +411,8 @@ class _LocalDailyInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = playedToday ? 'NEXT CHALLENGE TOMORROW' : 'LOCAL DAILY MODE';
     final detail = playedToday
-        ? 'A NEW CHALLENGE ID AND COMMAND ORDER unlock at local midnight.'
-        : 'This offline build uses your device date to generate one fixed challenge for the day.';
+        ? 'A new challenge ID and command order unlock at local midnight.'
+        : 'Your device date generates one fixed challenge and command order for the entire day.';
 
     return Container(
       width: double.infinity,
@@ -425,7 +425,7 @@ class _LocalDailyInfo extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            playedToday ? Icons.schedule_rounded : Icons.cloud_off_rounded,
+            playedToday ? Icons.schedule_rounded : Icons.today_rounded,
             color: playedToday ? ReactColors.lime : ReactColors.textSecondary,
             size: 23,
           ),
