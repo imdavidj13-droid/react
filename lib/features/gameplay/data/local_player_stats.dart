@@ -11,6 +11,7 @@ class LocalPlayerStats {
   static const _dailyStreakKey = 'daily_streak';
 
   static Future<int> bestFor(ReactGameMode mode) async {
+    if (mode == ReactGameMode.passIt) return 0;
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_bestKey(mode)) ?? 0;
   }
@@ -35,12 +36,16 @@ class LocalPlayerStats {
     await _recordDaily(prefs);
   }
 
-  static Future<void> recordResult(ReactRunResult result) async {
+  static Future<bool> recordResult(ReactRunResult result) async {
     final prefs = await SharedPreferences.getInstance();
+    var isNewBest = false;
 
-    final currentBest = prefs.getInt(_bestKey(result.mode)) ?? 0;
-    if (result.score > currentBest) {
-      await prefs.setInt(_bestKey(result.mode), result.score);
+    if (result.mode != ReactGameMode.passIt) {
+      final currentBest = prefs.getInt(_bestKey(result.mode)) ?? 0;
+      if (result.score > currentBest) {
+        await prefs.setInt(_bestKey(result.mode), result.score);
+        isNewBest = true;
+      }
     }
 
     await prefs.setInt(_runsKey, (prefs.getInt(_runsKey) ?? 0) + 1);
@@ -48,6 +53,8 @@ class LocalPlayerStats {
     if (result.mode == ReactGameMode.daily) {
       await _recordDaily(prefs);
     }
+
+    return isNewBest;
   }
 
   static Future<void> resetProgress() async {
