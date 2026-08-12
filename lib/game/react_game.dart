@@ -21,6 +21,7 @@ class ReactGame extends FlameGame {
   Future<void> onLoad() async {
     await super.onLoad();
     add(_AmbientParticleField(game: this));
+    add(_PressureField(game: this));
   }
 
   void configure({required Color accent, required double intensity}) {
@@ -41,6 +42,14 @@ class ReactGame extends FlameGame {
         speed: 105 + (intensity * 95),
       ),
     );
+    add(
+      _PulseRing(
+        game: this,
+        color: accent,
+        lifetime: .28,
+        maxRadiusFactor: .30 + intensity * .10,
+      ),
+    );
   }
 
   void triggerMiss() {
@@ -51,6 +60,15 @@ class ReactGame extends FlameGame {
         particleCount: 26,
         speed: 165,
         outwardBias: 1.2,
+      ),
+    );
+    add(
+      _PulseRing(
+        game: this,
+        color: ReactColors.coral,
+        lifetime: .42,
+        maxRadiusFactor: .43,
+        strokeWidth: 5,
       ),
     );
   }
@@ -74,7 +92,7 @@ class _AmbientParticleField extends Component {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    for (var i = 0; i < 34; i++) {
+    for (var i = 0; i < 38; i++) {
       _particles.add(_newParticle(initial: true));
     }
   }
@@ -84,8 +102,8 @@ class _AmbientParticleField extends Component {
     return _AmbientParticle(
       x: position.dx,
       y: initial ? position.dy : game.size.y + 8,
-      radius: 0.7 + _random.nextDouble() * 1.4,
-      speed: 7 + _random.nextDouble() * 17,
+      radius: 0.7 + _random.nextDouble() * 1.5,
+      speed: 7 + _random.nextDouble() * 18,
       drift: (_random.nextDouble() - .5) * 8,
       phase: _random.nextDouble() * pi * 2,
     );
@@ -96,14 +114,16 @@ class _AmbientParticleField extends Component {
     super.update(dt);
     if (game.size.x <= 0 || game.size.y <= 0) return;
 
-    final speedMultiplier = .7 + game.intensity * 1.7;
+    final speedMultiplier = .7 + game.intensity * 2.1;
     for (var i = 0; i < _particles.length; i++) {
       final particle = _particles[i];
-      particle.phase += dt * (1.2 + game.intensity * 2.4);
+      particle.phase += dt * (1.2 + game.intensity * 3.0);
       particle.y -= particle.speed * speedMultiplier * dt;
       particle.x += sin(particle.phase) * particle.drift * dt;
 
-      if (particle.y < -10 || particle.x < -12 || particle.x > game.size.x + 12) {
+      if (particle.y < -10 ||
+          particle.x < -12 ||
+          particle.x > game.size.x + 12) {
         _particles[i] = _newParticle();
       }
     }
@@ -112,16 +132,74 @@ class _AmbientParticleField extends Component {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    final baseAlpha = .045 + game.intensity * .055;
+    final baseAlpha = .04 + game.intensity * .065;
 
     for (final particle in _particles) {
       final shimmer = .72 + sin(particle.phase) * .28;
-      final alpha = (baseAlpha * shimmer).clamp(0.0, .12).toDouble();
+      final alpha = (baseAlpha * shimmer).clamp(0.0, .14).toDouble();
       final paint = Paint()..color = game.accent.withValues(alpha: alpha);
       canvas.drawCircle(
         Offset(particle.x, particle.y),
         particle.radius,
         paint,
+      );
+    }
+  }
+}
+
+class _PressureField extends Component {
+  _PressureField({required this.game});
+
+  final ReactGame game;
+  double _phase = 0;
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _phase += dt * (1.1 + game.intensity * 4.4);
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    if (game.size.x <= 0 || game.size.y <= 0 || game.intensity < .38) return;
+
+    final pressure = ((game.intensity - .38) / .62).clamp(0.0, 1.0).toDouble();
+    final pulse = .65 + sin(_phase) * .35;
+    final alpha = (.025 + pressure * .09) * pulse;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2 + pressure * 2.8
+      ..color = game.accent.withValues(alpha: alpha.clamp(0.0, .13).toDouble());
+
+    final inset = 8 + pressure * 12;
+    final rect = Rect.fromLTWH(
+      inset,
+      inset,
+      max(0, game.size.x - inset * 2),
+      max(0, game.size.y - inset * 2),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, Radius.circular(28 + pressure * 14)),
+      paint,
+    );
+
+    if (pressure < .45) return;
+
+    final streakPaint = Paint()
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 1.2 + pressure * 1.8
+      ..color = game.accent.withValues(alpha: (.04 + pressure * .07).toDouble());
+    final length = 18 + pressure * 44;
+    final travel = (_phase * 64) % max(1, game.size.y);
+
+    for (var i = 0; i < 5; i++) {
+      final y = (travel + i * game.size.y / 5) % max(1, game.size.y);
+      canvas.drawLine(Offset(8, y), Offset(8 + length, y), streakPaint);
+      canvas.drawLine(
+        Offset(game.size.x - 8, game.size.y - y),
+        Offset(game.size.x - 8 - length, game.size.y - y),
+        streakPaint,
       );
     }
   }
@@ -213,6 +291,51 @@ class _ReactionBurst extends Component {
         paint,
       );
     }
+  }
+}
+
+class _PulseRing extends Component {
+  _PulseRing({
+    required this.game,
+    required this.color,
+    required this.lifetime,
+    required this.maxRadiusFactor,
+    this.strokeWidth = 3,
+  });
+
+  final ReactGame game;
+  final Color color;
+  final double lifetime;
+  final double maxRadiusFactor;
+  final double strokeWidth;
+
+  double _age = 0;
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _age += dt;
+    if (_age >= lifetime) removeFromParent();
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    if (game.size.x <= 0 || game.size.y <= 0) return;
+
+    final t = (_age / lifetime).clamp(0.0, 1.0).toDouble();
+    final radius = min(game.size.x, game.size.y) * maxRadiusFactor * t;
+    final alpha = ((1 - t) * .42).clamp(0.0, .42).toDouble();
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth * (1 - t * .35)
+      ..color = color.withValues(alpha: alpha);
+
+    canvas.drawCircle(
+      Offset(game.size.x / 2, game.size.y / 2),
+      radius,
+      paint,
+    );
   }
 }
 
