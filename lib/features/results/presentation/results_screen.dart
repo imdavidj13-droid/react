@@ -55,6 +55,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     _StatsStrip(result: result),
                     const SizedBox(height: 16),
                     _OutcomeCard(result: result, color: _modeColor),
+                    if (result.mode == ReactGameMode.passIt &&
+                        result.playerLives != null) ...[
+                      const SizedBox(height: 14),
+                      _PassItSummary(result: result),
+                    ],
                     SizedBox(height: compact ? 24 : 32),
                     if (result.mode == ReactGameMode.daily)
                       const _DailyLockedButton()
@@ -340,6 +345,109 @@ class _OutcomeCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PassItSummary extends StatelessWidget {
+  const _PassItSummary({required this.result});
+
+  final ReactRunResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final lives = result.playerLives ?? const <int>[];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: ReactColors.purple.withValues(alpha: .38)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'FINAL PLAYER STATUS',
+            style: TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (var i = 0; i < lives.length; i++) ...[
+            _PassItPlayerRow(
+              player: i + 1,
+              lives: lives[i],
+              winner: result.winnerPlayer == i + 1,
+            ),
+            if (i != lives.length - 1) const SizedBox(height: 7),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PassItPlayerRow extends StatelessWidget {
+  const _PassItPlayerRow({
+    required this.player,
+    required this.lives,
+    required this.winner,
+  });
+
+  final int player;
+  final int lives;
+  final bool winner;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = winner ? ReactColors.lime : ReactColors.textSecondary;
+    final hearts = lives == 0 ? 'OUT' : List.filled(lives, '♥').join(' ');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF090F1B),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: winner
+              ? ReactColors.lime.withValues(alpha: .48)
+              : const Color(0xFF24364E),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            winner ? Icons.emoji_events_rounded : Icons.person_rounded,
+            color: color,
+            size: 20,
+          ),
+          const SizedBox(width: 9),
+          Text(
+            'PLAYER $player',
+            style: TextStyle(
+              color: winner ? ReactColors.textPrimary : ReactColors.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            winner ? 'WINNER  •  $hearts' : hearts,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .7,
             ),
           ),
         ],
