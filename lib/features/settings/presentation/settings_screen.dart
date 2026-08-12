@@ -96,7 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _SettingTile(
                 icon: Icons.volume_up_rounded,
                 title: 'SOUND',
-                subtitle: 'Gameplay and interface audio when sound assets are added.',
+                subtitle: 'Gameplay and interface audio.',
                 value: _soundEnabled,
                 color: ReactColors.electricBlueBright,
                 onChanged: _setSound,
@@ -105,7 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _SettingTile(
                 icon: Icons.auto_awesome_rounded,
                 title: 'VISUAL EFFECTS',
-                subtitle: 'Flame particles, bursts and high-pressure edge effects.',
+                subtitle: 'Particles, reaction bursts and pressure effects.',
                 value: _visualEffectsEnabled,
                 color: ReactColors.purple,
                 onChanged: _setVisualEffects,
@@ -231,7 +231,7 @@ class _ProfileHero extends StatelessWidget {
                 ),
                 SizedBox(height: 5),
                 Text(
-                  'Your current records and preferences stay on this device.',
+                  'Your records and preferences are saved on this device.',
                   style: TextStyle(
                     color: ReactColors.textSecondary,
                     fontSize: 10,
@@ -467,11 +467,11 @@ class _InfoCard extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          Icon(Icons.info_outline_rounded, color: ReactColors.textSecondary, size: 22),
+          Icon(Icons.phone_android_rounded, color: ReactColors.textSecondary, size: 22),
           SizedBox(width: 11),
           Expanded(
             child: Text(
-              'OFFLINE BUILD • NO ACCOUNT OR CLOUD SYNC YET',
+              'LOCAL PLAY • RECORDS AND PREFERENCES ARE SAVED ON THIS DEVICE',
               style: TextStyle(
                 color: ReactColors.textSecondary,
                 fontSize: 8.5,
