@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
-import '../../classic/presentation/classic_screen.dart';
+import '../../modes/presentation/mode_run_screen.dart';
 
 class PassItScreen extends StatelessWidget {
   const PassItScreen({super.key});
 
   void _start(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ClassicScreen()),
+      MaterialPageRoute<void>(
+        builder: (_) => const ModeRunScreen(mode: ReactRunMode.passIt),
+      ),
     );
   }
 
@@ -40,23 +42,17 @@ class PassItScreen extends StatelessWidget {
                   const SizedBox(height: 10),
                   const Row(
                     children: [
-                      Expanded(child: _RuleCard(icon: Icons.favorite_rounded, value: '3', label: 'LIVES', color: ReactColors.coral)),
+                      Expanded(child: _RuleCard(icon: Icons.favorite_rounded, value: '3', label: 'LIVES EACH', color: ReactColors.coral)),
                       SizedBox(width: 9),
-                      Expanded(child: _RuleCard(icon: Icons.speed_rounded, value: 'FAST', label: 'PACE', color: ReactColors.lime)),
+                      Expanded(child: _RuleCard(icon: Icons.swap_horiz_rounded, value: '1 CMD', label: 'PER TURN', color: ReactColors.lime)),
                       SizedBox(width: 9),
-                      Expanded(child: _RuleCard(icon: Icons.shuffle_rounded, value: 'RANDOM', label: 'ORDER', color: ReactColors.purple)),
+                      Expanded(child: _RuleCard(icon: Icons.emoji_events_rounded, value: 'LAST', label: 'PLAYER WINS', color: ReactColors.purple)),
                     ],
                   ),
                   const SizedBox(height: 18),
                   const _RoundPreview(),
                   const SizedBox(height: 16),
                   _StartButton(onTap: () => _start(context)),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'FIRST PASS: ONE SHARED RUN • TURN SYSTEM NEXT',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: ReactColors.textSecondary, fontSize: 7.5, fontWeight: FontWeight.w800, letterSpacing: .8),
-                  ),
                 ],
               ),
             );
@@ -127,7 +123,7 @@ class _Hero extends StatelessWidget {
                 SizedBox(height: 5),
                 Text('LOCAL MULTIPLAYER', style: TextStyle(color: ReactColors.purple, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
                 SizedBox(height: 9),
-                Text('Take turns on one phone. Miss a command and lose a life.', style: TextStyle(color: ReactColors.textSecondary, fontSize: 10.5, height: 1.35, fontWeight: FontWeight.w600)),
+                Text('Complete one command, then hand the phone over. Miss and you lose a life. Last player standing wins.', style: TextStyle(color: ReactColors.textSecondary, fontSize: 10.5, height: 1.35, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -189,7 +185,7 @@ class _PlayerRow extends StatelessWidget {
               ],
             ),
           ),
-          Icon(Icons.edit_outlined, color: color.withValues(alpha: .7), size: 19),
+          Text('♥ ♥ ♥', style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w900)),
         ],
       ),
     );
@@ -220,7 +216,7 @@ class _RuleCard extends StatelessWidget {
           const SizedBox(height: 7),
           FittedBox(child: Text(value, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w900))),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 7.5, fontWeight: FontWeight.w900, letterSpacing: .7)),
+          Text(label, textAlign: TextAlign.center, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 7.2, fontWeight: FontWeight.w900, letterSpacing: .5)),
         ],
       ),
     );
@@ -244,7 +240,7 @@ class _RoundPreview extends StatelessWidget {
         children: [
           Icon(Icons.phone_android_rounded, color: ReactColors.electricBlueBright, size: 28),
           SizedBox(width: 12),
-          Expanded(child: Text('COMPLETE A COMMAND, THEN PASS THE PHONE', style: TextStyle(color: ReactColors.textPrimary, fontSize: 9.5, fontWeight: FontWeight.w900, letterSpacing: .7))),
+          Expanded(child: Text('ONE COMMAND EACH, THEN PASS THE PHONE', style: TextStyle(color: ReactColors.textPrimary, fontSize: 9.5, fontWeight: FontWeight.w900, letterSpacing: .7))),
           Icon(Icons.arrow_forward_rounded, color: ReactColors.purple),
         ],
       ),
