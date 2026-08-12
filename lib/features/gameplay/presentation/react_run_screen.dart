@@ -433,6 +433,17 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     );
   }
 
+  void _quitRun() {
+    if (_finished || !mounted) return;
+    _finished = true;
+    _acceptingInput = false;
+    _commandTimer?.cancel();
+    _nextTimer?.cancel();
+    _runTimer?.cancel();
+    _game.pauseEngine();
+    Navigator.of(context).pop();
+  }
+
   void _finish(ReactRunOutcome outcome, {int? winnerPlayer}) {
     if (_finished || !mounted) return;
     _finished = true;
@@ -487,89 +498,96 @@ class _ReactRunScreenState extends State<ReactRunScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ReactColors.background,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          GameWidget(game: _game),
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final arenaSize = constraints.maxWidth.clamp(318.0, 390.0).toDouble();
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
-                  child: Column(
-                    children: [
-                      _Header(
-                        mode: widget.mode,
-                        score: _score,
-                        statusLabel: _statusLabel,
-                        statusValue: _statusValue,
-                        onPause: () => _setPaused(true),
-                      ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: Center(
-                          child: ReactGestureSurface(
-                            enabled: _acceptingInput && !_paused && !_handoff,
-                            expectedCommand: _command,
-                            onCommand: _handleCommand,
-                            child: _Arena(
-                              size: arenaSize,
-                              command: _command,
-                              progress: _progress,
-                              commandDurationMs: _commandDurationMs,
-                              accent: _modeColor(widget.mode),
-                            ),
-                          ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || _finished) return;
+        _setPaused(!_paused);
+      },
+      child: Scaffold(
+        backgroundColor: ReactColors.background,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            GameWidget(game: _game),
+            SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final arenaSize = constraints.maxWidth.clamp(318.0, 390.0).toDouble();
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+                    child: Column(
+                      children: [
+                        _Header(
+                          mode: widget.mode,
+                          score: _score,
+                          statusLabel: _statusLabel,
+                          statusValue: _statusValue,
+                          onPause: () => _setPaused(true),
                         ),
-                      ),
-                      SizedBox(
-                        height: 44,
-                        child: Center(
-                          child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 120),
-                            opacity: _feedback == null ? 0 : 1,
-                            child: Text(
-                              _feedback ?? '',
-                              style: TextStyle(
-                                color: _feedback?.startsWith('MISS') == true
-                                    ? ReactColors.coral
-                                    : ReactColors.electricBlueBright,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 2,
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child: Center(
+                            child: ReactGestureSurface(
+                              enabled: _acceptingInput && !_paused && !_handoff,
+                              expectedCommand: _command,
+                              onCommand: _handleCommand,
+                              child: _Arena(
+                                size: arenaSize,
+                                command: _command,
+                                progress: _progress,
+                                commandDurationMs: _commandDurationMs,
+                                accent: _modeColor(widget.mode),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      _BottomBar(
-                        mode: widget.mode,
-                        score: _score,
-                        misses: _misses,
-                        averageTimeSeconds: _averageTimeSeconds,
-                      ),
-                    ],
-                  ),
-                );
-              },
+                        SizedBox(
+                          height: 44,
+                          child: Center(
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 120),
+                              opacity: _feedback == null ? 0 : 1,
+                              child: Text(
+                                _feedback ?? '',
+                                style: TextStyle(
+                                  color: _feedback?.startsWith('MISS') == true
+                                      ? ReactColors.coral
+                                      : ReactColors.electricBlueBright,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        _BottomBar(
+                          mode: widget.mode,
+                          score: _score,
+                          misses: _misses,
+                          averageTimeSeconds: _averageTimeSeconds,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-          if (_paused)
-            _PauseOverlay(
-              onResume: () => _setPaused(false),
-              onRestart: _restart,
-              onQuit: () => Navigator.of(context).pop(),
-            ),
-          if (_handoff && !_paused)
-            _HandoffOverlay(
-              player: _currentPlayer + 1,
-              lives: _playerLives[_currentPlayer],
-              onReady: _beginPassItTurn,
-            ),
-        ],
+            if (_paused)
+              _PauseOverlay(
+                onResume: () => _setPaused(false),
+                onRestart: widget.mode == ReactGameMode.daily ? null : _restart,
+                onQuit: _quitRun,
+              ),
+            if (_handoff && !_paused)
+              _HandoffOverlay(
+                player: _currentPlayer + 1,
+                lives: _playerLives[_currentPlayer],
+                onReady: _beginPassItTurn,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -989,7 +1007,7 @@ class _PauseOverlay extends StatelessWidget {
   });
 
   final VoidCallback onResume;
-  final VoidCallback onRestart;
+  final VoidCallback? onRestart;
   final VoidCallback onQuit;
 
   @override
@@ -1034,7 +1052,11 @@ class _PauseOverlay extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 FilledButton(onPressed: onResume, child: const Text('RESUME')),
-                TextButton(onPressed: onRestart, child: const Text('RESTART RUN')),
+                if (onRestart != null)
+                  TextButton(
+                    onPressed: onRestart,
+                    child: const Text('RESTART RUN'),
+                  ),
                 TextButton(onPressed: onQuit, child: const Text('QUIT RUN')),
               ],
             ),
