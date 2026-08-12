@@ -2,14 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
 import '../../../core/widgets/neon_button.dart';
+import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import '../../gameplay/presentation/react_run_screen.dart';
 import '../../home/presentation/home_screen.dart';
 
-class ResultsScreen extends StatelessWidget {
+class ResultsScreen extends StatefulWidget {
   const ResultsScreen({required this.result, super.key});
 
   final ReactRunResult result;
+
+  @override
+  State<ResultsScreen> createState() => _ResultsScreenState();
+}
+
+class _ResultsScreenState extends State<ResultsScreen> {
+  ReactRunResult get result => widget.result;
 
   Color get _modeColor => switch (result.mode) {
         ReactGameMode.classic => ReactColors.electricBlueBright,
@@ -18,6 +26,12 @@ class ResultsScreen extends StatelessWidget {
         ReactGameMode.daily => ReactColors.electricBlueBright,
         ReactGameMode.passIt => ReactColors.purple,
       };
+
+  @override
+  void initState() {
+    super.initState();
+    LocalPlayerStats.recordResult(result);
+  }
 
   @override
   Widget build(BuildContext context) {
