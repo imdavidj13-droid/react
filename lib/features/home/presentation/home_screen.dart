@@ -72,6 +72,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             _Streak(days: stats.dailyStreak),
                           ],
                         ),
+                        SizedBox(height: compact ? 10 : 14),
+                        _RecordStrip(stats: stats),
                         SizedBox(height: compact ? 4 : 8),
                         _PlayDial(
                           size: dialSize,
@@ -356,6 +358,105 @@ class _Streak extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _RecordStrip extends StatelessWidget {
+  const _RecordStrip({required this.stats});
+
+  final _HomeStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xCC07111D),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF233651)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _RecordMetric(
+              label: 'BLITZ',
+              value: '${stats.blitzBest}',
+              color: ReactColors.coral,
+            ),
+          ),
+          const _RecordDivider(),
+          Expanded(
+            child: _RecordMetric(
+              label: 'ENDLESS',
+              value: '${stats.endlessBest}',
+              color: ReactColors.lime,
+            ),
+          ),
+          const _RecordDivider(),
+          Expanded(
+            child: _RecordMetric(
+              label: 'RUNS',
+              value: '${stats.runsPlayed}',
+              color: ReactColors.electricBlueBright,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecordMetric extends StatelessWidget {
+  const _RecordMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
+            height: 1,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 7.5,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .9,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecordDivider extends StatelessWidget {
+  const _RecordDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 28,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      color: const Color(0xFF1D3048),
     );
   }
 }
