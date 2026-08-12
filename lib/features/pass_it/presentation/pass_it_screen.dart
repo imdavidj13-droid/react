@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/settings/react_settings.dart';
 import '../../../core/theme/react_colors.dart';
-import '../../modes/presentation/mode_run_screen.dart';
+import '../../gameplay/domain/react_run_result.dart';
+import '../../gameplay/presentation/react_run_screen.dart';
 
 class PassItScreen extends StatefulWidget {
   const PassItScreen({super.key});
@@ -28,7 +29,7 @@ class _PassItScreenState extends State<PassItScreen> {
   void _start(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => const ModeRunScreen(mode: ReactRunMode.passIt),
+        builder: (_) => const ReactRunScreen(mode: ReactGameMode.passIt),
       ),
     );
   }
