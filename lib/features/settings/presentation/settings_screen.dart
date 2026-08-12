@@ -35,6 +35,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await ReactSettings.setVisualEffectsEnabled(value);
   }
 
+  Future<void> _resetProgress() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF07111D),
+        title: const Text('RESET LOCAL PROGRESS?'),
+        content: const Text(
+          'This permanently clears every local best score, total runs, Daily streak and today\'s Daily attempt. Sound and visual settings are kept.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('CANCEL'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: ReactColors.coral),
+            child: const Text('RESET'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await LocalPlayerStats.resetProgress();
+    if (!mounted) return;
+
+    setState(() => _stats = _ProfileStats.load());
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Local progress reset.')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,6 +110,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: ReactColors.purple,
                 onChanged: _setVisualEffects,
               ),
+              const SizedBox(height: 18),
+              const _SectionLabel('LOCAL DATA'),
+              const SizedBox(height: 10),
+              _ResetProgressTile(onPressed: _resetProgress),
               const SizedBox(height: 18),
               const _InfoCard(),
             ],
@@ -354,6 +392,61 @@ class _SettingTile extends StatelessWidget {
           ),
           Switch(value: value, onChanged: onChanged, activeThumbColor: color),
         ],
+      ),
+    );
+  }
+}
+
+class _ResetProgressTile extends StatelessWidget {
+  const _ResetProgressTile({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF07111D),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: ReactColors.coral.withValues(alpha: .38)),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.delete_outline_rounded, color: ReactColors.coral, size: 25),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'RESET LOCAL PROGRESS',
+                    style: TextStyle(
+                      color: ReactColors.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'Clear scores, run history and Daily progress from this device.',
+                    style: TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 9,
+                      height: 1.3,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: ReactColors.coral),
+          ],
+        ),
       ),
     );
   }
