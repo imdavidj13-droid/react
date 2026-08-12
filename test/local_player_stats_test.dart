@@ -85,4 +85,22 @@ void main() {
     expect(await LocalPlayerStats.dailyStreak(), 1);
     expect(await LocalPlayerStats.bestFor(ReactGameMode.daily), 10);
   });
+
+  test('reset clears progress and daily state', () async {
+    await LocalPlayerStats.recordResult(
+      result(mode: ReactGameMode.classic, score: 14),
+    );
+    await LocalPlayerStats.recordResult(
+      result(mode: ReactGameMode.blitz, score: 22),
+    );
+    await LocalPlayerStats.markDailyAttemptStarted();
+
+    await LocalPlayerStats.resetProgress();
+
+    expect(await LocalPlayerStats.bestFor(ReactGameMode.classic), 0);
+    expect(await LocalPlayerStats.bestFor(ReactGameMode.blitz), 0);
+    expect(await LocalPlayerStats.runsPlayed(), 0);
+    expect(await LocalPlayerStats.dailyStreak(), 0);
+    expect(await LocalPlayerStats.hasPlayedDailyToday(), isFalse);
+  });
 }
