@@ -183,7 +183,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
 
   void _armCommandTimer(int remainingMs) {
     final fullDuration = _commandDurationMs;
-    final safeRemaining = remainingMs.clamp(1, fullDuration);
+    final safeRemaining = remainingMs.clamp(1, fullDuration).toInt();
     final elapsedBeforePause = fullDuration - safeRemaining;
 
     _commandStartedAt = DateTime.now().subtract(
