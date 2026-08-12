@@ -23,7 +23,7 @@ enum ClassicCommand {
 
 extension ClassicCommandUi on ClassicCommand {
   String get title => switch (this) {
-        ClassicCommand.tap => 'PRESS IT',
+        ClassicCommand.tap => 'TAP IT',
         ClassicCommand.doubleTap => 'DOUBLE TAP',
         ClassicCommand.hold => 'HOLD IT',
         ClassicCommand.swipeLeft => 'SWIPE LEFT',
@@ -75,7 +75,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
   static const _minimumSwipeDistance = 48.0;
   static const _pinchThreshold = 0.72;
   static const _spreadThreshold = 1.28;
-  static const _placeholderBestScore = 12850;
+  static const _placeholderBestScore = 42;
 
   late final ReactGame _game;
   final Random _random = Random();
@@ -90,10 +90,10 @@ class _ClassicScreenState extends State<ClassicScreen> {
   int _bestCombo = 0;
   int _reactions = 0;
   int _totalResponseMs = 0;
+  int _lives = 3;
   bool _acceptingInput = true;
   bool _finished = false;
   String? _feedback;
-  int? _feedbackPoints;
 
   Offset _dragDelta = Offset.zero;
   bool _multiTouchSeen = false;
@@ -119,18 +119,17 @@ class _ClassicScreenState extends State<ClassicScreen> {
   void _startCommand() {
     _timer?.cancel();
     _nextCommandTimer?.cancel();
+    if (!mounted || _finished) return;
 
     final next =
         ClassicCommand.values[_random.nextInt(ClassicCommand.values.length)];
 
-    if (!mounted) return;
     setState(() {
       _command = next;
       _commandStartedAt = DateTime.now();
       _timeRemaining = 1;
       _acceptingInput = true;
       _feedback = null;
-      _feedbackPoints = null;
       _dragDelta = Offset.zero;
       _multiTouchSeen = false;
       _scaleResolved = false;
@@ -150,7 +149,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
             feedbackOverride: 'FROZEN',
           );
         } else {
-          _failRun();
+          _loseLife();
         }
         return;
       }
@@ -162,7 +161,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
   void _handleGesture(ClassicCommand performed) {
     if (!_acceptingInput || _finished) return;
     if (performed != _command) {
-      _failRun();
+      _loseLife();
       return;
     }
     _completeCommand();
@@ -183,7 +182,6 @@ class _ClassicScreenState extends State<ClassicScreen> {
       _bestCombo = max(_bestCombo, newCombo);
       _reactions += 1;
       _totalResponseMs += actualResponseMs;
-      _feedbackPoints = 1;
       _feedback = feedbackOverride ??
           (actualResponseMs <= 750
               ? 'PERFECT'
@@ -191,6 +189,32 @@ class _ClassicScreenState extends State<ClassicScreen> {
                   ? 'GREAT'
                   : 'GOOD');
     });
+
+    _nextCommandTimer = Timer(
+      const Duration(milliseconds: 500),
+      _startCommand,
+    );
+  }
+
+  void _loseLife() {
+    if (!_acceptingInput || _finished) return;
+    _timer?.cancel();
+
+    final remaining = _lives - 1;
+    setState(() {
+      _acceptingInput = false;
+      _lives = remaining;
+      _combo = 0;
+      _feedback = 'MISS';
+    });
+
+    if (remaining <= 0) {
+      _nextCommandTimer = Timer(
+        const Duration(milliseconds: 420),
+        _finishRun,
+      );
+      return;
+    }
 
     _nextCommandTimer = Timer(
       const Duration(milliseconds: 520),
@@ -242,16 +266,13 @@ class _ClassicScreenState extends State<ClassicScreen> {
     _handleGesture(performed);
   }
 
-  void _failRun() {
-    if (_finished) return;
+  void _finishRun() {
+    if (_finished || !mounted) return;
     _finished = true;
     _acceptingInput = false;
     _timer?.cancel();
     _nextCommandTimer?.cancel();
-    _openResults();
-  }
 
-  void _openResults() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => ResultsScreen(
@@ -288,6 +309,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
                       _GameplayHeader(
                         score: _score,
                         combo: _combo,
+                        lives: _lives,
                         onClose: () => Navigator.of(context).pop(),
                       ),
                       SizedBox(height: compact ? 10 : 16),
@@ -312,15 +334,24 @@ class _ClassicScreenState extends State<ClassicScreen> {
                         ),
                       ),
                       AnimatedSize(
-                        duration: const Duration(milliseconds: 160),
+                        duration: const Duration(milliseconds: 150),
                         child: _feedback == null
                             ? const SizedBox.shrink()
                             : Padding(
-                                padding: const EdgeInsets.only(top: 4, bottom: 8),
-                                child: _SuccessFeedback(
-                                  key: ValueKey('$_feedback-$_reactions'),
-                                  feedback: _feedback!,
-                                  points: _feedbackPoints!,
+                                padding:
+                                    const EdgeInsets.only(top: 4, bottom: 8),
+                                child: Text(
+                                  _feedback == 'MISS'
+                                      ? 'MISS  •  $_lives LIVES LEFT'
+                                      : '+1  $_feedback',
+                                  style: TextStyle(
+                                    color: _feedback == 'MISS'
+                                        ? ReactColors.coral
+                                        : ReactColors.electricBlueBright,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 2.2,
+                                  ),
                                 ),
                               ),
                       ),
@@ -345,11 +376,13 @@ class _GameplayHeader extends StatelessWidget {
   const _GameplayHeader({
     required this.score,
     required this.combo,
+    required this.lives,
     required this.onClose,
   });
 
   final int score;
   final int combo;
+  final int lives;
   final VoidCallback onClose;
 
   @override
@@ -368,7 +401,15 @@ class _GameplayHeader extends StatelessWidget {
               icon: const Icon(Icons.pause_rounded),
             ),
             const Spacer(),
-            const _ReactWordmark(),
+            const Text(
+              'RE△CT',
+              style: TextStyle(
+                color: ReactColors.textPrimary,
+                fontSize: 25,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2.5,
+              ),
+            ),
             const Spacer(),
             const SizedBox(width: 46),
           ],
@@ -392,51 +433,15 @@ class _GameplayHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            const Expanded(
+            Expanded(
               child: _HudCard(
-                label: 'MODE',
-                value: 'CLASSIC',
-                color: ReactColors.electricBlueBright,
+                label: 'LIVES',
+                value: List.filled(lives, '♥').join(' '),
+                color: ReactColors.coral,
                 compactValue: true,
               ),
             ),
           ],
-        ),
-      ],
-    );
-  }
-}
-
-class _ReactWordmark extends StatelessWidget {
-  const _ReactWordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'RE',
-          style: TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 25,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 2,
-          ),
-        ),
-        Icon(
-          Icons.change_history_rounded,
-          color: ReactColors.electricBlueBright,
-          size: 25,
-        ),
-        Text(
-          'CT',
-          style: TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 25,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 2,
-          ),
         ),
       ],
     );
@@ -485,7 +490,6 @@ class _HudCard extends StatelessWidget {
                 color: color,
                 fontSize: compactValue ? 15 : 23,
                 fontWeight: FontWeight.w900,
-                letterSpacing: compactValue ? .8 : 0,
               ),
             ),
           ),
@@ -527,7 +531,10 @@ class _CommandArena extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF050A13),
-              border: Border.all(color: const Color(0xFF153B65), width: 1.5),
+              border: Border.all(
+                color: const Color(0xFF153B65),
+                width: 1.5,
+              ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -539,12 +546,18 @@ class _CommandArena extends StatelessWidget {
                     color: ReactColors.textPrimary,
                     fontSize: 31,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: .3,
                     height: 1,
                   ),
                 ),
                 const SizedBox(height: 18),
-                _CommandGraphic(command: command),
+                Icon(
+                  command.icon,
+                  color: ReactColors.electricBlueBright,
+                  size: command == ClassicCommand.pinch ||
+                          command == ClassicCommand.spread
+                      ? 88
+                      : 96,
+                ),
                 const SizedBox(height: 15),
                 Text(
                   command.hint,
@@ -553,7 +566,7 @@ class _CommandArena extends StatelessWidget {
                     color: ReactColors.textSecondary,
                     fontSize: 8,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 1.25,
+                    letterSpacing: 1.2,
                   ),
                 ),
               ],
@@ -567,7 +580,10 @@ class _CommandArena extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: const Color(0xFF07111D),
-                border: Border.all(color: const Color(0xFF31577E), width: 2),
+                border: Border.all(
+                  color: const Color(0xFF31577E),
+                  width: 2,
+                ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -590,7 +606,6 @@ class _CommandArena extends StatelessWidget {
                       color: ReactColors.textSecondary,
                       fontSize: 8,
                       fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
                     ),
                   ),
                 ],
@@ -598,44 +613,6 @@ class _CommandArena extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CommandGraphic extends StatelessWidget {
-  const _CommandGraphic({required this.command});
-
-  final ClassicCommand command;
-
-  @override
-  Widget build(BuildContext context) {
-    if (command == ClassicCommand.tap) {
-      return Container(
-        width: 116,
-        height: 116,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF27D9FF), Color(0xFF126CFF)],
-          ),
-          border: Border.all(color: const Color(0xFFB5F6FF), width: 2.5),
-        ),
-      );
-    }
-
-    return SizedBox(
-      width: 120,
-      height: 110,
-      child: Icon(
-        command.icon,
-        color: ReactColors.electricBlueBright,
-        size: command == ClassicCommand.pinch ||
-                command == ClassicCommand.spread
-            ? 88
-            : 96,
       ),
     );
   }
@@ -654,25 +631,24 @@ class _SegmentedRingPainter extends CustomPainter {
     final base = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 9
-      ..strokeCap = StrokeCap.round
       ..color = const Color(0xFF122038);
     canvas.drawCircle(center, radius, base);
 
     const gap = .12;
     const segmentSweep = (pi * 2 - gap * 3) / 3;
-    final segments = <Color>[
+    final colors = <Color>[
       ReactColors.electricBlueBright,
       ReactColors.lime,
       ReactColors.coral,
     ];
 
     var start = pi * .72;
-    for (var i = 0; i < 3; i++) {
+    for (final color in colors) {
       final paint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 8
         ..strokeCap = StrokeCap.round
-        ..color = segments[i].withValues(alpha: .72);
+        ..color = color.withValues(alpha: .72);
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
         start,
@@ -684,38 +660,36 @@ class _SegmentedRingPainter extends CustomPainter {
     }
 
     final timerRadius = radius + 14;
-    final timerTrack = Paint()
+    final track = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12
-      ..strokeCap = StrokeCap.round
       ..color = const Color(0xFF10243D);
-    canvas.drawCircle(center, timerRadius, timerTrack);
+    canvas.drawCircle(center, timerRadius, track);
 
-    final timerPaint = Paint()
+    final timer = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12
       ..strokeCap = StrokeCap.round
       ..color = progress < .18
           ? ReactColors.coral
           : ReactColors.electricBlueBright;
-
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: timerRadius),
       -pi / 2,
       pi * 2 * progress,
       false,
-      timerPaint,
+      timer,
     );
 
     final tickPaint = Paint()..strokeWidth = 1.4;
     for (var i = 0; i < 64; i++) {
       final angle = i * pi * 2 / 64;
-      final c = i < 22
+      final color = i < 22
           ? ReactColors.electricBlueBright
           : i < 43
               ? ReactColors.lime
               : ReactColors.coral;
-      tickPaint.color = c.withValues(alpha: .5);
+      tickPaint.color = color.withValues(alpha: .5);
       final p1 = center + Offset(cos(angle), sin(angle)) * (radius + 30);
       final p2 = center + Offset(cos(angle), sin(angle)) * (radius + 34);
       canvas.drawLine(p1, p2, tickPaint);
@@ -725,45 +699,6 @@ class _SegmentedRingPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _SegmentedRingPainter oldDelegate) {
     return oldDelegate.progress != progress;
-  }
-}
-
-class _SuccessFeedback extends StatelessWidget {
-  const _SuccessFeedback({
-    required this.feedback,
-    required this.points,
-    super.key,
-  });
-
-  final String feedback;
-  final int points;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          '+$points',
-          style: const TextStyle(
-            color: ReactColors.lime,
-            fontSize: 24,
-            fontWeight: FontWeight.w900,
-            height: 1,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          feedback,
-          style: const TextStyle(
-            color: Color(0xFF2DE7F1),
-            fontSize: 15,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 3.3,
-          ),
-        ),
-      ],
-    );
   }
 }
 
@@ -810,7 +745,7 @@ class _PacePanel extends StatelessWidget {
           const _MetricDivider(),
           _PaceMetric(
             label: 'YOUR BEST RESULT',
-            value: _formatScore(bestScore),
+            value: '$bestScore',
             highlight: true,
           ),
           const _MetricDivider(),
@@ -824,17 +759,6 @@ class _PacePanel extends StatelessWidget {
       ),
     );
   }
-
-  static String _formatScore(int value) {
-    final text = value.toString();
-    if (text.length <= 3) return text;
-    final buffer = StringBuffer();
-    for (var i = 0; i < text.length; i++) {
-      if (i > 0 && (text.length - i) % 3 == 0) buffer.write(',');
-      buffer.write(text[i]);
-    }
-    return buffer.toString();
-  }
 }
 
 class _MetricDivider extends StatelessWidget {
@@ -845,7 +769,7 @@ class _MetricDivider extends StatelessWidget {
     return Container(
       width: 1,
       height: 32,
-      margin: const EdgeInsets.symmetric(horizontal: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 9),
       color: const Color(0xFF1B304A),
     );
   }
@@ -877,7 +801,7 @@ class _PaceMetric extends StatelessWidget {
                 color: ReactColors.textSecondary,
                 fontSize: 6.5,
                 fontWeight: FontWeight.w800,
-                letterSpacing: .7,
+                letterSpacing: .6,
               ),
             ),
           ),
@@ -887,7 +811,9 @@ class _PaceMetric extends StatelessWidget {
             child: Text(
               value,
               style: TextStyle(
-                color: highlight ? ReactColors.lime : ReactColors.textPrimary,
+                color: highlight
+                    ? ReactColors.lime
+                    : ReactColors.textPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.w900,
               ),
