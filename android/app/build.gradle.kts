@@ -23,9 +23,8 @@ android {
 
     buildTypes {
         release {
-            // A real release keystore will be configured before store distribution.
-            // Do not commit keystore secrets to the repository.
-            signingConfig = signingConfigs.getByName("debug")
+            // Intentionally unsigned until the real Studio XIII release
+            // keystore is configured. Never fall back to the debug key.
         }
     }
 }
