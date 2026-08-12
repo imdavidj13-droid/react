@@ -6,6 +6,10 @@ class LocalPlayerStats {
   LocalPlayerStats._();
 
   static String _bestKey(ReactGameMode mode) => 'best_${mode.name}';
+  static String _modeRunsKey(ReactGameMode mode) => 'mode_runs_${mode.name}';
+  static String _modeCommandsKey(ReactGameMode mode) => 'mode_commands_${mode.name}';
+  static String _modeResponseMsKey(ReactGameMode mode) => 'mode_response_ms_${mode.name}';
+
   static const _runsKey = 'runs_played';
   static const _dailyLastPlayedKey = 'daily_last_played';
   static const _dailyStreakKey = 'daily_streak';
@@ -19,6 +23,34 @@ class LocalPlayerStats {
   static Future<int> runsPlayed() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_runsKey) ?? 0;
+  }
+
+  static Future<int> runsFor(ReactGameMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_modeRunsKey(mode)) ?? 0;
+  }
+
+  static Future<int> successfulCommandsFor(ReactGameMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_modeCommandsKey(mode)) ?? 0;
+  }
+
+  static Future<double> averageReactionSecondsFor(ReactGameMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    final commands = prefs.getInt(_modeCommandsKey(mode)) ?? 0;
+    if (commands <= 0) return 0;
+
+    final totalResponseMs = prefs.getInt(_modeResponseMsKey(mode)) ?? 0;
+    return (totalResponseMs / commands) / 1000;
+  }
+
+  static Future<int> totalSuccessfulCommands() async {
+    final prefs = await SharedPreferences.getInstance();
+    var total = 0;
+    for (final mode in ReactGameMode.values) {
+      total += prefs.getInt(_modeCommandsKey(mode)) ?? 0;
+    }
+    return total;
   }
 
   static Future<int> dailyStreak() async {
@@ -49,6 +81,26 @@ class LocalPlayerStats {
     }
 
     await prefs.setInt(_runsKey, (prefs.getInt(_runsKey) ?? 0) + 1);
+    await prefs.setInt(
+      _modeRunsKey(result.mode),
+      (prefs.getInt(_modeRunsKey(result.mode)) ?? 0) + 1,
+    );
+
+    if (result.successfulCommands > 0) {
+      final previousCommands = prefs.getInt(_modeCommandsKey(result.mode)) ?? 0;
+      final previousResponseMs = prefs.getInt(_modeResponseMsKey(result.mode)) ?? 0;
+      final runResponseMs =
+          (result.averageTimeSeconds * 1000 * result.successfulCommands).round();
+
+      await prefs.setInt(
+        _modeCommandsKey(result.mode),
+        previousCommands + result.successfulCommands,
+      );
+      await prefs.setInt(
+        _modeResponseMsKey(result.mode),
+        previousResponseMs + runResponseMs,
+      );
+    }
 
     if (result.mode == ReactGameMode.daily) {
       await _recordDaily(prefs);
@@ -62,6 +114,9 @@ class LocalPlayerStats {
 
     for (final mode in ReactGameMode.values) {
       await prefs.remove(_bestKey(mode));
+      await prefs.remove(_modeRunsKey(mode));
+      await prefs.remove(_modeCommandsKey(mode));
+      await prefs.remove(_modeResponseMsKey(mode));
     }
 
     await prefs.remove(_runsKey);
