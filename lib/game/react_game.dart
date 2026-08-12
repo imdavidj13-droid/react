@@ -44,44 +44,110 @@ class ReactGame extends FlameGame {
 
   void triggerSuccess() {
     if (!effectsEnabled) return;
+
+    final particleBoost = isBlitz
+        ? 8
+        : isEndless
+            ? (intensity * 16).round()
+            : isPassIt
+                ? 4
+                : 0;
+    final speedBoost = isBlitz
+        ? 75.0
+        : isEndless
+            ? intensity * 80
+            : 0.0;
+
     add(
       _ReactionBurst(
         game: this,
         color: accent,
-        particleCount: 18 + (intensity * 12).round(),
-        speed: 105 + (intensity * 95),
+        particleCount: 18 + (intensity * 12).round() + particleBoost,
+        speed: 105 + (intensity * 95) + speedBoost,
       ),
     );
+
     add(
       _PulseRing(
         game: this,
         color: accent,
-        lifetime: .28,
+        lifetime: isBlitz ? .20 : .28,
         maxRadiusFactor: .30 + intensity * .10,
+        strokeWidth: isBlitz ? 4 : 3,
       ),
     );
+
+    if (isEndless && intensity >= .62) {
+      add(
+        _PulseRing(
+          game: this,
+          color: ReactColors.lime,
+          lifetime: .20,
+          maxRadiusFactor: .48,
+          strokeWidth: 2.2,
+        ),
+      );
+    }
+
+    if (isPassIt) {
+      add(
+        _PulseRing(
+          game: this,
+          color: ReactColors.electricBlueBright,
+          lifetime: .38,
+          maxRadiusFactor: .24,
+          strokeWidth: 2,
+        ),
+      );
+    }
   }
 
   void triggerMiss() {
     if (!effectsEnabled) return;
+
     add(
       _ReactionBurst(
         game: this,
         color: ReactColors.coral,
-        particleCount: 26,
-        speed: 165,
-        outwardBias: 1.2,
+        particleCount: isEndless ? 38 : 26,
+        speed: isEndless ? 215 : 165,
+        outwardBias: isEndless ? 1.4 : 1.2,
       ),
     );
+
     add(
       _PulseRing(
         game: this,
         color: ReactColors.coral,
-        lifetime: .42,
-        maxRadiusFactor: .43,
-        strokeWidth: 5,
+        lifetime: isBlitz ? .26 : .42,
+        maxRadiusFactor: isEndless ? .56 : .43,
+        strokeWidth: isEndless ? 6 : 5,
       ),
     );
+
+    if (isBlitz) {
+      add(
+        _PulseRing(
+          game: this,
+          color: ReactColors.coral,
+          lifetime: .18,
+          maxRadiusFactor: .60,
+          strokeWidth: 2.4,
+        ),
+      );
+    }
+
+    if (isPassIt) {
+      add(
+        _PulseRing(
+          game: this,
+          color: ReactColors.purple,
+          lifetime: .50,
+          maxRadiusFactor: .34,
+          strokeWidth: 2.4,
+        ),
+      );
+    }
   }
 
   Offset randomPoint() {
@@ -260,7 +326,8 @@ class _ModeSignatureField extends Component {
   void _renderBlitz(Canvas canvas) {
     final center = Offset(game.size.x / 2, game.size.y / 2);
     final radius = min(game.size.x, game.size.y) * .46;
-    final alpha = (.025 + game.effectiveIntensity * .035).clamp(0.0, .055).toDouble();
+    final alpha =
+        (.025 + game.effectiveIntensity * .035).clamp(0.0, .055).toDouble();
     final paint = Paint()
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 1.7
