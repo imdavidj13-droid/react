@@ -22,7 +22,7 @@ class _BlitzScreenState extends State<BlitzScreen> {
   }
 
   Future<void> _loadBest() async {
-    final best = await LocalPlayerStats.bestScore(ReactGameMode.blitz);
+    final best = await LocalPlayerStats.bestFor(ReactGameMode.blitz);
     if (mounted) setState(() => _best = best);
   }
 
