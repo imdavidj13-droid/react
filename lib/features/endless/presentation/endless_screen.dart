@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
-import '../../classic/presentation/classic_screen.dart';
+import '../../modes/presentation/mode_run_screen.dart';
 
 class EndlessScreen extends StatelessWidget {
   const EndlessScreen({super.key});
 
   void _start(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ClassicScreen()),
+      MaterialPageRoute<void>(
+        builder: (_) => const ModeRunScreen(mode: ReactRunMode.endless),
+      ),
     );
   }
 
@@ -32,7 +34,7 @@ class EndlessScreen extends StatelessWidget {
                     children: [
                       Expanded(child: _RuleCard(icon: Icons.all_inclusive_rounded, label: 'NO LIMIT', detail: 'Keep reacting')),
                       SizedBox(width: 9),
-                      Expanded(child: _RuleCard(icon: Icons.trending_up_rounded, label: 'RAMP', detail: 'Gets faster')),
+                      Expanded(child: _RuleCard(icon: Icons.trending_up_rounded, label: 'RAMP', detail: 'Gets faster every score')),
                       SizedBox(width: 9),
                       Expanded(child: _RuleCard(icon: Icons.close_rounded, label: '1 MISS', detail: 'Run ends')),
                     ],
@@ -41,12 +43,6 @@ class EndlessScreen extends StatelessWidget {
                   const _BestPanel(),
                   const SizedBox(height: 16),
                   _StartButton(onTap: () => _start(context)),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'FIRST PASS USES CLASSIC PACE • SPEED RAMP NEXT',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: ReactColors.textSecondary, fontSize: 7.5, fontWeight: FontWeight.w800, letterSpacing: .8),
-                  ),
                 ],
               ),
             );
@@ -117,7 +113,7 @@ class _Hero extends StatelessWidget {
                 SizedBox(height: 5),
                 Text('NO FINISH LINE.', style: TextStyle(color: ReactColors.lime, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
                 SizedBox(height: 9),
-                Text('Keep the streak alive for as long as you can. One mistake ends the run.', style: TextStyle(color: ReactColors.textSecondary, fontSize: 10.5, height: 1.35, fontWeight: FontWeight.w600)),
+                Text('The timer starts generous and tightens after every successful command. One mistake ends the run.', style: TextStyle(color: ReactColors.textSecondary, fontSize: 10.5, height: 1.35, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
