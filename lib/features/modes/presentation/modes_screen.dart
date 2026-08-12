@@ -7,6 +7,7 @@ import '../../daily/presentation/daily_screen.dart';
 import '../../endless/presentation/endless_screen.dart';
 import '../../leaderboard/presentation/leaderboard_screen.dart';
 import '../../pass_it/presentation/pass_it_screen.dart';
+import '../../settings/presentation/settings_screen.dart';
 
 class ModesScreen extends StatelessWidget {
   const ModesScreen({super.key});
@@ -93,6 +94,16 @@ class ModesScreen extends StatelessWidget {
                     badge: 'RECORDS',
                     onTap: () => open(const LeaderboardScreen()),
                   ),
+                  const SizedBox(height: 12),
+                  _ModePanel(
+                    title: 'PROFILE',
+                    subtitle: 'Local stats and game preferences.',
+                    detail: 'SOUND  •  VISUAL EFFECTS  •  RECORDS',
+                    icon: Icons.person_outline_rounded,
+                    color: ReactColors.electricBlueBright,
+                    badge: 'SETTINGS',
+                    onTap: () => open(const SettingsScreen()),
+                  ),
                 ],
               ),
             );
@@ -101,8 +112,6 @@ class ModesScreen extends StatelessWidget {
       ),
     );
   }
-
-  // Remaining visual widgets are unchanged below.
 }
 
 class _Header extends StatelessWidget {
