@@ -30,6 +30,11 @@ class LocalPlayerStats {
     return prefs.getString(_dailyLastPlayedKey) == _dateKey(DateTime.now());
   }
 
+  static Future<void> markDailyAttemptStarted() async {
+    final prefs = await SharedPreferences.getInstance();
+    await _recordDaily(prefs);
+  }
+
   static Future<void> recordResult(ReactRunResult result) async {
     final prefs = await SharedPreferences.getInstance();
 
