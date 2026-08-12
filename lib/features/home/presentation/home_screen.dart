@@ -9,6 +9,7 @@ import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import '../../leaderboard/presentation/leaderboard_screen.dart';
 import '../../modes/presentation/modes_screen.dart';
+import '../../settings/presentation/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -38,51 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(_reload);
   }
 
-  void _openProfile(_HomeStats stats) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF07111D),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 20, 22, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'LOCAL PROFILE',
-                style: TextStyle(
-                  color: ReactColors.textPrimary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: 5),
-              const Text(
-                'Scores are stored on this device while React is offline-only.',
-                style: TextStyle(
-                  color: ReactColors.textSecondary,
-                  fontSize: 10.5,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 18),
-              _ProfileMetric(label: 'RUNS PLAYED', value: '${stats.runsPlayed}'),
-              _ProfileMetric(label: 'CLASSIC BEST', value: '${stats.classicBest}'),
-              _ProfileMetric(label: 'BLITZ BEST', value: '${stats.blitzBest}'),
-              _ProfileMetric(label: 'ENDLESS BEST', value: '${stats.endlessBest}'),
-              _ProfileMetric(label: 'DAILY STREAK', value: '${stats.dailyStreak}'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,7 +60,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     constraints: BoxConstraints(minHeight: constraints.maxHeight - 30),
                     child: Column(
                       children: [
-                        _TopSection(onProfile: () => _openProfile(stats)),
+                        _TopSection(
+                          onProfile: () => _open(context, const SettingsScreen()),
+                        ),
                         SizedBox(height: compact ? 14 : 18),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -300,7 +258,11 @@ class _BestScore extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.workspace_premium_outlined, color: ReactColors.lime, size: 20),
+          const Icon(
+            Icons.workspace_premium_outlined,
+            color: ReactColors.lime,
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -365,7 +327,11 @@ class _Streak extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.local_fire_department_rounded, color: ReactColors.coral, size: 20),
+                const Icon(
+                  Icons.local_fire_department_rounded,
+                  color: ReactColors.coral,
+                  size: 20,
+                ),
                 Text(
                   '$days',
                   style: const TextStyle(
@@ -415,9 +381,16 @@ class _PlayDial extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: ReactColors.background,
-                border: Border.all(color: const Color(0xFF42D8FF), width: 2.5),
+                border: Border.all(
+                  color: const Color(0xFF42D8FF),
+                  width: 2.5,
+                ),
               ),
-              child: const Icon(Icons.play_arrow_rounded, color: Color(0xFF39D8FF), size: 74),
+              child: const Icon(
+                Icons.play_arrow_rounded,
+                color: Color(0xFF39D8FF),
+                size: 74,
+              ),
             ),
           ),
         ),
@@ -445,12 +418,28 @@ class _DialPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..strokeWidth = 4.5
         ..color = color;
-      canvas.drawArc(Rect.fromCircle(center: center, radius: r), start, sweep, false, line);
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: r),
+        start,
+        sweep,
+        false,
+        line,
+      );
     }
 
-    arc(math.pi * .72, math.pi * .54, ReactColors.electricBlueBright, radius * .83);
+    arc(
+      math.pi * .72,
+      math.pi * .54,
+      ReactColors.electricBlueBright,
+      radius * .83,
+    );
     arc(math.pi * 1.54, math.pi * .43, ReactColors.lime, radius * .76);
-    arc(math.pi * .08, math.pi * .42, const Color(0xFFFF6D8B), radius * .87);
+    arc(
+      math.pi * .08,
+      math.pi * .42,
+      const Color(0xFFFF6D8B),
+      radius * .87,
+    );
   }
 
   @override
@@ -500,7 +489,12 @@ class _PlayButton extends StatelessWidget {
 }
 
 class _NavTile extends StatelessWidget {
-  const _NavTile({required this.icon, required this.label, required this.color, required this.onTap});
+  const _NavTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;
@@ -537,41 +531,6 @@ class _NavTile extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ProfileMetric extends StatelessWidget {
-  const _ProfileMetric({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(
-              color: ReactColors.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
       ),
     );
   }
