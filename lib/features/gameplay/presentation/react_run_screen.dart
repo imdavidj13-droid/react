@@ -266,12 +266,12 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         return;
 
       case ReactGameMode.endless:
-        _misses += 1;
+        setState(() => _misses += 1);
         _finish(ReactRunOutcome.missedCommand);
         return;
 
       case ReactGameMode.daily:
-        _misses += 1;
+        setState(() => _misses += 1);
         _finish(ReactRunOutcome.missedCommand);
         return;
 
@@ -437,6 +437,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
                         child: Center(
                           child: ReactGestureSurface(
                             enabled: _acceptingInput && !_paused && !_handoff,
+                            expectedCommand: _command,
                             onCommand: _handleCommand,
                             child: _Arena(
                               size: arenaSize,
