@@ -56,17 +56,20 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     const SizedBox(height: 16),
                     _OutcomeCard(result: result, color: _modeColor),
                     SizedBox(height: compact ? 24 : 32),
-                    NeonButton(
-                      label: 'PLAY AGAIN',
-                      icon: Icons.replay_rounded,
-                      onPressed: () {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute<void>(
-                            builder: (_) => ReactRunScreen(mode: result.mode),
-                          ),
-                        );
-                      },
-                    ),
+                    if (result.mode == ReactGameMode.daily)
+                      const _DailyLockedButton()
+                    else
+                      NeonButton(
+                        label: 'PLAY AGAIN',
+                        icon: Icons.replay_rounded,
+                        onPressed: () {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute<void>(
+                              builder: (_) => ReactRunScreen(mode: result.mode),
+                            ),
+                          );
+                        },
+                      ),
                     const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
@@ -96,6 +99,39 @@ class _ResultsScreenState extends State<ResultsScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _DailyLockedButton extends StatelessWidget {
+  const _DailyLockedButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 58,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A1422),
+        borderRadius: BorderRadius.circular(29),
+        border: Border.all(color: ReactColors.lime.withValues(alpha: .42)),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.check_circle_outline_rounded, color: ReactColors.lime, size: 21),
+          SizedBox(width: 10),
+          Text(
+            'DAILY ATTEMPT COMPLETE',
+            style: TextStyle(
+              color: ReactColors.lime,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.1,
+            ),
+          ),
+        ],
       ),
     );
   }
