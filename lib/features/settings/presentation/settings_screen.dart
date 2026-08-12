@@ -1,0 +1,394 @@
+import 'package:flutter/material.dart';
+
+import '../../../core/settings/react_settings.dart';
+import '../../../core/theme/react_colors.dart';
+import '../../gameplay/data/local_player_stats.dart';
+import '../../gameplay/domain/react_run_result.dart';
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late bool _soundEnabled;
+  late bool _visualEffectsEnabled;
+  late Future<_ProfileStats> _stats;
+
+  @override
+  void initState() {
+    super.initState();
+    _soundEnabled = ReactSettings.soundEnabled;
+    _visualEffectsEnabled = ReactSettings.visualEffectsEnabled;
+    _stats = _ProfileStats.load();
+  }
+
+  Future<void> _setSound(bool value) async {
+    setState(() => _soundEnabled = value);
+    await ReactSettings.setSoundEnabled(value);
+  }
+
+  Future<void> _setVisualEffects(bool value) async {
+    setState(() => _visualEffectsEnabled = value);
+    await ReactSettings.setVisualEffectsEnabled(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: ReactColors.background,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Header(onBack: () => Navigator.of(context).pop()),
+              const SizedBox(height: 22),
+              const _ProfileHero(),
+              const SizedBox(height: 18),
+              FutureBuilder<_ProfileStats>(
+                future: _stats,
+                builder: (context, snapshot) {
+                  final stats = snapshot.data ?? const _ProfileStats();
+                  return _StatsPanel(stats: stats);
+                },
+              ),
+              const SizedBox(height: 18),
+              const _SectionLabel('GAME SETTINGS'),
+              const SizedBox(height: 10),
+              _SettingTile(
+                icon: Icons.volume_up_rounded,
+                title: 'SOUND',
+                subtitle: 'Gameplay and interface audio when sound assets are added.',
+                value: _soundEnabled,
+                color: ReactColors.electricBlueBright,
+                onChanged: _setSound,
+              ),
+              const SizedBox(height: 10),
+              _SettingTile(
+                icon: Icons.auto_awesome_rounded,
+                title: 'VISUAL EFFECTS',
+                subtitle: 'Flame particles, bursts and high-pressure edge effects.',
+                value: _visualEffectsEnabled,
+                color: ReactColors.purple,
+                onChanged: _setVisualEffects,
+              ),
+              const SizedBox(height: 18),
+              const _InfoCard(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileStats {
+  const _ProfileStats({
+    this.runs = 0,
+    this.classic = 0,
+    this.blitz = 0,
+    this.endless = 0,
+    this.daily = 0,
+    this.streak = 0,
+  });
+
+  final int runs;
+  final int classic;
+  final int blitz;
+  final int endless;
+  final int daily;
+  final int streak;
+
+  static Future<_ProfileStats> load() async {
+    final values = await Future.wait<int>([
+      LocalPlayerStats.runsPlayed(),
+      LocalPlayerStats.bestFor(ReactGameMode.classic),
+      LocalPlayerStats.bestFor(ReactGameMode.blitz),
+      LocalPlayerStats.bestFor(ReactGameMode.endless),
+      LocalPlayerStats.bestFor(ReactGameMode.daily),
+      LocalPlayerStats.dailyStreak(),
+    ]);
+    return _ProfileStats(
+      runs: values[0],
+      classic: values[1],
+      blitz: values[2],
+      endless: values[3],
+      daily: values[4],
+      streak: values[5],
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.onBack});
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        IconButton(
+          onPressed: onBack,
+          style: IconButton.styleFrom(
+            backgroundColor: const Color(0xFF07101E),
+            foregroundColor: ReactColors.textPrimary,
+            side: const BorderSide(color: Color(0xFF1E3552)),
+          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+        ),
+        const Spacer(),
+        const Text(
+          'PROFILE',
+          style: TextStyle(
+            color: ReactColors.textPrimary,
+            fontSize: 27,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.8,
+          ),
+        ),
+        const Spacer(),
+        const SizedBox(width: 40),
+      ],
+    );
+  }
+}
+
+class _ProfileHero extends StatelessWidget {
+  const _ProfileHero();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: ReactColors.electricBlueBright.withValues(alpha: .45)),
+      ),
+      child: const Row(
+        children: [
+          CircleAvatar(
+            radius: 34,
+            backgroundColor: Color(0xFF050A13),
+            child: Icon(Icons.person_rounded, color: ReactColors.electricBlueBright, size: 37),
+          ),
+          SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'LOCAL PLAYER',
+                  style: TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .8,
+                  ),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  'Your current records and preferences stay on this device.',
+                  style: TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 10,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatsPanel extends StatelessWidget {
+  const _StatsPanel({required this.stats});
+  final _ProfileStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFF263851)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: _Metric(label: 'RUNS', value: '${stats.runs}', color: ReactColors.textPrimary)),
+              Expanded(child: _Metric(label: 'CLASSIC', value: '${stats.classic}', color: ReactColors.electricBlueBright)),
+              Expanded(child: _Metric(label: 'BLITZ', value: '${stats.blitz}', color: ReactColors.coral)),
+            ],
+          ),
+          const Divider(color: Color(0xFF22364E), height: 26),
+          Row(
+            children: [
+              Expanded(child: _Metric(label: 'ENDLESS', value: '${stats.endless}', color: ReactColors.lime)),
+              Expanded(child: _Metric(label: 'DAILY', value: '${stats.daily}', color: ReactColors.purple)),
+              Expanded(child: _Metric(label: 'STREAK', value: '${stats.streak}', color: ReactColors.coral)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Metric extends StatelessWidget {
+  const _Metric({required this.label, required this.value, required this.color});
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(value, style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 7.5,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .8,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.3,
+          ),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(child: Divider(color: Color(0xFF263851))),
+      ],
+    );
+  }
+}
+
+class _SettingTile extends StatelessWidget {
+  const _SettingTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.color,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final Color color;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: .30)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 25),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 9,
+                    height: 1.3,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(value: value, onChanged: onChanged, activeThumbColor: color),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: const Color(0xFF09101C),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF24364E)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.info_outline_rounded, color: ReactColors.textSecondary, size: 22),
+          SizedBox(width: 11),
+          Expanded(
+            child: Text(
+              'OFFLINE BUILD • NO ACCOUNT OR CLOUD SYNC YET',
+              style: TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 8.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .8,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
