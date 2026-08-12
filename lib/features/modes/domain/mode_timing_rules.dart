@@ -13,6 +13,8 @@ class ModeTimingRules {
     this.missTimePenaltyMs = 0,
   });
 
+  static final Map<ModeTimingRules, int> _latestScores = {};
+
   final int startCommandMs;
   final int minimumCommandMs;
   final int commandSpeedStepMs;
@@ -27,12 +29,16 @@ class ModeTimingRules {
   final int? runDurationMs;
   final int missTimePenaltyMs;
 
-  // Compatibility for screens still being moved onto score-aware transition
-  // timing. This always returns the starting delay; use successDelayMsForScore
-  // for the audited ramp.
-  int get successDelayMs => startSuccessDelayMs;
+  // Compatibility bridge for the existing run screens. The command-duration
+  // lookup records the current score, allowing the existing successDelayMs
+  // call to use the same score-aware pace curve. Once every run screen calls
+  // successDelayMsForScore directly this bridge can be removed.
+  int get successDelayMs =>
+      successDelayMsForScore(_latestScores[this] ?? 0);
 
   int commandDurationMsForScore(int score) {
+    _latestScores[this] = score;
+
     if (commandSpeedStepMs <= 0 || commandSpeedStepEveryPoints <= 0) {
       return startCommandMs;
     }
