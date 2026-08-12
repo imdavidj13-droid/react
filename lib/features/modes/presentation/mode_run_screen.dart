@@ -8,6 +8,7 @@ import '../../../core/theme/react_colors.dart';
 import '../../../game/react_game.dart';
 import '../../classic/presentation/classic_screen.dart';
 import '../../results/presentation/results_screen.dart';
+import '../domain/mode_timing_rules.dart';
 
 enum ReactRunMode { blitz, endless, daily, passIt }
 
@@ -22,15 +23,15 @@ extension ReactRunModeUi on ReactRunMode {
   Color get color => switch (this) {
         ReactRunMode.blitz => ReactColors.coral,
         ReactRunMode.endless => ReactColors.lime,
-        ReactRunMode.daily => ReactColors.lime,
+        ReactRunMode.daily => ReactColors.electricBlueBright,
         ReactRunMode.passIt => ReactColors.purple,
       };
 
-  int get placeholderBest => switch (this) {
-        ReactRunMode.blitz => 34,
-        ReactRunMode.endless => 61,
-        ReactRunMode.daily => 18,
-        ReactRunMode.passIt => 27,
+  ModeTimingRules get timing => switch (this) {
+        ReactRunMode.blitz => ReactModeTiming.blitz,
+        ReactRunMode.endless => ReactModeTiming.endless,
+        ReactRunMode.daily => ReactModeTiming.daily,
+        ReactRunMode.passIt => ReactModeTiming.passIt,
       };
 }
 
@@ -49,14 +50,13 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
   static const _pinchThreshold = 0.72;
   static const _spreadThreshold = 1.28;
   static const _dailyTarget = 20;
-  static const _blitzMissPenaltyMs = 3000;
 
   late final ReactGame _game;
   late final Random _random;
 
   Timer? _commandTimer;
   Timer? _nextCommandTimer;
-  Timer? _blitzTimer;
+  Timer? _runTimer;
 
   ClassicCommand _command = ClassicCommand.tap;
   DateTime _commandStartedAt = DateTime.now();
@@ -66,7 +66,7 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
   int _bestCombo = 0;
   int _reactions = 0;
   int _totalResponseMs = 0;
-  int _blitzMsRemaining = 60000;
+  int _runMsRemaining = 0;
   int _misses = 0;
   bool _acceptingInput = true;
   bool _finished = false;
@@ -79,14 +79,8 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
   int _currentPlayer = 0;
   final List<int> _playerLives = [3, 3, 3];
 
-  Duration get _commandDuration => switch (widget.mode) {
-        ReactRunMode.blitz => const Duration(milliseconds: 1400),
-        ReactRunMode.endless => Duration(
-            milliseconds: max(850, 2400 - (_score * 70)),
-          ),
-        ReactRunMode.daily => const Duration(milliseconds: 1900),
-        ReactRunMode.passIt => const Duration(milliseconds: 1800),
-      };
+  ModeTimingRules get _timing => widget.mode.timing;
+  int get _commandDurationMs => _timing.commandDurationMsForScore(_score);
 
   double get _averageTimeSeconds =>
       _reactions == 0 ? 0 : (_totalResponseMs / _reactions) / 1000;
@@ -97,12 +91,14 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
   void initState() {
     super.initState();
     _game = ReactGame();
+
     final now = DateTime.now();
     final dailySeed = now.year * 10000 + now.month * 100 + now.day;
     _random = widget.mode == ReactRunMode.daily ? Random(dailySeed) : Random();
 
-    if (widget.mode == ReactRunMode.blitz) {
-      _startBlitzClock();
+    _runMsRemaining = _timing.runDurationMs ?? 0;
+    if (_timing.runDurationMs != null) {
+      _startRunClock();
     }
     _startCommand();
   }
@@ -111,17 +107,15 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
   void dispose() {
     _commandTimer?.cancel();
     _nextCommandTimer?.cancel();
-    _blitzTimer?.cancel();
+    _runTimer?.cancel();
     super.dispose();
   }
 
-  void _startBlitzClock() {
-    _blitzTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+  void _startRunClock() {
+    _runTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       if (!mounted || _finished) return;
-
-      final next = max(0, _blitzMsRemaining - 100);
-      setState(() => _blitzMsRemaining = next);
-
+      final next = max(0, _runMsRemaining - 100);
+      setState(() => _runMsRemaining = next);
       if (next <= 0) {
         _finishRun(
           failedCommand: 'TIME UP',
@@ -172,12 +166,12 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
 
       final elapsed =
           DateTime.now().difference(_commandStartedAt).inMilliseconds;
-      final progress = 1 - (elapsed / _commandDuration.inMilliseconds);
+      final progress = 1 - (elapsed / _commandDurationMs);
 
       if (progress <= 0) {
         if (_command == ClassicCommand.freeze) {
           _completeCommand(
-            responseMs: _commandDuration.inMilliseconds,
+            responseMs: _commandDurationMs,
             feedbackOverride: 'FROZEN',
           );
         } else {
@@ -192,12 +186,10 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
 
   void _handleGesture(ClassicCommand performed) {
     if (!_acceptingInput || _finished) return;
-
     if (performed != _command) {
       _handleMiss();
       return;
     }
-
     _completeCommand();
   }
 
@@ -229,7 +221,7 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
     }
 
     _nextCommandTimer = Timer(
-      Duration(milliseconds: widget.mode == ReactRunMode.blitz ? 240 : 430),
+      Duration(milliseconds: _timing.successDelayMs),
       _startCommand,
     );
   }
@@ -240,34 +232,34 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
 
     switch (widget.mode) {
       case ReactRunMode.blitz:
-        final penalizedTime = max(0, _blitzMsRemaining - _blitzMissPenaltyMs);
+        final penalized = max(0, _runMsRemaining - _timing.missTimePenaltyMs);
         setState(() {
           _acceptingInput = false;
           _combo = 0;
           _misses += 1;
-          _blitzMsRemaining = penalizedTime;
-          _feedback = 'MISS  -3 SEC';
+          _runMsRemaining = penalized;
+          _feedback = 'MISS  -${_timing.missTimePenaltyMs ~/ 1000} SEC';
         });
-
-        if (penalizedTime <= 0) {
+        if (penalized <= 0) {
           _finishRun(
             failedCommand: 'TIME UP',
             failedIcon: Icons.timer_rounded,
           );
           return;
         }
-
         _nextCommandTimer = Timer(
-          const Duration(milliseconds: 420),
+          Duration(milliseconds: _timing.missDelayMs),
           _startCommand,
         );
         return;
 
       case ReactRunMode.endless:
+        _misses += 1;
         _finishRun();
         return;
 
       case ReactRunMode.daily:
+        _misses += 1;
         _finishRun();
         return;
 
@@ -282,7 +274,7 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
         });
         _advancePlayer();
         _nextCommandTimer = Timer(
-          const Duration(milliseconds: 650),
+          Duration(milliseconds: _timing.missDelayMs),
           _startCommand,
         );
         return;
@@ -296,7 +288,6 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
     do {
       candidate = (candidate + 1) % _playerLives.length;
     } while (_playerLives[candidate] <= 0);
-
     _currentPlayer = candidate;
   }
 
@@ -335,8 +326,8 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
     final dx = _dragDelta.dx;
     final dy = _dragDelta.dy;
     final horizontal = dx.abs() >= dy.abs();
-    final primaryDistance = horizontal ? dx.abs() : dy.abs();
-    if (primaryDistance < _minimumSwipeDistance) return;
+    final distance = horizontal ? dx.abs() : dy.abs();
+    if (distance < _minimumSwipeDistance) return;
 
     final performed = horizontal
         ? (dx < 0 ? ClassicCommand.swipeLeft : ClassicCommand.swipeRight)
@@ -351,7 +342,7 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
     _acceptingInput = false;
     _commandTimer?.cancel();
     _nextCommandTimer?.cancel();
-    _blitzTimer?.cancel();
+    _runTimer?.cancel();
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
@@ -375,9 +366,8 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
       };
 
   String get _statusValue => switch (widget.mode) {
-        ReactRunMode.blitz => '${(_blitzMsRemaining / 1000).ceil()}s',
-        ReactRunMode.endless =>
-          '${(_commandDuration.inMilliseconds / 1000).toStringAsFixed(1)}s',
+        ReactRunMode.blitz => '${(_runMsRemaining / 1000).ceil()}s',
+        ReactRunMode.endless => '${(_commandDurationMs / 1000).toStringAsFixed(1)}s',
         ReactRunMode.daily => '$_score/$_dailyTarget',
         ReactRunMode.passIt =>
           'P${_currentPlayer + 1} ${List.filled(_playerLives[_currentPlayer], '♥').join()}',
@@ -427,31 +417,31 @@ class _ModeRunScreenState extends State<ModeRunScreen> {
                               size: arenaSize,
                               command: _command,
                               progress: _timeRemaining,
-                              commandDuration: _commandDuration,
+                              commandDurationMs: _commandDurationMs,
                               accent: widget.mode.color,
                             ),
                           ),
                         ),
                       ),
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 150),
-                        child: _feedback == null
-                            ? const SizedBox.shrink()
-                            : Padding(
-                                padding:
-                                    const EdgeInsets.only(top: 4, bottom: 8),
-                                child: Text(
-                                  _feedback!,
-                                  style: TextStyle(
-                                    color: _feedback!.startsWith('MISS')
-                                        ? ReactColors.coral
-                                        : ReactColors.electricBlueBright,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 2.2,
-                                  ),
-                                ),
+                      SizedBox(
+                        height: 44,
+                        child: Center(
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 120),
+                            opacity: _feedback == null ? 0 : 1,
+                            child: Text(
+                              _feedback ?? 'READY',
+                              style: TextStyle(
+                                color: _feedback?.startsWith('MISS') == true
+                                    ? ReactColors.coral
+                                    : ReactColors.electricBlueBright,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 2.2,
                               ),
+                            ),
+                          ),
+                        ),
                       ),
                       _BottomPanel(
                         mode: widget.mode,
@@ -520,21 +510,9 @@ class _RunHeader extends StatelessWidget {
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(
-              child: _HudCard(
-                label: 'SCORE',
-                value: '$score',
-                color: ReactColors.lime,
-              ),
-            ),
+            Expanded(child: _HudCard(label: 'SCORE', value: '$score', color: ReactColors.lime)),
             const SizedBox(width: 10),
-            Expanded(
-              child: _HudCard(
-                label: 'COMBO',
-                value: 'x$combo',
-                color: ReactColors.purple,
-              ),
-            ),
+            Expanded(child: _HudCard(label: 'COMBO', value: 'x$combo', color: ReactColors.purple)),
             const SizedBox(width: 10),
             Expanded(
               child: _HudCard(
@@ -607,20 +585,19 @@ class _RunArena extends StatelessWidget {
     required this.size,
     required this.command,
     required this.progress,
-    required this.commandDuration,
+    required this.commandDurationMs,
     required this.accent,
   });
 
   final double size;
   final ClassicCommand command;
   final double progress;
-  final Duration commandDuration;
+  final int commandDurationMs;
   final Color accent;
 
   @override
   Widget build(BuildContext context) {
-    final seconds =
-        (commandDuration.inMilliseconds * progress / 1000).clamp(0, 9.9);
+    final seconds = (commandDurationMs * progress / 1000).clamp(0, 9.9);
 
     return SizedBox.square(
       dimension: size,
@@ -637,10 +614,7 @@ class _RunArena extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF050A13),
-              border: Border.all(
-                color: const Color(0xFF153B65),
-                width: 1.5,
-              ),
+              border: Border.all(color: const Color(0xFF153B65), width: 1.5),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -659,10 +633,7 @@ class _RunArena extends StatelessWidget {
                 Icon(
                   command.icon,
                   color: ReactColors.electricBlueBright,
-                  size: command == ClassicCommand.pinch ||
-                          command == ClassicCommand.spread
-                      ? 88
-                      : 96,
+                  size: command == ClassicCommand.pinch || command == ClassicCommand.spread ? 88 : 96,
                 ),
                 const SizedBox(height: 15),
                 Text(
@@ -686,10 +657,7 @@ class _RunArena extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: const Color(0xFF07111D),
-                border: Border.all(
-                  color: const Color(0xFF31577E),
-                  width: 2,
-                ),
+                border: Border.all(color: const Color(0xFF31577E), width: 2),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -745,29 +713,11 @@ class _ModeRingPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     deco.color = ReactColors.electricBlueBright.withValues(alpha: .7);
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      .8,
-      1.45,
-      false,
-      deco,
-    );
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), .8, 1.45, false, deco);
     deco.color = ReactColors.lime.withValues(alpha: .7);
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      3.0,
-      1.25,
-      false,
-      deco,
-    );
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), 3.0, 1.25, false, deco);
     deco.color = ReactColors.coral.withValues(alpha: .7);
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      4.75,
-      1.1,
-      false,
-      deco,
-    );
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), 4.75, 1.1, false, deco);
 
     final timerRadius = radius + 14;
     final track = Paint()
@@ -838,9 +788,7 @@ class _BottomPanel extends StatelessWidget {
           const _Divider(),
           _BottomMetric(
             label: 'AVG TIME',
-            value: averageTimeSeconds == 0
-                ? '--'
-                : '${averageTimeSeconds.toStringAsFixed(2)}s',
+            value: averageTimeSeconds == 0 ? '--' : '${averageTimeSeconds.toStringAsFixed(2)}s',
           ),
         ],
       ),
