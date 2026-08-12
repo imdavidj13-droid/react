@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
-import '../../gameplay/presentation/react_run_screen.dart';
+import '../../gameplay/presentation/react_run_launch_screen.dart';
 
 class EndlessScreen extends StatefulWidget {
   const EndlessScreen({super.key});
@@ -29,7 +29,7 @@ class _EndlessScreenState extends State<EndlessScreen> {
   void _start(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => const ReactRunScreen(mode: ReactGameMode.endless),
+        builder: (_) => const ReactRunLaunchScreen(mode: ReactGameMode.endless),
       ),
     );
   }
