@@ -7,7 +7,6 @@ import '../../daily/presentation/daily_screen.dart';
 import '../../endless/presentation/endless_screen.dart';
 import '../../leaderboard/presentation/leaderboard_screen.dart';
 import '../../pass_it/presentation/pass_it_screen.dart';
-import '../../training/presentation/training_screen.dart';
 
 class ModesScreen extends StatelessWidget {
   const ModesScreen({super.key});
@@ -83,16 +82,6 @@ class ModesScreen extends StatelessWidget {
                     color: ReactColors.lime,
                     badge: 'DAILY RUN',
                     onTap: () => open(const DailyScreen()),
-                  ),
-                  const SizedBox(height: 12),
-                  _ModePanel(
-                    title: 'TRAINING',
-                    subtitle: 'Practise each command individually.',
-                    detail: 'LEARN  •  REPEAT  •  MASTER',
-                    icon: Icons.school_outlined,
-                    color: ReactColors.electricBlue,
-                    badge: 'PRACTICE',
-                    onTap: () => open(const TrainingScreen()),
                   ),
                   const SizedBox(height: 12),
                   _ModePanel(
