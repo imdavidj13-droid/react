@@ -57,7 +57,7 @@ class ModesScreen extends StatelessWidget {
                   _ModePanel(
                     title: 'ENDLESS',
                     subtitle: 'Keep going until you miss.',
-                    detail: 'NO LIMIT  •  BUILD YOUR STREAK',
+                    detail: 'NO LIMIT  •  INTENSITY RAMPS FAST',
                     icon: Icons.all_inclusive_rounded,
                     color: ReactColors.lime,
                     badge: 'NO LIMIT',
@@ -67,7 +67,7 @@ class ModesScreen extends StatelessWidget {
                   _ModePanel(
                     title: 'PASS IT',
                     subtitle: 'Local multiplayer reaction rounds.',
-                    detail: '2+ PLAYERS  •  ONE DEVICE',
+                    detail: '3 PLAYERS  •  ONE DEVICE',
                     icon: Icons.groups_2_outlined,
                     color: ReactColors.purple,
                     badge: 'MULTIPLAYER',
@@ -76,8 +76,8 @@ class ModesScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   _ModePanel(
                     title: 'DAILY',
-                    subtitle: 'One shared challenge each day.',
-                    detail: '1 ATTEMPT  •  GLOBAL SCORE',
+                    subtitle: 'One deterministic challenge each day.',
+                    detail: '1 LOCAL ATTEMPT  •  20 COMMANDS',
                     icon: Icons.calendar_month_rounded,
                     color: ReactColors.lime,
                     badge: 'DAILY RUN',
@@ -85,12 +85,12 @@ class ModesScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   _ModePanel(
-                    title: 'LEADERBOARD',
-                    subtitle: 'Compare Classic scores and rank.',
-                    detail: 'GLOBAL RANK  •  SEASON SCORE',
+                    title: 'SCORES',
+                    subtitle: 'See your best runs on this device.',
+                    detail: 'LOCAL RECORDS  •  EVERY MODE',
                     icon: Icons.leaderboard_rounded,
                     color: ReactColors.purple,
-                    badge: 'RANKINGS',
+                    badge: 'RECORDS',
                     onTap: () => open(const LeaderboardScreen()),
                   ),
                 ],
@@ -101,6 +101,8 @@ class ModesScreen extends StatelessWidget {
       ),
     );
   }
+
+  // Remaining visual widgets are unchanged below.
 }
 
 class _Header extends StatelessWidget {
@@ -380,10 +382,7 @@ class _ModeEmblem extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF050A13),
-              border: Border.all(
-                color: color.withValues(alpha: .85),
-                width: 2,
-              ),
+              border: Border.all(color: color.withValues(alpha: .85), width: 2),
             ),
           ),
           Container(
