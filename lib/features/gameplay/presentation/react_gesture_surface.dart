@@ -22,13 +22,13 @@ class ReactGestureSurface extends StatefulWidget {
 class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   static const _minimumSwipeDistance = 48.0;
 
-  // Pinch/spread now uses the actual distance between two pointers rather than
-  // GestureDetector's scale ratio. Both an absolute and proportional movement
-  // are required, which keeps it responsive without making small finger jitter
-  // count as a completed command.
+  // Require both a proportional and absolute distance change. This makes
+  // pinch/spread much easier to trigger deliberately than the old 0.72/1.28
+  // ScaleUpdateDetails thresholds, without accepting normal finger jitter.
   static const _minimumPinchSpreadDelta = 22.0;
   static const _pinchRatio = 0.84;
   static const _spreadRatio = 1.16;
+  static const _multiTouchTapSuppression = Duration(milliseconds: 300);
 
   final Map<int, Offset> _pointers = <int, Offset>{};
 
@@ -36,9 +36,17 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   double? _twoFingerStartDistance;
   bool _multiTouchSeen = false;
   bool _multiTouchResolved = false;
+  DateTime _suppressTapUntil = DateTime.fromMillisecondsSinceEpoch(0);
+
+  bool get _tapSuppressed => DateTime.now().isBefore(_suppressTapUntil);
 
   void _emit(ReactCommand command) {
-    if (!widget.enabled || _multiTouchSeen || _multiTouchResolved) return;
+    if (!widget.enabled ||
+        _multiTouchSeen ||
+        _multiTouchResolved ||
+        _tapSuppressed) {
+      return;
+    }
     widget.onCommand(command);
   }
 
@@ -49,6 +57,7 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
     if (_pointers.length >= 2) {
       _multiTouchSeen = true;
       _multiTouchResolved = false;
+      _suppressTapUntil = DateTime.now().add(_multiTouchTapSuppression);
       _twoFingerStartDistance = _currentTwoFingerDistance();
     }
   }
@@ -72,12 +81,14 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
 
     if (distanceDelta <= -_minimumPinchSpreadDelta && ratio <= _pinchRatio) {
       _multiTouchResolved = true;
+      _suppressTapUntil = DateTime.now().add(_multiTouchTapSuppression);
       widget.onCommand(ReactCommand.pinch);
       return;
     }
 
     if (distanceDelta >= _minimumPinchSpreadDelta && ratio >= _spreadRatio) {
       _multiTouchResolved = true;
+      _suppressTapUntil = DateTime.now().add(_multiTouchTapSuppression);
       widget.onCommand(ReactCommand.spread);
     }
   }
@@ -88,15 +99,10 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       _twoFingerStartDistance = null;
     }
 
-    // Keep _multiTouchSeen true until every finger has left the surface. This
-    // prevents a completed pinch/spread from subsequently being interpreted as
-    // a single tap by GestureDetector.
-    if (_pointers.isEmpty) {
-      Future<void>.microtask(() {
-        if (!mounted || _pointers.isNotEmpty) return;
-        _multiTouchSeen = false;
-        _multiTouchResolved = false;
-      });
+    if (_pointers.isEmpty && _multiTouchSeen) {
+      _suppressTapUntil = DateTime.now().add(_multiTouchTapSuppression);
+      _multiTouchSeen = false;
+      _multiTouchResolved = false;
     }
   }
 
@@ -117,7 +123,7 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   }
 
   void _onPanEnd(DragEndDetails details) {
-    if (!widget.enabled || _multiTouchSeen) return;
+    if (!widget.enabled || _multiTouchSeen || _tapSuppressed) return;
 
     final dx = _dragDelta.dx;
     final dy = _dragDelta.dy;
