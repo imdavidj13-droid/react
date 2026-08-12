@@ -12,12 +12,13 @@ void main() {
     required ReactGameMode mode,
     required int score,
     ReactRunOutcome outcome = ReactRunOutcome.missedCommand,
+    double averageTimeSeconds = .8,
   }) {
     return ReactRunResult(
       mode: mode,
       score: score,
       successfulCommands: score,
-      averageTimeSeconds: .8,
+      averageTimeSeconds: averageTimeSeconds,
       outcome: outcome,
     );
   }
@@ -60,15 +61,58 @@ void main() {
     expect(await LocalPlayerStats.runsPlayed(), 1);
   });
 
-  test('increments total runs for every recorded result', () async {
+  test('increments total runs and per-mode runs', () async {
     await LocalPlayerStats.recordResult(
       result(mode: ReactGameMode.classic, score: 3),
     );
     await LocalPlayerStats.recordResult(
       result(mode: ReactGameMode.endless, score: 8),
     );
+    await LocalPlayerStats.recordResult(
+      result(mode: ReactGameMode.classic, score: 5),
+    );
 
-    expect(await LocalPlayerStats.runsPlayed(), 2);
+    expect(await LocalPlayerStats.runsPlayed(), 3);
+    expect(await LocalPlayerStats.runsFor(ReactGameMode.classic), 2);
+    expect(await LocalPlayerStats.runsFor(ReactGameMode.endless), 1);
+  });
+
+  test('accumulates successful commands per mode', () async {
+    await LocalPlayerStats.recordResult(
+      result(mode: ReactGameMode.classic, score: 6),
+    );
+    await LocalPlayerStats.recordResult(
+      result(mode: ReactGameMode.classic, score: 4),
+    );
+    await LocalPlayerStats.recordResult(
+      result(mode: ReactGameMode.blitz, score: 7),
+    );
+
+    expect(await LocalPlayerStats.successfulCommandsFor(ReactGameMode.classic), 10);
+    expect(await LocalPlayerStats.successfulCommandsFor(ReactGameMode.blitz), 7);
+    expect(await LocalPlayerStats.totalSuccessfulCommands(), 17);
+  });
+
+  test('calculates weighted average reaction time per mode', () async {
+    await LocalPlayerStats.recordResult(
+      result(
+        mode: ReactGameMode.classic,
+        score: 2,
+        averageTimeSeconds: .5,
+      ),
+    );
+    await LocalPlayerStats.recordResult(
+      result(
+        mode: ReactGameMode.classic,
+        score: 3,
+        averageTimeSeconds: 1.0,
+      ),
+    );
+
+    expect(
+      await LocalPlayerStats.averageReactionSecondsFor(ReactGameMode.classic),
+      closeTo(.8, .001),
+    );
   });
 
   test('Daily attempt can be consumed before a result exists', () async {
@@ -109,7 +153,7 @@ void main() {
     expect(await LocalPlayerStats.bestFor(ReactGameMode.daily), 10);
   });
 
-  test('reset clears progress and daily state', () async {
+  test('reset clears progress, detailed stats, and daily state', () async {
     await LocalPlayerStats.recordResult(
       result(mode: ReactGameMode.classic, score: 14),
     );
@@ -123,6 +167,9 @@ void main() {
     expect(await LocalPlayerStats.bestFor(ReactGameMode.classic), 0);
     expect(await LocalPlayerStats.bestFor(ReactGameMode.blitz), 0);
     expect(await LocalPlayerStats.runsPlayed(), 0);
+    expect(await LocalPlayerStats.runsFor(ReactGameMode.classic), 0);
+    expect(await LocalPlayerStats.successfulCommandsFor(ReactGameMode.classic), 0);
+    expect(await LocalPlayerStats.averageReactionSecondsFor(ReactGameMode.classic), 0);
     expect(await LocalPlayerStats.dailyStreak(), 0);
     expect(await LocalPlayerStats.hasPlayedDailyToday(), isFalse);
   });
