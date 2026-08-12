@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
-import '../../classic/presentation/classic_screen.dart';
+import '../../modes/presentation/mode_run_screen.dart';
 
 class DailyScreen extends StatelessWidget {
   const DailyScreen({super.key});
 
   void _start(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ClassicScreen()),
+      MaterialPageRoute<void>(
+        builder: (_) => const ModeRunScreen(mode: ReactRunMode.daily),
+      ),
     );
   }
 
@@ -36,7 +38,7 @@ class DailyScreen extends StatelessWidget {
                     children: [
                       Expanded(child: _StatCard(icon: Icons.local_fire_department_rounded, label: 'CURRENT STREAK', value: '7 DAYS', color: ReactColors.coral)),
                       SizedBox(width: 10),
-                      Expanded(child: _StatCard(icon: Icons.history_rounded, label: 'YESTERDAY', value: '38', color: ReactColors.electricBlueBright)),
+                      Expanded(child: _StatCard(icon: Icons.history_rounded, label: 'YESTERDAY', value: '18', color: ReactColors.electricBlueBright)),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -44,11 +46,9 @@ class DailyScreen extends StatelessWidget {
                     children: [
                       Expanded(child: _StatCard(icon: Icons.public_rounded, label: 'GLOBAL PLACE', value: 'TOP 12%', color: ReactColors.lime)),
                       SizedBox(width: 10),
-                      Expanded(child: _StatCard(icon: Icons.workspace_premium_outlined, label: 'DAILY BEST', value: '54', color: ReactColors.purple)),
+                      Expanded(child: _StatCard(icon: Icons.workspace_premium_outlined, label: 'DAILY BEST', value: '20', color: ReactColors.purple)),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  const Text('FIRST PASS USES THE CORE RUN • FIXED DAILY SEED NEXT', style: TextStyle(color: ReactColors.textSecondary, fontSize: 7.5, fontWeight: FontWeight.w800, letterSpacing: .7)),
                 ],
               ),
             );
@@ -106,7 +106,7 @@ class _ChallengeCard extends StatelessWidget {
                     SizedBox(height: 6),
                     Text('ION PULSE', style: TextStyle(color: ReactColors.electricBlueBright, fontSize: 27, fontWeight: FontWeight.w900, letterSpacing: 1.6)),
                     SizedBox(height: 12),
-                    Row(children: [Icon(Icons.schedule_rounded, color: ReactColors.textSecondary, size: 17), SizedBox(width: 7), Text('RESETS IN 14:37:25', style: TextStyle(color: ReactColors.textPrimary, fontSize: 10, fontWeight: FontWeight.w800))]),
+                    Text('20 COMMANDS • SAME ORDER FOR EVERYONE', style: TextStyle(color: ReactColors.lime, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: .8)),
                   ],
                 ),
               ),
@@ -124,11 +124,11 @@ class _ChallengeCard extends StatelessWidget {
           const SizedBox(height: 14),
           const Row(
             children: [
-              Expanded(child: _Metric(label: 'YOUR BEST', value: '42', color: ReactColors.lime)),
+              Expanded(child: _Metric(label: 'YOUR BEST', value: '18', color: ReactColors.lime)),
               _Divider(),
-              Expanded(child: _Metric(label: 'GLOBAL BEST', value: '54', color: ReactColors.purple)),
+              Expanded(child: _Metric(label: 'GLOBAL BEST', value: '20', color: ReactColors.purple)),
               _Divider(),
-              Expanded(child: _Metric(label: 'ATTEMPTS', value: '1', color: ReactColors.coral)),
+              Expanded(child: _Metric(label: 'POINTS', value: '1 / CMD', color: ReactColors.coral)),
             ],
           ),
           const SizedBox(height: 18),
