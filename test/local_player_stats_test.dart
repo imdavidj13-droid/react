@@ -22,19 +22,42 @@ void main() {
     );
   }
 
-  test('records and preserves the highest score for each mode', () async {
-    await LocalPlayerStats.recordResult(
-      result(mode: ReactGameMode.classic, score: 12),
+  test('records and preserves the highest score for each scored mode', () async {
+    expect(
+      await LocalPlayerStats.recordResult(
+        result(mode: ReactGameMode.classic, score: 12),
+      ),
+      isTrue,
     );
-    await LocalPlayerStats.recordResult(
-      result(mode: ReactGameMode.classic, score: 7),
+    expect(
+      await LocalPlayerStats.recordResult(
+        result(mode: ReactGameMode.classic, score: 7),
+      ),
+      isFalse,
     );
-    await LocalPlayerStats.recordResult(
-      result(mode: ReactGameMode.blitz, score: 19),
+    expect(
+      await LocalPlayerStats.recordResult(
+        result(mode: ReactGameMode.blitz, score: 19),
+      ),
+      isTrue,
     );
 
     expect(await LocalPlayerStats.bestFor(ReactGameMode.classic), 12);
     expect(await LocalPlayerStats.bestFor(ReactGameMode.blitz), 19);
+  });
+
+  test('Pass It counts as a run but never creates a personal best', () async {
+    final newBest = await LocalPlayerStats.recordResult(
+      result(
+        mode: ReactGameMode.passIt,
+        score: 30,
+        outcome: ReactRunOutcome.winner,
+      ),
+    );
+
+    expect(newBest, isFalse);
+    expect(await LocalPlayerStats.bestFor(ReactGameMode.passIt), 0);
+    expect(await LocalPlayerStats.runsPlayed(), 1);
   });
 
   test('increments total runs for every recorded result', () async {
