@@ -68,7 +68,7 @@ class ModesScreen extends StatelessWidget {
                   _ModePanel(
                     title: 'PASS IT',
                     subtitle: 'Local multiplayer reaction rounds.',
-                    detail: '3 PLAYERS  •  ONE DEVICE',
+                    detail: '2–4 PLAYERS  •  ONE DEVICE',
                     icon: Icons.groups_2_outlined,
                     color: ReactColors.purple,
                     badge: 'MULTIPLAYER',
