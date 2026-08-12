@@ -7,6 +7,7 @@ import '../../../core/widgets/neon_button.dart';
 import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_command.dart';
 import '../../gameplay/domain/react_run_result.dart';
+import '../../gameplay/presentation/react_run_launch_screen.dart';
 import '../../gameplay/presentation/react_run_screen.dart';
 import '../../home/presentation/home_screen.dart';
 
@@ -42,6 +43,13 @@ class _ResultsScreenState extends State<ResultsScreen> {
     final newBest = await LocalPlayerStats.recordResult(result);
     if (!mounted || !newBest) return;
     setState(() => _newBest = true);
+  }
+
+  Widget _replayScreen() {
+    if (result.mode == ReactGameMode.passIt) {
+      return const ReactRunScreen(mode: ReactGameMode.passIt);
+    }
+    return ReactRunLaunchScreen(mode: result.mode);
   }
 
   @override
@@ -83,9 +91,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                         icon: Icons.replay_rounded,
                         onPressed: () {
                           Navigator.of(context).pushReplacement(
-                            MaterialPageRoute<void>(
-                              builder: (_) => ReactRunScreen(mode: result.mode),
-                            ),
+                            MaterialPageRoute<void>(builder: (_) => _replayScreen()),
                           );
                         },
                       ),
