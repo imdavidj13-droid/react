@@ -48,6 +48,16 @@ void main() {
     expect(await LocalPlayerStats.runsPlayed(), 2);
   });
 
+  test('Daily attempt can be consumed before a result exists', () async {
+    expect(await LocalPlayerStats.hasPlayedDailyToday(), isFalse);
+
+    await LocalPlayerStats.markDailyAttemptStarted();
+
+    expect(await LocalPlayerStats.hasPlayedDailyToday(), isTrue);
+    expect(await LocalPlayerStats.dailyStreak(), 1);
+    expect(await LocalPlayerStats.runsPlayed(), 0);
+  });
+
   test('marks the daily challenge as played after a result is recorded', () async {
     expect(await LocalPlayerStats.hasPlayedDailyToday(), isFalse);
 
@@ -64,6 +74,7 @@ void main() {
   });
 
   test('re-recording Daily on the same day does not grow the streak', () async {
+    await LocalPlayerStats.markDailyAttemptStarted();
     await LocalPlayerStats.recordResult(
       result(mode: ReactGameMode.daily, score: 5),
     );
