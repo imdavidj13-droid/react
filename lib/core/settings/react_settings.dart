@@ -15,7 +15,8 @@ class ReactSettings {
     final prefs = await SharedPreferences.getInstance();
     soundEnabled = prefs.getBool(_soundKey) ?? true;
     visualEffectsEnabled = prefs.getBool(_visualEffectsKey) ?? true;
-    passItPlayerCount = (prefs.getInt(_passItPlayerCountKey) ?? 3).clamp(2, 4);
+    passItPlayerCount =
+        (prefs.getInt(_passItPlayerCountKey) ?? 3).clamp(2, 4).toInt();
   }
 
   static Future<void> setSoundEnabled(bool value) async {
@@ -31,7 +32,7 @@ class ReactSettings {
   }
 
   static Future<void> setPassItPlayerCount(int value) async {
-    final safeValue = value.clamp(2, 4);
+    final safeValue = value.clamp(2, 4).toInt();
     passItPlayerCount = safeValue;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_passItPlayerCountKey, safeValue);
