@@ -178,9 +178,6 @@ class _Logo extends StatelessWidget {
             Icons.change_history_rounded,
             color: Color(0xFF2DDCFF),
             size: 39,
-            shadows: [
-              Shadow(color: ReactColors.electricBlue, blurRadius: 16),
-            ],
           ),
         ),
         Text(
@@ -276,12 +273,6 @@ class _Streak extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFFFF7A72), width: 3.5),
-              boxShadow: [
-                BoxShadow(
-                  color: ReactColors.coral.withValues(alpha: .14),
-                  blurRadius: 16,
-                ),
-              ],
             ),
             child: const Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -344,20 +335,11 @@ class _PlayDial extends StatelessWidget {
                   color: const Color(0xFF42D8FF),
                   width: 2.5,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: ReactColors.electricBlue.withValues(alpha: .13),
-                    blurRadius: 18,
-                  ),
-                ],
               ),
               child: const Icon(
                 Icons.play_arrow_rounded,
                 color: Color(0xFF39D8FF),
                 size: 74,
-                shadows: [
-                  Shadow(color: ReactColors.electricBlue, blurRadius: 14),
-                ],
               ),
             ),
           ),
@@ -382,19 +364,12 @@ class _DialPainter extends CustomPainter {
     canvas.drawCircle(center, radius * .59, base);
 
     void arc(double start, double sweep, Color color, double r) {
-      final glow = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round
-        ..strokeWidth = 9
-        ..color = color.withValues(alpha: .08)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 9);
       final line = Paint()
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeWidth = 4.5
         ..color = color;
       final rect = Rect.fromCircle(center: center, radius: r);
-      canvas.drawArc(rect, start, sweep, false, glow);
       canvas.drawArc(rect, start, sweep, false, line);
     }
 
@@ -455,12 +430,6 @@ class _PlayButton extends StatelessWidget {
             colors: [Color(0xFF24AFFF), Color(0xFF0D78F6)],
           ),
           border: Border.all(color: const Color(0xFF74E8FF), width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: ReactColors.electricBlue.withValues(alpha: .16),
-              blurRadius: 16,
-            ),
-          ],
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -573,8 +542,8 @@ class _CommandsPanel extends StatelessWidget {
                 color: ReactColors.lime,
               ),
               _Command(
-                icon: Icons.sync_rounded,
-                label: 'ROTATE',
+                icon: Icons.pause_circle_outline_rounded,
+                label: 'FREEZE',
                 color: ReactColors.purple,
               ),
             ],
