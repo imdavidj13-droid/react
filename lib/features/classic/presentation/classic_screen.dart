@@ -6,62 +6,10 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
 import '../../../game/react_game.dart';
+import '../../gameplay/domain/react_command.dart';
+import '../../gameplay/presentation/react_gesture_surface.dart';
 import '../../modes/domain/mode_timing_rules.dart';
 import '../../results/presentation/results_screen.dart';
-
-enum ClassicCommand {
-  tap,
-  doubleTap,
-  hold,
-  swipeLeft,
-  swipeRight,
-  swipeUp,
-  swipeDown,
-  pinch,
-  spread,
-  freeze,
-}
-
-extension ClassicCommandUi on ClassicCommand {
-  String get title => switch (this) {
-        ClassicCommand.tap => 'TAP IT',
-        ClassicCommand.doubleTap => 'DOUBLE TAP',
-        ClassicCommand.hold => 'HOLD IT',
-        ClassicCommand.swipeLeft => 'SWIPE LEFT',
-        ClassicCommand.swipeRight => 'SWIPE RIGHT',
-        ClassicCommand.swipeUp => 'SWIPE UP',
-        ClassicCommand.swipeDown => 'SWIPE DOWN',
-        ClassicCommand.pinch => 'PINCH IT',
-        ClassicCommand.spread => 'SPREAD IT',
-        ClassicCommand.freeze => 'FREEZE',
-      };
-
-  String get hint => switch (this) {
-        ClassicCommand.tap => 'TAP ONCE',
-        ClassicCommand.doubleTap => 'TAP TWICE QUICKLY',
-        ClassicCommand.hold => 'PRESS AND HOLD',
-        ClassicCommand.swipeLeft => 'SWIPE TO THE LEFT',
-        ClassicCommand.swipeRight => 'SWIPE TO THE RIGHT',
-        ClassicCommand.swipeUp => 'SWIPE UPWARD',
-        ClassicCommand.swipeDown => 'SWIPE DOWNWARD',
-        ClassicCommand.pinch => 'MOVE TWO FINGERS TOGETHER',
-        ClassicCommand.spread => 'MOVE TWO FINGERS APART',
-        ClassicCommand.freeze => 'DO NOTHING',
-      };
-
-  IconData get icon => switch (this) {
-        ClassicCommand.tap => Icons.touch_app_rounded,
-        ClassicCommand.doubleTap => Icons.ads_click_rounded,
-        ClassicCommand.hold => Icons.pan_tool_alt_rounded,
-        ClassicCommand.swipeLeft => Icons.arrow_back_rounded,
-        ClassicCommand.swipeRight => Icons.arrow_forward_rounded,
-        ClassicCommand.swipeUp => Icons.arrow_upward_rounded,
-        ClassicCommand.swipeDown => Icons.arrow_downward_rounded,
-        ClassicCommand.pinch => Icons.close_fullscreen_rounded,
-        ClassicCommand.spread => Icons.open_in_full_rounded,
-        ClassicCommand.freeze => Icons.ac_unit_rounded,
-      };
-}
 
 class ClassicScreen extends StatefulWidget {
   const ClassicScreen({super.key});
@@ -72,9 +20,6 @@ class ClassicScreen extends StatefulWidget {
 
 class _ClassicScreenState extends State<ClassicScreen> {
   static const _tickDuration = Duration(milliseconds: 40);
-  static const _minimumSwipeDistance = 48.0;
-  static const _pinchThreshold = 0.72;
-  static const _spreadThreshold = 1.28;
   static const _placeholderBestScore = 42;
 
   late final ReactGame _game;
@@ -82,7 +27,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
 
   Timer? _timer;
   Timer? _nextCommandTimer;
-  ClassicCommand _command = ClassicCommand.tap;
+  ReactCommand _command = ReactCommand.tap;
   DateTime _commandStartedAt = DateTime.now();
   double _timeRemaining = 1;
   int _score = 0;
@@ -94,10 +39,6 @@ class _ClassicScreenState extends State<ClassicScreen> {
   bool _acceptingInput = true;
   bool _finished = false;
   String? _feedback;
-
-  Offset _dragDelta = Offset.zero;
-  bool _multiTouchSeen = false;
-  bool _scaleResolved = false;
 
   int get _commandDurationMs =>
       ReactModeTiming.classic.commandDurationMsForScore(_score);
@@ -124,8 +65,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
     _nextCommandTimer?.cancel();
     if (!mounted || _finished) return;
 
-    final next =
-        ClassicCommand.values[_random.nextInt(ClassicCommand.values.length)];
+    final next = ReactCommand.values[_random.nextInt(ReactCommand.values.length)];
 
     setState(() {
       _command = next;
@@ -133,9 +73,6 @@ class _ClassicScreenState extends State<ClassicScreen> {
       _timeRemaining = 1;
       _acceptingInput = true;
       _feedback = null;
-      _dragDelta = Offset.zero;
-      _multiTouchSeen = false;
-      _scaleResolved = false;
     });
 
     _timer = Timer.periodic(_tickDuration, (_) {
@@ -146,14 +83,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
       final progress = 1 - (elapsed / _commandDurationMs);
 
       if (progress <= 0) {
-        if (_command == ClassicCommand.freeze) {
-          _completeCommand(
-            responseMs: _commandDurationMs,
-            feedbackOverride: 'FROZEN',
-          );
-        } else {
-          _loseLife();
-        }
+        _loseLife();
         return;
       }
 
@@ -161,7 +91,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
     });
   }
 
-  void _handleGesture(ClassicCommand performed) {
+  void _handleGesture(ReactCommand performed) {
     if (!_acceptingInput || _finished) return;
     if (performed != _command) {
       _loseLife();
@@ -170,11 +100,11 @@ class _ClassicScreenState extends State<ClassicScreen> {
     _completeCommand();
   }
 
-  void _completeCommand({int? responseMs, String? feedbackOverride}) {
+  void _completeCommand() {
     if (!_acceptingInput || _finished) return;
     _timer?.cancel();
 
-    final actualResponseMs = responseMs ??
+    final actualResponseMs =
         DateTime.now().difference(_commandStartedAt).inMilliseconds;
     final newCombo = _combo + 1;
 
@@ -185,16 +115,18 @@ class _ClassicScreenState extends State<ClassicScreen> {
       _bestCombo = max(_bestCombo, newCombo);
       _reactions += 1;
       _totalResponseMs += actualResponseMs;
-      _feedback = feedbackOverride ??
-          (actualResponseMs <= 750
-              ? 'PERFECT'
-              : actualResponseMs <= 1400
-                  ? 'GREAT'
-                  : 'GOOD');
+      _feedback = actualResponseMs <= 750
+          ? 'PERFECT'
+          : actualResponseMs <= 1400
+              ? 'GREAT'
+              : 'GOOD';
     });
 
     _nextCommandTimer = Timer(
-      Duration(milliseconds: ReactModeTiming.classic.successDelayMs),
+      Duration(
+        milliseconds:
+            ReactModeTiming.classic.successDelayMsForScore(_score),
+      ),
       _startCommand,
     );
   }
@@ -223,50 +155,6 @@ class _ClassicScreenState extends State<ClassicScreen> {
       Duration(milliseconds: ReactModeTiming.classic.missDelayMs),
       _startCommand,
     );
-  }
-
-  void _handleScaleStart(ScaleStartDetails details) {
-    if (!_acceptingInput || _finished) return;
-    _dragDelta = Offset.zero;
-    _multiTouchSeen = details.pointerCount >= 2;
-    _scaleResolved = false;
-  }
-
-  void _handleScaleUpdate(ScaleUpdateDetails details) {
-    if (!_acceptingInput || _finished || _scaleResolved) return;
-
-    if (details.pointerCount >= 2) {
-      _multiTouchSeen = true;
-      if (details.scale <= _pinchThreshold) {
-        _scaleResolved = true;
-        _handleGesture(ClassicCommand.pinch);
-      } else if (details.scale >= _spreadThreshold) {
-        _scaleResolved = true;
-        _handleGesture(ClassicCommand.spread);
-      }
-      return;
-    }
-
-    if (!_multiTouchSeen) {
-      _dragDelta += details.focalPointDelta;
-    }
-  }
-
-  void _handleScaleEnd(ScaleEndDetails details) {
-    if (!_acceptingInput || _finished || _multiTouchSeen || _scaleResolved) {
-      return;
-    }
-
-    final dx = _dragDelta.dx;
-    final dy = _dragDelta.dy;
-    final horizontal = dx.abs() >= dy.abs();
-    final distance = horizontal ? dx.abs() : dy.abs();
-    if (distance < _minimumSwipeDistance) return;
-
-    final performed = horizontal
-        ? (dx < 0 ? ClassicCommand.swipeLeft : ClassicCommand.swipeRight)
-        : (dy < 0 ? ClassicCommand.swipeUp : ClassicCommand.swipeDown);
-    _handleGesture(performed);
   }
 
   void _finishRun() {
@@ -318,16 +206,9 @@ class _ClassicScreenState extends State<ClassicScreen> {
                       SizedBox(height: compact ? 10 : 16),
                       Expanded(
                         child: Center(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => _handleGesture(ClassicCommand.tap),
-                            onDoubleTap: () =>
-                                _handleGesture(ClassicCommand.doubleTap),
-                            onLongPress: () =>
-                                _handleGesture(ClassicCommand.hold),
-                            onScaleStart: _handleScaleStart,
-                            onScaleUpdate: _handleScaleUpdate,
-                            onScaleEnd: _handleScaleEnd,
+                          child: ReactGestureSurface(
+                            enabled: _acceptingInput && !_finished,
+                            onCommand: _handleGesture,
                             child: _CommandArena(
                               size: arenaSize,
                               command: _command,
@@ -421,9 +302,21 @@ class _GameplayHeader extends StatelessWidget {
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(child: _HudCard(label: 'SCORE', value: '$score', color: ReactColors.lime)),
+            Expanded(
+              child: _HudCard(
+                label: 'SCORE',
+                value: '$score',
+                color: ReactColors.lime,
+              ),
+            ),
             const SizedBox(width: 10),
-            Expanded(child: _HudCard(label: 'COMBO', value: 'x$combo', color: ReactColors.purple)),
+            Expanded(
+              child: _HudCard(
+                label: 'COMBO',
+                value: 'x$combo',
+                color: ReactColors.purple,
+              ),
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: _HudCard(
@@ -500,7 +393,7 @@ class _CommandArena extends StatelessWidget {
   });
 
   final double size;
-  final ClassicCommand command;
+  final ReactCommand command;
   final double progress;
   final int commandDurationMs;
 
@@ -523,7 +416,10 @@ class _CommandArena extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF050A13),
-              border: Border.all(color: const Color(0xFF153B65), width: 1.5),
+              border: Border.all(
+                color: const Color(0xFF153B65),
+                width: 1.5,
+              ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -542,7 +438,10 @@ class _CommandArena extends StatelessWidget {
                 Icon(
                   command.icon,
                   color: ReactColors.electricBlueBright,
-                  size: command == ClassicCommand.pinch || command == ClassicCommand.spread ? 88 : 96,
+                  size: command == ReactCommand.pinch ||
+                          command == ReactCommand.spread
+                      ? 88
+                      : 96,
                 ),
                 const SizedBox(height: 15),
                 Text(
@@ -566,7 +465,10 @@ class _CommandArena extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: const Color(0xFF07111D),
-                border: Border.all(color: const Color(0xFF31577E), width: 2),
+                border: Border.all(
+                  color: const Color(0xFF31577E),
+                  width: 2,
+                ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -696,7 +598,11 @@ class _PacePanel extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.bolt_rounded, color: ReactColors.electricBlueBright, size: 21),
+          const Icon(
+            Icons.bolt_rounded,
+            color: ReactColors.electricBlueBright,
+            size: 21,
+          ),
           const SizedBox(width: 8),
           const Text(
             'CLASSIC',
@@ -710,11 +616,17 @@ class _PacePanel extends StatelessWidget {
           const Spacer(),
           _PaceMetric(label: 'SCORE', value: '$score'),
           const _MetricDivider(),
-          _PaceMetric(label: 'YOUR BEST RESULT', value: '$bestScore', highlight: true),
+          _PaceMetric(
+            label: 'YOUR BEST RESULT',
+            value: '$bestScore',
+            highlight: true,
+          ),
           const _MetricDivider(),
           _PaceMetric(
             label: 'AVG TIME',
-            value: averageTimeSeconds == 0 ? '--' : '${averageTimeSeconds.toStringAsFixed(2)}s',
+            value: averageTimeSeconds == 0
+                ? '--'
+                : '${averageTimeSeconds.toStringAsFixed(2)}s',
           ),
         ],
       ),
@@ -770,7 +682,9 @@ class _PaceMetric extends StatelessWidget {
             child: Text(
               value,
               style: TextStyle(
-                color: highlight ? ReactColors.lime : ReactColors.textPrimary,
+                color: highlight
+                    ? ReactColors.lime
+                    : ReactColors.textPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.w900,
               ),
