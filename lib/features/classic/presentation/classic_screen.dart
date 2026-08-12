@@ -151,20 +151,16 @@ class _ClassicScreenState extends State<ClassicScreen> {
         return;
       }
 
-      setState(() {
-        _timeRemaining = progress.clamp(0.0, 1.0);
-      });
+      setState(() => _timeRemaining = progress.clamp(0.0, 1.0));
     });
   }
 
   void _handleGesture(ClassicCommand performed) {
     if (!_acceptingInput || _finished) return;
-
     if (performed != _command) {
       _failRun();
       return;
     }
-
     _completeCommand();
   }
 
@@ -210,7 +206,6 @@ class _ClassicScreenState extends State<ClassicScreen> {
 
     if (details.pointerCount >= 2) {
       _multiTouchSeen = true;
-
       if (details.scale <= _pinchThreshold) {
         _scaleResolved = true;
         _handleGesture(ClassicCommand.pinch);
@@ -235,13 +230,11 @@ class _ClassicScreenState extends State<ClassicScreen> {
     final dy = _dragDelta.dy;
     final horizontal = dx.abs() >= dy.abs();
     final primaryDistance = horizontal ? dx.abs() : dy.abs();
-
     if (primaryDistance < _minimumSwipeDistance) return;
 
     final performed = horizontal
         ? (dx < 0 ? ClassicCommand.swipeLeft : ClassicCommand.swipeRight)
         : (dy < 0 ? ClassicCommand.swipeUp : ClassicCommand.swipeDown);
-
     _handleGesture(performed);
   }
 
@@ -296,7 +289,7 @@ class _ClassicScreenState extends State<ClassicScreen> {
                         combo: _combo,
                         onClose: () => Navigator.of(context).pop(),
                       ),
-                      SizedBox(height: compact ? 14 : 20),
+                      SizedBox(height: compact ? 12 : 18),
                       Expanded(
                         child: Center(
                           child: GestureDetector(
@@ -334,9 +327,11 @@ class _ClassicScreenState extends State<ClassicScreen> {
                         ),
                       ),
                       SizedBox(height: compact ? 8 : 12),
-                      _CommandStrip(active: _command),
-                      const SizedBox(height: 10),
-                      const _ModeFooter(),
+                      _RunStatusPanel(
+                        reactions: _reactions,
+                        combo: _combo,
+                        bestCombo: _bestCombo,
+                      ),
                     ],
                   ),
                 );
@@ -658,12 +653,12 @@ class _SegmentedRingPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final radius = size.width * .44;
+
     final base = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 9
       ..strokeCap = StrokeCap.round
       ..color = const Color(0xFF122038);
-
     canvas.drawCircle(center, radius, base);
 
     const gap = .12;
@@ -680,7 +675,7 @@ class _SegmentedRingPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 8
         ..strokeCap = StrokeCap.round
-        ..color = segments[i].withValues(alpha: .9);
+        ..color = segments[i].withValues(alpha: .78);
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
         start,
@@ -691,11 +686,20 @@ class _SegmentedRingPainter extends CustomPainter {
       start += segmentSweep + gap;
     }
 
+    final timerTrack = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0xFF11233C);
+    canvas.drawCircle(center, radius + 14, timerTrack);
+
     final timerPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
+      ..strokeWidth = 8
       ..strokeCap = StrokeCap.round
-      ..color = progress < .28 ? ReactColors.coral : Colors.white;
+      ..color = progress < .2
+          ? ReactColors.coral
+          : ReactColors.electricBlueBright;
 
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius + 14),
@@ -713,11 +717,9 @@ class _SegmentedRingPainter extends CustomPainter {
           : i < 43
               ? ReactColors.lime
               : ReactColors.coral;
-      tickPaint.color = c.withValues(alpha: .65);
-      final p1 = center +
-          Offset(cos(angle), sin(angle)) * (radius + 25);
-      final p2 = center +
-          Offset(cos(angle), sin(angle)) * (radius + 30);
+      tickPaint.color = c.withValues(alpha: .55);
+      final p1 = center + Offset(cos(angle), sin(angle)) * (radius + 27);
+      final p2 = center + Offset(cos(angle), sin(angle)) * (radius + 31);
       canvas.drawLine(p1, p2, tickPaint);
     }
   }
@@ -798,138 +800,36 @@ class _SuccessFeedback extends StatelessWidget {
   }
 }
 
-class _CommandStrip extends StatelessWidget {
-  const _CommandStrip({required this.active});
-
-  final ClassicCommand active;
-
-  @override
-  Widget build(BuildContext context) {
-    final activeType = switch (active) {
-      ClassicCommand.tap || ClassicCommand.doubleTap || ClassicCommand.hold =>
-        'TAP',
-      ClassicCommand.swipeLeft ||
-      ClassicCommand.swipeRight ||
-      ClassicCommand.swipeUp ||
-      ClassicCommand.swipeDown =>
-        'SWIPE',
-      ClassicCommand.pinch || ClassicCommand.spread => 'PINCH',
-      ClassicCommand.freeze => 'FREEZE',
-    };
-
-    return Container(
-      height: 76,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF29405D)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _StripItem(
-              label: 'TAP',
-              icon: Icons.touch_app_rounded,
-              color: ReactColors.electricBlueBright,
-              active: activeType == 'TAP',
-            ),
-          ),
-          const VerticalDivider(color: Color(0xFF243850), width: 1),
-          Expanded(
-            child: _StripItem(
-              label: 'SWIPE',
-              icon: Icons.double_arrow_rounded,
-              color: ReactColors.electricBlue,
-              active: activeType == 'SWIPE',
-            ),
-          ),
-          const VerticalDivider(color: Color(0xFF243850), width: 1),
-          Expanded(
-            child: _StripItem(
-              label: 'PINCH',
-              icon: Icons.close_fullscreen_rounded,
-              color: ReactColors.lime,
-              active: activeType == 'PINCH',
-            ),
-          ),
-          const VerticalDivider(color: Color(0xFF243850), width: 1),
-          Expanded(
-            child: _StripItem(
-              label: 'FREEZE',
-              icon: Icons.ac_unit_rounded,
-              color: ReactColors.purple,
-              active: activeType == 'FREEZE',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StripItem extends StatelessWidget {
-  const _StripItem({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.active,
+class _RunStatusPanel extends StatelessWidget {
+  const _RunStatusPanel({
+    required this.reactions,
+    required this.combo,
+    required this.bestCombo,
   });
 
-  final String label;
-  final IconData icon;
-  final Color color;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          color: active ? color : const Color(0xFF56657B),
-          size: 25,
-        ),
-        const SizedBox(height: 5),
-        Text(
-          label,
-          style: TextStyle(
-            color: active ? ReactColors.textPrimary : ReactColors.textSecondary,
-            fontSize: 8,
-            fontWeight: FontWeight.w900,
-            letterSpacing: .7,
-          ),
-        ),
-        const SizedBox(height: 5),
-        Container(
-          width: 24,
-          height: 2,
-          color: active ? color : Colors.transparent,
-        ),
-      ],
-    );
-  }
-}
-
-class _ModeFooter extends StatelessWidget {
-  const _ModeFooter();
+  final int reactions;
+  final int combo;
+  final int bestCombo;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
+      height: 62,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1E344F)),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF213A57)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.bolt_rounded, color: ReactColors.electricBlueBright, size: 19),
-          SizedBox(width: 8),
-          Text(
+          const Icon(
+            Icons.bolt_rounded,
+            color: ReactColors.electricBlueBright,
+            size: 21,
+          ),
+          const SizedBox(width: 9),
+          const Text(
             'CLASSIC',
             style: TextStyle(
               color: ReactColors.electricBlueBright,
@@ -938,18 +838,49 @@ class _ModeFooter extends StatelessWidget {
               letterSpacing: 1,
             ),
           ),
-          Spacer(),
-          Text(
-            '10 COMMANDS',
-            style: TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 9,
-              fontWeight: FontWeight.w800,
-              letterSpacing: .8,
-            ),
-          ),
+          const Spacer(),
+          _RunMetric(label: 'REACTIONS', value: '$reactions'),
+          const SizedBox(width: 16),
+          _RunMetric(label: 'COMBO', value: 'x$combo'),
+          const SizedBox(width: 16),
+          _RunMetric(label: 'BEST', value: 'x$bestCombo'),
         ],
       ),
+    );
+  }
+}
+
+class _RunMetric extends StatelessWidget {
+  const _RunMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 6.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: .8,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: const TextStyle(
+            color: ReactColors.textPrimary,
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
     );
   }
 }
