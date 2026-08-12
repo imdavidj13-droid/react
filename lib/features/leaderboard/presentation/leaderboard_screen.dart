@@ -46,7 +46,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 children: [
                   _Header(onBack: () => Navigator.of(context).pop()),
                   const SizedBox(height: 20),
-                  const _OfflineBanner(),
+                  const _RecordsBanner(),
                   const SizedBox(height: 20),
                   const _SectionLabel('YOUR BEST SCORES'),
                   const SizedBox(height: 10),
@@ -56,8 +56,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   ],
                   const SizedBox(height: 10),
                   const _PassItNote(),
-                  const SizedBox(height: 10),
-                  const _FutureOnlineCard(),
                 ],
               ),
             );
@@ -116,8 +114,8 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _OfflineBanner extends StatelessWidget {
-  const _OfflineBanner();
+class _RecordsBanner extends StatelessWidget {
+  const _RecordsBanner();
 
   @override
   Widget build(BuildContext context) {
@@ -131,14 +129,14 @@ class _OfflineBanner extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          Icon(Icons.offline_bolt_rounded, color: ReactColors.lime, size: 30),
+          Icon(Icons.workspace_premium_outlined, color: ReactColors.lime, size: 30),
           SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'OFFLINE SCOREBOARD',
+                  'PERSONAL RECORDS',
                   style: TextStyle(
                     color: ReactColors.textPrimary,
                     fontSize: 15,
@@ -148,7 +146,7 @@ class _OfflineBanner extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'NO FAKE RANKS • THESE ARE YOUR REAL SCORES ON THIS DEVICE',
+                  'YOUR BEST RESULT IN EACH SOLO MODE ON THIS DEVICE',
                   style: TextStyle(
                     color: ReactColors.textSecondary,
                     fontSize: 8,
@@ -294,7 +292,7 @@ class _PassItNote extends StatelessWidget {
           SizedBox(width: 11),
           Expanded(
             child: Text(
-              'PASS IT IS A MATCH MODE • WINNERS ARE SHOWN PER GAME, NOT AS A PERSONAL SCORE RECORD',
+              'PASS IT RECORDS THE WINNER PER MATCH INSTEAD OF A PERSONAL HIGH SCORE',
               style: TextStyle(
                 color: ReactColors.textSecondary,
                 fontSize: 8,
@@ -302,54 +300,6 @@ class _PassItNote extends StatelessWidget {
                 fontWeight: FontWeight.w800,
                 letterSpacing: .6,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FutureOnlineCard extends StatelessWidget {
-  const _FutureOnlineCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(17),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A1220),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: ReactColors.purple.withValues(alpha: .45)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.public_rounded, color: ReactColors.purple, size: 30),
-          SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'GLOBAL LEADERBOARDS LATER',
-                  style: TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'ONLINE RANKS, FRIENDS AND SEASONS WILL ONLY APPEAR ONCE REAL BACKEND DATA EXISTS.',
-                  style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 8,
-                    height: 1.4,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
             ),
           ),
         ],
