@@ -1,57 +1,62 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
+import '../../gameplay/data/local_player_stats.dart';
+import '../../gameplay/domain/react_run_result.dart';
 
-class LeaderboardScreen extends StatelessWidget {
+class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
 
-  static const _leaders = [
-    ('4', 'BEAT_BLAZER', '111', ReactColors.purple),
-    ('5', 'SYNAPSE_42', '103', Color(0xFF5EE55A)),
-    ('6', 'QUICK_FINGERS', '97', Color(0xFF58C5FF)),
-    ('7', 'FLASHPOINT', '91', Color(0xFFFF8A66)),
-  ];
+  @override
+  State<LeaderboardScreen> createState() => _LeaderboardScreenState();
+}
+
+class _LeaderboardScreenState extends State<LeaderboardScreen> {
+  late Future<List<(ReactGameMode, int)>> _scores;
+
+  @override
+  void initState() {
+    super.initState();
+    _scores = _loadScores();
+  }
+
+  Future<List<(ReactGameMode, int)>> _loadScores() async {
+    final modes = [
+      ReactGameMode.classic,
+      ReactGameMode.blitz,
+      ReactGameMode.endless,
+      ReactGameMode.daily,
+      ReactGameMode.passIt,
+    ];
+    final values = await Future.wait(modes.map(LocalPlayerStats.bestFor));
+    return [for (var i = 0; i < modes.length; i++) (modes[i], values[i])];
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ReactColors.background,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final pad = constraints.maxWidth < 380 ? 16.0 : 20.0;
-
+        child: FutureBuilder<List<(ReactGameMode, int)>>(
+          future: _scores,
+          builder: (context, snapshot) {
+            final scores = snapshot.data ?? const [];
             return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(pad, 14, pad, 28),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
               child: Column(
                 children: [
                   _Header(onBack: () => Navigator.of(context).pop()),
-                  const SizedBox(height: 18),
-                  const _ModeTabs(),
-                  const SizedBox(height: 18),
-                  const _SeasonBanner(),
-                  const SizedBox(height: 18),
-                  const _Podium(),
-                  const SizedBox(height: 16),
-                  const _YouCard(),
-                  const SizedBox(height: 18),
-                  const _SectionLabel('GLOBAL TOP SCORES'),
+                  const SizedBox(height: 20),
+                  const _OfflineBanner(),
+                  const SizedBox(height: 20),
+                  const _SectionLabel('YOUR BEST SCORES'),
                   const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF07111D),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: const Color(0xFF223750)),
-                    ),
-                    child: Column(
-                      children: [
-                        for (final row in _leaders) _LeaderRow(data: row),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const _RankProgressCard(),
+                  for (final entry in scores) ...[
+                    _ScoreRow(mode: entry.$1, score: entry.$2),
+                    const SizedBox(height: 10),
+                  ],
+                  const SizedBox(height: 10),
+                  const _FutureOnlineCard(),
                 ],
               ),
             );
@@ -64,7 +69,6 @@ class LeaderboardScreen extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   const _Header({required this.onBack});
-
   final VoidCallback onBack;
 
   @override
@@ -84,7 +88,7 @@ class _Header extends StatelessWidget {
         const Column(
           children: [
             Text(
-              'LEADERBOARD',
+              'SCORES',
               style: TextStyle(
                 color: ReactColors.textPrimary,
                 fontSize: 27,
@@ -94,9 +98,9 @@ class _Header extends StatelessWidget {
             ),
             SizedBox(height: 3),
             Text(
-              'CLASSIC • SEASON 01',
+              'LOCAL DEVICE RECORDS',
               style: TextStyle(
-                color: ReactColors.electricBlueBright,
+                color: ReactColors.purple,
                 fontSize: 8,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.4,
@@ -111,248 +115,8 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _ModeTabs extends StatelessWidget {
-  const _ModeTabs();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF21344D)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF0D2949),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: ReactColors.electricBlueBright),
-              ),
-              alignment: Alignment.center,
-              child: const Text(
-                'GLOBAL',
-                style: TextStyle(
-                  color: ReactColors.electricBlueBright,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.1,
-                ),
-              ),
-            ),
-          ),
-          const Expanded(
-            child: Center(
-              child: Text(
-                'FRIENDS',
-                style: TextStyle(
-                  color: ReactColors.textSecondary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.1,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SeasonBanner extends StatelessWidget {
-  const _SeasonBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF29405D)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.emoji_events_outlined, color: ReactColors.lime, size: 28),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'SEASON 01',
-                  style: TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .9,
-                  ),
-                ),
-                SizedBox(height: 3),
-                Text(
-                  'BEST CLASSIC SCORE SETS YOUR RANK',
-                  style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '18D LEFT',
-            style: TextStyle(
-              color: ReactColors.coral,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: .8,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Podium extends StatelessWidget {
-  const _Podium();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      height: 220,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(
-            child: _PodiumPlayer(
-              rank: 2,
-              name: 'REFLEX_KING',
-              score: '128',
-              color: ReactColors.electricBlueBright,
-              blockHeight: 62,
-            ),
-          ),
-          SizedBox(width: 8),
-          Expanded(
-            child: _PodiumPlayer(
-              rank: 1,
-              name: 'NEON_NINJA',
-              score: '142',
-              color: ReactColors.lime,
-              blockHeight: 88,
-              crown: true,
-            ),
-          ),
-          SizedBox(width: 8),
-          Expanded(
-            child: _PodiumPlayer(
-              rank: 3,
-              name: 'TAP_MASTER',
-              score: '119',
-              color: Color(0xFFFFA23C),
-              blockHeight: 50,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PodiumPlayer extends StatelessWidget {
-  const _PodiumPlayer({
-    required this.rank,
-    required this.name,
-    required this.score,
-    required this.color,
-    required this.blockHeight,
-    this.crown = false,
-  });
-
-  final int rank;
-  final String name;
-  final String score;
-  final Color color;
-  final double blockHeight;
-  final bool crown;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        SizedBox(
-          height: 26,
-          child: crown
-              ? Icon(Icons.workspace_premium_rounded, color: color, size: 22)
-              : null,
-        ),
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF091423),
-            border: Border.all(color: color, width: 2),
-          ),
-          child: Icon(Icons.person_rounded, color: color, size: 27),
-        ),
-        const SizedBox(height: 6),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            name,
-            style: const TextStyle(
-              color: ReactColors.textPrimary,
-              fontSize: 8.5,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          score,
-          style: TextStyle(
-            color: color,
-            fontSize: 14,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          height: blockHeight,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: const Color(0xFF07111D),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            border: Border.all(color: color.withValues(alpha: .6)),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            '$rank',
-            style: TextStyle(
-              color: color,
-              fontSize: rank == 1 ? 36 : 28,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _YouCard extends StatelessWidget {
-  const _YouCard();
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
 
   @override
   Widget build(BuildContext context) {
@@ -360,173 +124,147 @@ class _YouCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A1D35),
+        color: const Color(0xFF07111D),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: ReactColors.electricBlueBright, width: 1.4),
+        border: Border.all(color: const Color(0xFF29405D)),
       ),
       child: const Row(
         children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: Color(0xFF07111D),
-            child: Icon(
-              Icons.person_outline_rounded,
-              color: ReactColors.electricBlueBright,
-              size: 31,
-            ),
-          ),
+          Icon(Icons.offline_bolt_rounded, color: ReactColors.lime, size: 30),
           SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'YOUR RANK',
+                  'OFFLINE SCOREBOARD',
                   style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 8,
+                    color: ReactColors.textPrimary,
+                    fontSize: 15,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 1.1,
+                    letterSpacing: .9,
                   ),
                 ),
                 SizedBox(height: 4),
                 Text(
-                  '#1,248',
+                  'NO FAKE RANKS • THESE ARE YOUR REAL SCORES ON THIS DEVICE',
                   style: TextStyle(
-                    color: ReactColors.electricBlueBright,
-                    fontSize: 25,
-                    fontWeight: FontWeight.w900,
+                    color: ReactColors.textSecondary,
+                    fontSize: 8,
+                    height: 1.4,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: .8,
                   ),
                 ),
               ],
             ),
           ),
-          _MiniMetric(label: 'YOUR BEST', value: '42', color: ReactColors.lime),
-          SizedBox(width: 14),
-          _MiniMetric(label: 'TOP SCORE', value: '142', color: ReactColors.purple),
         ],
       ),
-    );
-  }
-}
-
-class _MiniMetric extends StatelessWidget {
-  const _MiniMetric({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 6.5,
-            fontWeight: FontWeight.w900,
-            letterSpacing: .7,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 14,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ],
     );
   }
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-
-  final String text;
+  const _SectionLabel(this.label);
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Expanded(child: Divider(color: Color(0xFF233750))),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            text,
-            style: const TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.3,
-            ),
+        Text(
+          label,
+          style: const TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.3,
           ),
         ),
-        const Expanded(child: Divider(color: Color(0xFF233750))),
+        const SizedBox(width: 12),
+        const Expanded(child: Divider(color: Color(0xFF263851))),
       ],
     );
   }
 }
 
-class _LeaderRow extends StatelessWidget {
-  const _LeaderRow({required this.data});
+class _ScoreRow extends StatelessWidget {
+  const _ScoreRow({required this.mode, required this.score});
 
-  final (String, String, String, Color) data;
+  final ReactGameMode mode;
+  final int score;
+
+  Color get color => switch (mode) {
+        ReactGameMode.classic => ReactColors.electricBlueBright,
+        ReactGameMode.blitz => ReactColors.coral,
+        ReactGameMode.endless => ReactColors.lime,
+        ReactGameMode.daily => ReactColors.purple,
+        ReactGameMode.passIt => const Color(0xFFFFB85A),
+      };
+
+  IconData get icon => switch (mode) {
+        ReactGameMode.classic => Icons.bolt_rounded,
+        ReactGameMode.blitz => Icons.timer_rounded,
+        ReactGameMode.endless => Icons.all_inclusive_rounded,
+        ReactGameMode.daily => Icons.calendar_month_rounded,
+        ReactGameMode.passIt => Icons.groups_2_rounded,
+      };
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF081522),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: data.$4.withValues(alpha: .22)),
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: .38)),
       ),
       child: Row(
         children: [
           Container(
-            width: 34,
-            height: 34,
-            alignment: Alignment.center,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: data.$4.withValues(alpha: .65)),
+              color: const Color(0xFF050A13),
+              border: Border.all(color: color, width: 1.5),
             ),
-            child: Text(
-              data.$1,
-              style: TextStyle(
-                color: data.$4,
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+            child: Icon(icon, color: color, size: 26),
           ),
-          const SizedBox(width: 11),
+          const SizedBox(width: 13),
           Expanded(
-            child: Text(
-              data.$2,
-              style: const TextStyle(
-                color: ReactColors.textPrimary,
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  mode.label,
+                  style: const TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .7,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                const Text(
+                  'PERSONAL BEST',
+                  style: TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 7.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: .8,
+                  ),
+                ),
+              ],
             ),
           ),
           Text(
-            data.$3,
+            '$score',
             style: TextStyle(
-              color: data.$4,
-              fontSize: 13,
+              color: color,
+              fontSize: 28,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -536,63 +274,46 @@ class _LeaderRow extends StatelessWidget {
   }
 }
 
-class _RankProgressCard extends StatelessWidget {
-  const _RankProgressCard();
+class _FutureOnlineCard extends StatelessWidget {
+  const _FutureOnlineCard();
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF263A55)),
+        color: const Color(0xFF0A1220),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: ReactColors.purple.withValues(alpha: .45)),
       ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: const Row(
         children: [
-          Row(
-            children: [
-              Icon(Icons.trending_up_rounded, color: ReactColors.lime, size: 21),
-              SizedBox(width: 8),
-              Text(
-                'NEXT TARGET  #1,000',
-                style: TextStyle(
-                  color: ReactColors.textPrimary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .8,
+          Icon(Icons.public_rounded, color: ReactColors.purple, size: 30),
+          SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'GLOBAL LEADERBOARDS LATER',
+                  style: TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              Spacer(),
-              Text(
-                '+5',
-                style: TextStyle(
-                  color: ReactColors.lime,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
+                SizedBox(height: 4),
+                Text(
+                  'ONLINE RANKS, FRIENDS AND SEASONS WILL ONLY APPEAR ONCE REAL BACKEND DATA EXISTS.',
+                  style: TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 8,
+                    height: 1.4,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-            child: LinearProgressIndicator(
-              value: .74,
-              minHeight: 7,
-              backgroundColor: Color(0xFF13233A),
-              color: ReactColors.electricBlueBright,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'A score of 47 would currently move you into the top 1,000.',
-            style: TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
+              ],
             ),
           ),
         ],
