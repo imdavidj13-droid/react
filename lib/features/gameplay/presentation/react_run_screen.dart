@@ -5,6 +5,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/audio/react_audio.dart';
+import '../../../core/settings/react_settings.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../../game/react_game.dart';
 import '../../modes/domain/mode_timing_rules.dart';
@@ -29,6 +30,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
 
   late final ReactGame _game;
   late final Random _random;
+  late final List<int> _playerLives;
 
   Timer? _commandTimer;
   Timer? _nextTimer;
@@ -46,7 +48,6 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   int _totalResponseMs = 0;
   int _lives = 3;
   int _currentPlayer = 0;
-  final List<int> _playerLives = [3, 3, 3];
 
   bool _acceptingInput = false;
   bool _finished = false;
@@ -97,6 +98,12 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    final passItPlayers = ReactSettings.passItPlayerCount.clamp(2, 4).toInt();
+    _playerLives = List<int>.filled(
+      widget.mode == ReactGameMode.passIt ? passItPlayers : 3,
+      3,
+    );
 
     _game = ReactGame()
       ..configure(
