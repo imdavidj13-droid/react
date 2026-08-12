@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../gameplay/domain/react_run_result.dart';
+import '../../gameplay/presentation/react_run_launch_screen.dart';
 import '../../gameplay/presentation/react_run_screen.dart';
 
 enum ReactRunMode { blitz, endless, daily, passIt }
@@ -21,6 +22,10 @@ class ModeRunScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ReactRunScreen(mode: mode.gameMode);
+    if (mode == ReactRunMode.passIt) {
+      return const ReactRunScreen(mode: ReactGameMode.passIt);
+    }
+
+    return ReactRunLaunchScreen(mode: mode.gameMode);
   }
 }
