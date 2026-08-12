@@ -37,7 +37,7 @@ class ModesScreen extends StatelessWidget {
                   _ModePanel(
                     title: 'CLASSIC',
                     subtitle: 'Survive as long as you can.',
-                    detail: '10 COMMANDS  •  RANDOM ORDER',
+                    detail: '9 COMMANDS  •  RANDOM ORDER',
                     icon: Icons.bolt_rounded,
                     color: ReactColors.electricBlueBright,
                     badge: 'CORE MODE',
@@ -380,7 +380,10 @@ class _ModeEmblem extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF050A13),
-              border: Border.all(color: color.withValues(alpha: .85), width: 2),
+              border: Border.all(
+                color: color.withValues(alpha: .85),
+                width: 2,
+              ),
             ),
           ),
           Container(
