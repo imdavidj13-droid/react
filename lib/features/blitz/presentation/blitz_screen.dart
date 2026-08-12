@@ -1,10 +1,30 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
+import '../../gameplay/data/local_player_stats.dart';
+import '../../gameplay/domain/react_run_result.dart';
 import '../../modes/presentation/mode_run_screen.dart';
 
-class BlitzScreen extends StatelessWidget {
+class BlitzScreen extends StatefulWidget {
   const BlitzScreen({super.key});
+
+  @override
+  State<BlitzScreen> createState() => _BlitzScreenState();
+}
+
+class _BlitzScreenState extends State<BlitzScreen> {
+  int _best = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBest();
+  }
+
+  Future<void> _loadBest() async {
+    final best = await LocalPlayerStats.bestScore(ReactGameMode.blitz);
+    if (mounted) setState(() => _best = best);
+  }
 
   void _start(BuildContext context) {
     Navigator.of(context).push(
@@ -32,15 +52,33 @@ class BlitzScreen extends StatelessWidget {
                   const SizedBox(height: 18),
                   const Row(
                     children: [
-                      Expanded(child: _RuleCard(icon: Icons.timer_outlined, label: '60 SEC', detail: 'One minute run')),
+                      Expanded(
+                        child: _RuleCard(
+                          icon: Icons.timer_outlined,
+                          label: '60 SEC',
+                          detail: 'One minute run',
+                        ),
+                      ),
                       SizedBox(width: 9),
-                      Expanded(child: _RuleCard(icon: Icons.speed_rounded, label: '1.4 SEC', detail: 'Fast commands')),
+                      Expanded(
+                        child: _RuleCard(
+                          icon: Icons.speed_rounded,
+                          label: 'FAST',
+                          detail: 'Rapid commands',
+                        ),
+                      ),
                       SizedBox(width: 9),
-                      Expanded(child: _RuleCard(icon: Icons.refresh_rounded, label: 'KEEP GOING', detail: 'Misses do not end it')),
+                      Expanded(
+                        child: _RuleCard(
+                          icon: Icons.remove_circle_outline_rounded,
+                          label: '-3 SEC',
+                          detail: 'Every miss',
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const _ScorePreview(),
+                  _ScorePreview(best: _best),
                   const SizedBox(height: 16),
                   _StartButton(onTap: () => _start(context)),
                 ],
@@ -71,7 +109,15 @@ class _Header extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
         ),
         const Spacer(),
-        const Text('RE△CT', style: TextStyle(color: ReactColors.textPrimary, fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: 3)),
+        const Text(
+          'RE△CT',
+          style: TextStyle(
+            color: ReactColors.textPrimary,
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 3,
+          ),
+        ),
         const Spacer(),
         const SizedBox(width: 40),
       ],
@@ -109,11 +155,35 @@ class _Hero extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('BLITZ', style: TextStyle(color: ReactColors.textPrimary, fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: 1.8)),
+                Text(
+                  'BLITZ',
+                  style: TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.8,
+                  ),
+                ),
                 SizedBox(height: 5),
-                Text('FAST. SHORT. BRUTAL.', style: TextStyle(color: ReactColors.coral, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
+                Text(
+                  'FAST. SHORT. BRUTAL.',
+                  style: TextStyle(
+                    color: ReactColors.coral,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.3,
+                  ),
+                ),
                 SizedBox(height: 9),
-                Text('Score as many successful commands as you can in 60 seconds. A miss resets your combo, not the run.', style: TextStyle(color: ReactColors.textSecondary, fontSize: 10.5, height: 1.35, fontWeight: FontWeight.w600)),
+                Text(
+                  'Score as many successful commands as you can in 60 seconds. A miss costs 3 seconds, but the run continues.',
+                  style: TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 10.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
@@ -144,9 +214,26 @@ class _RuleCard extends StatelessWidget {
         children: [
           Icon(icon, color: ReactColors.coral, size: 24),
           const SizedBox(height: 7),
-          FittedBox(child: Text(label, style: const TextStyle(color: ReactColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w900))),
+          FittedBox(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
           const SizedBox(height: 3),
-          Text(detail, textAlign: TextAlign.center, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 8, fontWeight: FontWeight.w600)),
+          Text(
+            detail,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 8,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -154,7 +241,8 @@ class _RuleCard extends StatelessWidget {
 }
 
 class _ScorePreview extends StatelessWidget {
-  const _ScorePreview();
+  const _ScorePreview({required this.best});
+  final int best;
 
   @override
   Widget build(BuildContext context) {
@@ -166,13 +254,31 @@ class _ScorePreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFF3B2A3F)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Expanded(child: _Metric(label: 'YOUR BEST', value: '34', color: ReactColors.coral)),
-          _Divider(),
-          Expanded(child: _Metric(label: 'TARGET', value: '40', color: ReactColors.lime)),
-          _Divider(),
-          Expanded(child: _Metric(label: 'POINTS', value: '1 / CMD', color: ReactColors.electricBlueBright)),
+          Expanded(
+            child: _Metric(
+              label: 'YOUR BEST',
+              value: '$best',
+              color: ReactColors.coral,
+            ),
+          ),
+          const _Divider(),
+          const Expanded(
+            child: _Metric(
+              label: 'MISS PENALTY',
+              value: '-3 SEC',
+              color: ReactColors.lime,
+            ),
+          ),
+          const _Divider(),
+          const Expanded(
+            child: _Metric(
+              label: 'POINTS',
+              value: '1 / CMD',
+              color: ReactColors.electricBlueBright,
+            ),
+          ),
         ],
       ),
     );
@@ -189,9 +295,22 @@ class _Metric extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 7.5, fontWeight: FontWeight.w900, letterSpacing: .7)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 7.5,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .7,
+          ),
+        ),
         const SizedBox(height: 5),
-        FittedBox(child: Text(value, style: TextStyle(color: color, fontSize: 17, fontWeight: FontWeight.w900))),
+        FittedBox(
+          child: Text(
+            value,
+            style: TextStyle(color: color, fontSize: 17, fontWeight: FontWeight.w900),
+          ),
+        ),
       ],
     );
   }
@@ -200,7 +319,8 @@ class _Metric extends StatelessWidget {
 class _Divider extends StatelessWidget {
   const _Divider();
   @override
-  Widget build(BuildContext context) => Container(width: 1, height: 36, color: const Color(0xFF263851));
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 36, color: const Color(0xFF263851));
 }
 
 class _StartButton extends StatelessWidget {
@@ -217,10 +337,16 @@ class _StartButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFF168CFF),
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(29), side: const BorderSide(color: Color(0xFF5FE5FF))),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(29),
+            side: const BorderSide(color: Color(0xFF5FE5FF)),
+          ),
         ),
         icon: const Icon(Icons.play_arrow_rounded),
-        label: const Text('START BLITZ', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+        label: const Text(
+          'START BLITZ',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+        ),
       ),
     );
   }
