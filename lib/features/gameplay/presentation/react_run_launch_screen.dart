@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/audio/react_audio.dart';
 import '../../../core/theme/react_colors.dart';
+import '../data/local_player_stats.dart';
 import '../domain/react_run_result.dart';
 import 'react_run_screen.dart';
 
@@ -49,12 +50,21 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen> {
       }
 
       _timer?.cancel();
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => ReactRunScreen(mode: widget.mode),
-        ),
-      );
+      unawaited(_beginRun());
     });
+  }
+
+  Future<void> _beginRun() async {
+    if (widget.mode == ReactGameMode.daily) {
+      await LocalPlayerStats.markDailyAttemptStarted();
+    }
+    if (!mounted) return;
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => ReactRunScreen(mode: widget.mode),
+      ),
+    );
   }
 
   @override
