@@ -1,10 +1,30 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
+import '../../gameplay/data/local_player_stats.dart';
+import '../../gameplay/domain/react_run_result.dart';
 import '../../modes/presentation/mode_run_screen.dart';
 
-class EndlessScreen extends StatelessWidget {
+class EndlessScreen extends StatefulWidget {
   const EndlessScreen({super.key});
+
+  @override
+  State<EndlessScreen> createState() => _EndlessScreenState();
+}
+
+class _EndlessScreenState extends State<EndlessScreen> {
+  int _best = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBest();
+  }
+
+  Future<void> _loadBest() async {
+    final best = await LocalPlayerStats.bestScore(ReactGameMode.endless);
+    if (mounted) setState(() => _best = best);
+  }
 
   void _start(BuildContext context) {
     Navigator.of(context).push(
@@ -32,15 +52,33 @@ class EndlessScreen extends StatelessWidget {
                   const SizedBox(height: 18),
                   const Row(
                     children: [
-                      Expanded(child: _RuleCard(icon: Icons.all_inclusive_rounded, label: 'NO LIMIT', detail: 'Keep reacting')),
+                      Expanded(
+                        child: _RuleCard(
+                          icon: Icons.all_inclusive_rounded,
+                          label: 'NO LIMIT',
+                          detail: 'Keep reacting',
+                        ),
+                      ),
                       SizedBox(width: 9),
-                      Expanded(child: _RuleCard(icon: Icons.trending_up_rounded, label: 'RAMP', detail: 'Gets faster every score')),
+                      Expanded(
+                        child: _RuleCard(
+                          icon: Icons.trending_up_rounded,
+                          label: 'RAMP',
+                          detail: 'Pace intensifies',
+                        ),
+                      ),
                       SizedBox(width: 9),
-                      Expanded(child: _RuleCard(icon: Icons.close_rounded, label: '1 MISS', detail: 'Run ends')),
+                      Expanded(
+                        child: _RuleCard(
+                          icon: Icons.close_rounded,
+                          label: '1 MISS',
+                          detail: 'Run ends',
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const _BestPanel(),
+                  _BestPanel(best: _best),
                   const SizedBox(height: 16),
                   _StartButton(onTap: () => _start(context)),
                 ],
@@ -71,7 +109,15 @@ class _Header extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
         ),
         const Spacer(),
-        const Text('RE△CT', style: TextStyle(color: ReactColors.textPrimary, fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: 3)),
+        const Text(
+          'RE△CT',
+          style: TextStyle(
+            color: ReactColors.textPrimary,
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 3,
+          ),
+        ),
         const Spacer(),
         const SizedBox(width: 40),
       ],
@@ -109,11 +155,35 @@ class _Hero extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('ENDLESS', style: TextStyle(color: ReactColors.textPrimary, fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                Text(
+                  'ENDLESS',
+                  style: TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                  ),
+                ),
                 SizedBox(height: 5),
-                Text('NO FINISH LINE.', style: TextStyle(color: ReactColors.lime, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
+                Text(
+                  'NO FINISH LINE.',
+                  style: TextStyle(
+                    color: ReactColors.lime,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.3,
+                  ),
+                ),
                 SizedBox(height: 9),
-                Text('The timer starts generous and tightens after every successful command. One mistake ends the run.', style: TextStyle(color: ReactColors.textSecondary, fontSize: 10.5, height: 1.35, fontWeight: FontWeight.w600)),
+                Text(
+                  'The reaction window and the gap between commands both collapse as your score rises. One mistake ends the run.',
+                  style: TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 10.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
@@ -144,9 +214,26 @@ class _RuleCard extends StatelessWidget {
         children: [
           Icon(icon, color: ReactColors.lime, size: 24),
           const SizedBox(height: 7),
-          FittedBox(child: Text(label, style: const TextStyle(color: ReactColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w900))),
+          FittedBox(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
           const SizedBox(height: 3),
-          Text(detail, textAlign: TextAlign.center, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 8, fontWeight: FontWeight.w600)),
+          Text(
+            detail,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 8,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -154,7 +241,8 @@ class _RuleCard extends StatelessWidget {
 }
 
 class _BestPanel extends StatelessWidget {
-  const _BestPanel();
+  const _BestPanel({required this.best});
+  final int best;
 
   @override
   Widget build(BuildContext context) {
@@ -166,21 +254,44 @@ class _BestPanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFF32461F)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.workspace_premium_outlined, color: ReactColors.lime, size: 28),
-          SizedBox(width: 12),
+          const Icon(Icons.workspace_premium_outlined, color: ReactColors.lime, size: 28),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('YOUR BEST RUN', style: TextStyle(color: ReactColors.textSecondary, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: .8)),
-                SizedBox(height: 4),
-                Text('42 COMMANDS', style: TextStyle(color: ReactColors.lime, fontSize: 20, fontWeight: FontWeight.w900)),
+                const Text(
+                  'YOUR BEST RUN',
+                  style: TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .8,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$best COMMANDS',
+                  style: const TextStyle(
+                    color: ReactColors.lime,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ],
             ),
           ),
-          Text('1 POINT EACH', style: TextStyle(color: ReactColors.electricBlueBright, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: .7)),
+          const Text(
+            '1 POINT EACH',
+            style: TextStyle(
+              color: ReactColors.electricBlueBright,
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .7,
+            ),
+          ),
         ],
       ),
     );
@@ -201,10 +312,16 @@ class _StartButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFF168CFF),
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(29), side: const BorderSide(color: Color(0xFF5FE5FF))),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(29),
+            side: const BorderSide(color: Color(0xFF5FE5FF)),
+          ),
         ),
         icon: const Icon(Icons.play_arrow_rounded),
-        label: const Text('START ENDLESS', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+        label: const Text(
+          'START ENDLESS',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+        ),
       ),
     );
   }
