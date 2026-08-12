@@ -32,7 +32,6 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
 
   final Map<int, Offset> _pointers = <int, Offset>{};
 
-  Offset? _primaryStart;
   Offset _primaryDelta = Offset.zero;
   double? _twoFingerStartDistance;
   DateTime? _primaryDownAt;
@@ -65,7 +64,6 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
 
     if (_pointers.length == 1) {
       _primaryPointer = event.pointer;
-      _primaryStart = event.localPosition;
       _primaryDelta = Offset.zero;
       _primaryDownAt = DateTime.now();
       _resolved = false;
@@ -218,7 +216,6 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
 
   void _resetGestureState({bool preserveDoubleTap = false}) {
     _primaryPointer = null;
-    _primaryStart = null;
     _primaryDelta = Offset.zero;
     _primaryDownAt = null;
     _multiTouchSeen = false;
