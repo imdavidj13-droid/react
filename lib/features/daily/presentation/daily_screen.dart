@@ -26,6 +26,11 @@ class _DailyScreenState extends State<DailyScreen> {
   }
 
   Future<void> _start() async {
+    await LocalPlayerStats.markDailyAttemptStarted();
+    if (!mounted) return;
+
+    setState(_reload);
+
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => const ModeRunScreen(mode: ReactRunMode.daily),
@@ -110,8 +115,11 @@ class _DailyScreenState extends State<DailyScreen> {
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.cloud_off_rounded,
-                                color: ReactColors.textSecondary, size: 23),
+                            Icon(
+                              Icons.cloud_off_rounded,
+                              color: ReactColors.textSecondary,
+                              size: 23,
+                            ),
                             SizedBox(width: 11),
                             Expanded(
                               child: Text(
@@ -318,7 +326,11 @@ class _ChallengeCard extends StatelessWidget {
                   side: const BorderSide(color: Color(0xFF5FE5FF)),
                 ),
               ),
-              icon: Icon(state.playedToday ? Icons.check_rounded : Icons.play_arrow_rounded),
+              icon: Icon(
+                state.playedToday
+                    ? Icons.check_rounded
+                    : Icons.play_arrow_rounded,
+              ),
               label: Text(
                 state.playedToday ? 'PLAYED TODAY' : 'PLAY DAILY',
                 style: const TextStyle(
@@ -356,7 +368,11 @@ class _Metric extends StatelessWidget {
         const SizedBox(height: 5),
         Text(
           value,
-          style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w900),
+          style: TextStyle(
+            color: color,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+          ),
         ),
       ],
     );
@@ -366,12 +382,20 @@ class _Metric extends StatelessWidget {
 class _Divider extends StatelessWidget {
   const _Divider();
   @override
-  Widget build(BuildContext context) =>
-      Container(width: 1, height: 36, color: const Color(0xFF233850));
+  Widget build(BuildContext context) => Container(
+        width: 1,
+        height: 36,
+        color: const Color(0xFF233850),
+      );
 }
 
 class _StatCard extends StatelessWidget {
-  const _StatCard({required this.icon, required this.label, required this.value, required this.color});
+  const _StatCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
   final IconData icon;
   final String label;
   final String value;
@@ -402,7 +426,14 @@ class _StatCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 3),
-          Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w900)),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ],
       ),
     );
