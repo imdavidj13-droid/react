@@ -13,32 +13,19 @@ class ModeTimingRules {
     this.missTimePenaltyMs = 0,
   });
 
-  static final Map<ModeTimingRules, int> _latestScores = {};
-
   final int startCommandMs;
   final int minimumCommandMs;
   final int commandSpeedStepMs;
   final int commandSpeedStepEveryPoints;
-
   final int startSuccessDelayMs;
   final int minimumSuccessDelayMs;
   final int successDelayStepMs;
   final int successDelayStepEveryPoints;
-
   final int missDelayMs;
   final int? runDurationMs;
   final int missTimePenaltyMs;
 
-  // Compatibility bridge for the existing run screens. The command-duration
-  // lookup records the current score, allowing the existing successDelayMs
-  // call to use the same score-aware pace curve. Once every run screen calls
-  // successDelayMsForScore directly this bridge can be removed.
-  int get successDelayMs =>
-      successDelayMsForScore(_latestScores[this] ?? 0);
-
   int commandDurationMsForScore(int score) {
-    _latestScores[this] = score;
-
     if (commandSpeedStepMs <= 0 || commandSpeedStepEveryPoints <= 0) {
       return startCommandMs;
     }
@@ -60,10 +47,6 @@ class ModeTimingRules {
 }
 
 abstract final class ReactModeTiming {
-  // CLASSIC
-  // Starts deliberately readable, then tightens steadily. Three lives give the
-  // player room to recover, so the mode can become genuinely quick at higher
-  // scores without feeling unfair early on.
   static const classic = ModeTimingRules(
     startCommandMs: 2300,
     minimumCommandMs: 1250,
@@ -76,9 +59,6 @@ abstract final class ReactModeTiming {
     missDelayMs: 600,
   );
 
-  // BLITZ
-  // Fixed 60-second score attack. Fast from the beginning, but misses cost
-  // clock time rather than ending the run.
   static const blitz = ModeTimingRules(
     startCommandMs: 1450,
     minimumCommandMs: 1000,
@@ -93,9 +73,6 @@ abstract final class ReactModeTiming {
     missTimePenaltyMs: 3000,
   );
 
-  // ENDLESS
-  // Survival mode. It becomes hostile quickly: both the reaction window and
-  // the gap between commands collapse as score rises. One miss ends the run.
   static const endless = ModeTimingRules(
     startCommandMs: 2000,
     minimumCommandMs: 800,
@@ -108,9 +85,6 @@ abstract final class ReactModeTiming {
     missDelayMs: 0,
   );
 
-  // DAILY
-  // Stable pace so every player receives the same meaningful challenge. The
-  // deterministic sequence matters more than a hidden speed curve.
   static const daily = ModeTimingRules(
     startCommandMs: 1900,
     minimumCommandMs: 1900,
@@ -123,9 +97,6 @@ abstract final class ReactModeTiming {
     missDelayMs: 0,
   );
 
-  // PASS IT
-  // The command itself can tighten a little, but the hand-over gap remains
-  // intentionally generous so the next player can physically receive the phone.
   static const passIt = ModeTimingRules(
     startCommandMs: 1900,
     minimumCommandMs: 1400,
