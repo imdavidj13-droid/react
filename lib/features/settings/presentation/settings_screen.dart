@@ -42,7 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: const Color(0xFF07111D),
         title: const Text('RESET LOCAL PROGRESS?'),
         content: const Text(
-          'This permanently clears every local best score, total runs, Daily streak and today\'s Daily attempt. Sound and visual settings are kept.',
+          'This permanently clears local scores, detailed run stats, Daily streak and today\'s Daily attempt. Sound and visual settings are kept.',
         ),
         actions: [
           TextButton(
@@ -86,8 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               FutureBuilder<_ProfileStats>(
                 future: _stats,
                 builder: (context, snapshot) {
-                  final stats = snapshot.data ?? const _ProfileStats();
-                  return _StatsPanel(stats: stats);
+                  return _StatsPanel(stats: snapshot.data ?? const _ProfileStats());
                 },
               ),
               const SizedBox(height: 18),
@@ -105,7 +104,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _SettingTile(
                 icon: Icons.auto_awesome_rounded,
                 title: 'VISUAL EFFECTS',
-                subtitle: 'Particles, reaction bursts and pressure effects.',
+                subtitle: 'Flame particles, bursts and pressure effects.',
                 value: _visualEffectsEnabled,
                 color: ReactColors.purple,
                 onChanged: _setVisualEffects,
@@ -127,6 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 class _ProfileStats {
   const _ProfileStats({
     this.runs = 0,
+    this.commands = 0,
     this.classic = 0,
     this.blitz = 0,
     this.endless = 0,
@@ -135,6 +135,7 @@ class _ProfileStats {
   });
 
   final int runs;
+  final int commands;
   final int classic;
   final int blitz;
   final int endless;
@@ -142,27 +143,29 @@ class _ProfileStats {
   final int streak;
 
   static Future<_ProfileStats> load() async {
-    final values = await Future.wait<int>([
-      LocalPlayerStats.runsPlayed(),
-      LocalPlayerStats.bestFor(ReactGameMode.classic),
-      LocalPlayerStats.bestFor(ReactGameMode.blitz),
-      LocalPlayerStats.bestFor(ReactGameMode.endless),
-      LocalPlayerStats.bestFor(ReactGameMode.daily),
-      LocalPlayerStats.dailyStreak(),
-    ]);
+    final runs = await LocalPlayerStats.runsPlayed();
+    final commands = await LocalPlayerStats.totalSuccessfulCommands();
+    final classic = await LocalPlayerStats.bestFor(ReactGameMode.classic);
+    final blitz = await LocalPlayerStats.bestFor(ReactGameMode.blitz);
+    final endless = await LocalPlayerStats.bestFor(ReactGameMode.endless);
+    final daily = await LocalPlayerStats.bestFor(ReactGameMode.daily);
+    final streak = await LocalPlayerStats.dailyStreak();
+
     return _ProfileStats(
-      runs: values[0],
-      classic: values[1],
-      blitz: values[2],
-      endless: values[3],
-      daily: values[4],
-      streak: values[5],
+      runs: runs,
+      commands: commands,
+      classic: classic,
+      blitz: blitz,
+      endless: endless,
+      daily: daily,
+      streak: streak,
     );
   }
 }
 
 class _Header extends StatelessWidget {
   const _Header({required this.onBack});
+
   final VoidCallback onBack;
 
   @override
@@ -206,14 +209,20 @@ class _ProfileHero extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: ReactColors.electricBlueBright.withValues(alpha: .45)),
+        border: Border.all(
+          color: ReactColors.electricBlueBright.withValues(alpha: .45),
+        ),
       ),
       child: const Row(
         children: [
           CircleAvatar(
             radius: 34,
             backgroundColor: Color(0xFF050A13),
-            child: Icon(Icons.person_rounded, color: ReactColors.electricBlueBright, size: 37),
+            child: Icon(
+              Icons.person_rounded,
+              color: ReactColors.electricBlueBright,
+              size: 37,
+            ),
           ),
           SizedBox(width: 14),
           Expanded(
@@ -250,6 +259,7 @@ class _ProfileHero extends StatelessWidget {
 
 class _StatsPanel extends StatelessWidget {
   const _StatsPanel({required this.stats});
+
   final _ProfileStats stats;
 
   @override
@@ -266,17 +276,73 @@ class _StatsPanel extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: _Metric(label: 'RUNS', value: '${stats.runs}', color: ReactColors.textPrimary)),
-              Expanded(child: _Metric(label: 'CLASSIC', value: '${stats.classic}', color: ReactColors.electricBlueBright)),
-              Expanded(child: _Metric(label: 'BLITZ', value: '${stats.blitz}', color: ReactColors.coral)),
+              Expanded(
+                child: _Metric(
+                  label: 'RUNS',
+                  value: '${stats.runs}',
+                  color: ReactColors.textPrimary,
+                ),
+              ),
+              Expanded(
+                child: _Metric(
+                  label: 'COMMANDS',
+                  value: '${stats.commands}',
+                  color: ReactColors.lime,
+                ),
+              ),
+              Expanded(
+                child: _Metric(
+                  label: 'STREAK',
+                  value: '${stats.streak}',
+                  color: ReactColors.coral,
+                ),
+              ),
             ],
           ),
           const Divider(color: Color(0xFF22364E), height: 26),
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'PERSONAL BESTS',
+              style: TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 7.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: _Metric(label: 'ENDLESS', value: '${stats.endless}', color: ReactColors.lime)),
-              Expanded(child: _Metric(label: 'DAILY', value: '${stats.daily}', color: ReactColors.purple)),
-              Expanded(child: _Metric(label: 'STREAK', value: '${stats.streak}', color: ReactColors.coral)),
+              Expanded(
+                child: _Metric(
+                  label: 'CLASSIC',
+                  value: '${stats.classic}',
+                  color: ReactColors.electricBlueBright,
+                ),
+              ),
+              Expanded(
+                child: _Metric(
+                  label: 'BLITZ',
+                  value: '${stats.blitz}',
+                  color: ReactColors.coral,
+                ),
+              ),
+              Expanded(
+                child: _Metric(
+                  label: 'ENDLESS',
+                  value: '${stats.endless}',
+                  color: ReactColors.lime,
+                ),
+              ),
+              Expanded(
+                child: _Metric(
+                  label: 'DAILY',
+                  value: '${stats.daily}',
+                  color: ReactColors.purple,
+                ),
+              ),
             ],
           ),
         ],
@@ -287,6 +353,7 @@ class _StatsPanel extends StatelessWidget {
 
 class _Metric extends StatelessWidget {
   const _Metric({required this.label, required this.value, required this.color});
+
   final String label;
   final String value;
   final Color color;
@@ -295,15 +362,26 @@ class _Metric extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value, style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w900)),
+        FittedBox(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 21,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 7.5,
-            fontWeight: FontWeight.w900,
-            letterSpacing: .8,
+        FittedBox(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 7,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .6,
+            ),
           ),
         ),
       ],
@@ -313,6 +391,7 @@ class _Metric extends StatelessWidget {
 
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.label);
+
   final String label;
 
   @override
@@ -390,7 +469,11 @@ class _SettingTile extends StatelessWidget {
               ],
             ),
           ),
-          Switch(value: value, onChanged: onChanged, activeThumbColor: color),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: color,
+          ),
         ],
       ),
     );
@@ -433,7 +516,7 @@ class _ResetProgressTile extends StatelessWidget {
                   ),
                   SizedBox(height: 3),
                   Text(
-                    'Clear scores, run history and Daily progress from this device.',
+                    'Clear scores, detailed run stats and Daily progress from this device.',
                     style: TextStyle(
                       color: ReactColors.textSecondary,
                       fontSize: 9,
