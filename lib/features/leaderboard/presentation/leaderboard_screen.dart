@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
 import '../../gameplay/data/local_player_stats.dart';
+import '../../gameplay/domain/react_run_history_entry.dart';
 import '../../gameplay/domain/react_run_result.dart';
 
 class LeaderboardScreen extends StatefulWidget {
@@ -12,15 +13,15 @@ class LeaderboardScreen extends StatefulWidget {
 }
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
-  late Future<List<_ModeStats>> _stats;
+  late Future<_ScoresData> _data;
 
   @override
   void initState() {
     super.initState();
-    _stats = _loadStats();
+    _data = _loadData();
   }
 
-  Future<List<_ModeStats>> _loadStats() async {
+  Future<_ScoresData> _loadData() async {
     final items = <_ModeStats>[];
     for (final mode in ReactGameMode.values) {
       items.add(
@@ -34,7 +35,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         ),
       );
     }
-    return items;
+
+    return _ScoresData(
+      stats: items,
+      recentRuns: await LocalPlayerStats.recentRuns(),
+    );
   }
 
   @override
@@ -42,24 +47,34 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     return Scaffold(
       backgroundColor: ReactColors.background,
       body: SafeArea(
-        child: FutureBuilder<List<_ModeStats>>(
-          future: _stats,
+        child: FutureBuilder<_ScoresData>(
+          future: _data,
           builder: (context, snapshot) {
-            final stats = snapshot.data ?? const <_ModeStats>[];
+            final data = snapshot.data ?? const _ScoresData();
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
               child: Column(
                 children: [
                   _Header(onBack: () => Navigator.of(context).pop()),
                   const SizedBox(height: 20),
-                  _RecordsBanner(stats: stats),
+                  _RecordsBanner(stats: data.stats),
                   const SizedBox(height: 20),
                   const _SectionLabel('YOUR MODE STATS'),
                   const SizedBox(height: 10),
-                  for (final item in stats) ...[
+                  for (final item in data.stats) ...[
                     _ModeStatsCard(stats: item),
                     const SizedBox(height: 10),
                   ],
+                  const SizedBox(height: 10),
+                  const _SectionLabel('RECENT RUNS'),
+                  const SizedBox(height: 10),
+                  if (data.recentRuns.isEmpty)
+                    const _EmptyHistory()
+                  else
+                    for (final run in data.recentRuns) ...[
+                      _RecentRunCard(entry: run),
+                      const SizedBox(height: 9),
+                    ],
                 ],
               ),
             );
@@ -68,6 +83,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       ),
     );
   }
+}
+
+class _ScoresData {
+  const _ScoresData({
+    this.stats = const <_ModeStats>[],
+    this.recentRuns = const <ReactRunHistoryEntry>[],
+  });
+
+  final List<_ModeStats> stats;
+  final List<ReactRunHistoryEntry> recentRuns;
 }
 
 class _ModeStats {
@@ -248,21 +273,8 @@ class _ModeStatsCard extends StatelessWidget {
 
   final _ModeStats stats;
 
-  Color get color => switch (stats.mode) {
-        ReactGameMode.classic => ReactColors.electricBlueBright,
-        ReactGameMode.blitz => ReactColors.coral,
-        ReactGameMode.endless => ReactColors.lime,
-        ReactGameMode.daily => ReactColors.purple,
-        ReactGameMode.passIt => const Color(0xFFFFB85A),
-      };
-
-  IconData get icon => switch (stats.mode) {
-        ReactGameMode.classic => Icons.bolt_rounded,
-        ReactGameMode.blitz => Icons.timer_rounded,
-        ReactGameMode.endless => Icons.all_inclusive_rounded,
-        ReactGameMode.daily => Icons.calendar_month_rounded,
-        ReactGameMode.passIt => Icons.groups_2_rounded,
-      };
+  Color get color => _modeColor(stats.mode);
+  IconData get icon => _modeIcon(stats.mode);
 
   @override
   Widget build(BuildContext context) {
@@ -347,17 +359,11 @@ class _ModeStatsCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _CardMetric(
-                  label: 'RUNS',
-                  value: '${stats.runs}',
-                ),
+                child: _CardMetric(label: 'RUNS', value: '${stats.runs}'),
               ),
               const _BannerDivider(),
               Expanded(
-                child: _CardMetric(
-                  label: 'COMMANDS',
-                  value: '${stats.commands}',
-                ),
+                child: _CardMetric(label: 'COMMANDS', value: '${stats.commands}'),
               ),
               const _BannerDivider(),
               Expanded(
@@ -369,6 +375,143 @@ class _ModeStatsCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentRunCard extends StatelessWidget {
+  const _RecentRunCard({required this.entry});
+
+  final ReactRunHistoryEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _modeColor(entry.mode);
+    final date = entry.playedAt.toLocal();
+    final timestamp =
+        '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}  '
+        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: .30)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF050A13),
+              border: Border.all(color: color.withValues(alpha: .8)),
+            ),
+            child: Icon(_modeIcon(entry.mode), color: color, size: 22),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      entry.mode.label,
+                      style: const TextStyle(
+                        color: ReactColors.textPrimary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .7,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      timestamp,
+                      style: const TextStyle(
+                        color: ReactColors.textSecondary,
+                        fontSize: 7.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  '${entry.successfulCommands} cleared  •  ${entry.misses} misses  •  '
+                  '${entry.averageTimeSeconds == 0 ? '--' : '${entry.averageTimeSeconds.toStringAsFixed(2)}s avg'}',
+                  style: const TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                entry.mode == ReactGameMode.passIt ? 'MATCH' : 'SCORE',
+                style: const TextStyle(
+                  color: ReactColors.textSecondary,
+                  fontSize: 6.5,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .6,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${entry.score}',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyHistory extends StatelessWidget {
+  const _EmptyHistory();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF263851)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.history_rounded, color: ReactColors.textSecondary, size: 24),
+          SizedBox(width: 11),
+          Expanded(
+            child: Text(
+              'PLAY A RUN TO START BUILDING YOUR RECENT HISTORY',
+              style: TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 8.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .7,
+              ),
+            ),
           ),
         ],
       ),
@@ -462,3 +605,19 @@ class _BannerDivider extends StatelessWidget {
     );
   }
 }
+
+Color _modeColor(ReactGameMode mode) => switch (mode) {
+      ReactGameMode.classic => ReactColors.electricBlueBright,
+      ReactGameMode.blitz => ReactColors.coral,
+      ReactGameMode.endless => ReactColors.lime,
+      ReactGameMode.daily => ReactColors.purple,
+      ReactGameMode.passIt => const Color(0xFFFFB85A),
+    };
+
+IconData _modeIcon(ReactGameMode mode) => switch (mode) {
+      ReactGameMode.classic => Icons.bolt_rounded,
+      ReactGameMode.blitz => Icons.timer_rounded,
+      ReactGameMode.endless => Icons.all_inclusive_rounded,
+      ReactGameMode.daily => Icons.calendar_month_rounded,
+      ReactGameMode.passIt => Icons.groups_2_rounded,
+    };
