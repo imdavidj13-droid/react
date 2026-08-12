@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/audio/react_audio.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../../game/react_game.dart';
 import '../../modes/domain/mode_timing_rules.dart';
@@ -51,6 +52,9 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   bool _finished = false;
   bool _paused = false;
   bool _handoff = false;
+  bool _pausedHadActiveCommand = false;
+  bool _blitzWarningPlayed = false;
+  int _pausedCommandRemainingMs = 0;
   String? _feedback;
 
   ModeTimingRules get _timing => switch (widget.mode) {
@@ -110,7 +114,14 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       );
       _runTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
         if (!mounted || _finished || _paused) return;
-        if (_blitzMsRemaining <= 0) {
+
+        final remaining = _blitzMsRemaining;
+        if (remaining <= 10000 && !_blitzWarningPlayed) {
+          _blitzWarningPlayed = true;
+          unawaited(ReactAudio.play(ReactSoundCue.blitzWarning));
+        }
+
+        if (remaining <= 0) {
           _finish(ReactRunOutcome.timeUp);
         } else {
           setState(() {});
@@ -121,6 +132,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     if (widget.mode == ReactGameMode.passIt) {
       _handoff = true;
       _acceptingInput = false;
+      unawaited(ReactAudio.play(ReactSoundCue.handoff));
     } else {
       _startCommand();
     }
@@ -161,14 +173,32 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     final next = ReactCommand.values[_random.nextInt(ReactCommand.values.length)];
     setState(() {
       _command = next;
-      _commandStartedAt = DateTime.now();
       _progress = 1;
-      _acceptingInput = true;
       _feedback = null;
     });
 
+    unawaited(ReactAudio.play(ReactSoundCue.command));
+    _armCommandTimer(_commandDurationMs);
+  }
+
+  void _armCommandTimer(int remainingMs) {
+    final fullDuration = _commandDurationMs;
+    final safeRemaining = remainingMs.clamp(1, fullDuration);
+    final elapsedBeforePause = fullDuration - safeRemaining;
+
+    _commandStartedAt = DateTime.now().subtract(
+      Duration(milliseconds: elapsedBeforePause),
+    );
+
+    setState(() {
+      _progress = safeRemaining / fullDuration;
+      _acceptingInput = true;
+    });
+
+    _commandTimer?.cancel();
     _commandTimer = Timer.periodic(_tick, (_) {
       if (!mounted || _finished || _paused || !_acceptingInput) return;
+
       final elapsed = DateTime.now().difference(_commandStartedAt).inMilliseconds;
       final nextProgress = 1 - (elapsed / _commandDurationMs);
       if (nextProgress <= 0) {
@@ -205,6 +235,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
               : '+1  GOOD';
     });
 
+    unawaited(ReactAudio.play(ReactSoundCue.success));
     _game.triggerSuccess();
     _syncFlameIntensity();
 
@@ -227,6 +258,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     switch (widget.mode) {
       case ReactGameMode.classic:
         final remaining = _lives - 1;
+        unawaited(ReactAudio.play(ReactSoundCue.lifeLost));
         setState(() {
           _acceptingInput = false;
           _lives = remaining;
@@ -250,6 +282,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         final penalty = _timing.missTimePenaltyMs;
         final remaining = max(0, _blitzMsRemaining - penalty);
         _blitzDeadline = DateTime.now().add(Duration(milliseconds: remaining));
+        unawaited(ReactAudio.play(ReactSoundCue.miss));
         setState(() {
           _acceptingInput = false;
           _misses += 1;
@@ -266,16 +299,19 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         return;
 
       case ReactGameMode.endless:
+        unawaited(ReactAudio.play(ReactSoundCue.miss));
         setState(() => _misses += 1);
         _finish(ReactRunOutcome.missedCommand);
         return;
 
       case ReactGameMode.daily:
+        unawaited(ReactAudio.play(ReactSoundCue.miss));
         setState(() => _misses += 1);
         _finish(ReactRunOutcome.missedCommand);
         return;
 
       case ReactGameMode.passIt:
+        unawaited(ReactAudio.play(ReactSoundCue.lifeLost));
         setState(() {
           _acceptingInput = false;
           _misses += 1;
@@ -299,6 +335,8 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   }
 
   void _advancePlayerAndHandoff() {
+    setState(() => _acceptingInput = false);
+
     if (_alivePlayers <= 1) {
       final winner = _playerLives.indexWhere((lives) => lives > 0) + 1;
       _nextTimer = Timer(
@@ -313,10 +351,14 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       candidate = (candidate + 1) % _playerLives.length;
     } while (_playerLives[candidate] <= 0);
 
-    setState(() {
-      _currentPlayer = candidate;
-      _handoff = true;
-      _acceptingInput = false;
+    _nextTimer = Timer(const Duration(milliseconds: 320), () {
+      if (!mounted || _finished) return;
+      setState(() {
+        _currentPlayer = candidate;
+        _handoff = true;
+        _feedback = null;
+      });
+      unawaited(ReactAudio.play(ReactSoundCue.handoff));
     });
   }
 
@@ -332,12 +374,24 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     if (_finished || _paused == value) return;
 
     if (value) {
+      _pausedHadActiveCommand = _acceptingInput && !_handoff;
+      if (_pausedHadActiveCommand) {
+        _pausedCommandRemainingMs = max(
+          1,
+          (_commandDurationMs * _progress).round(),
+        );
+      } else {
+        _pausedCommandRemainingMs = 0;
+      }
+
       _commandTimer?.cancel();
       _nextTimer?.cancel();
       _game.pauseEngine();
+
       if (widget.mode == ReactGameMode.blitz) {
         _pausedBlitzRemaining = Duration(milliseconds: _blitzMsRemaining);
       }
+
       setState(() {
         _paused = true;
         _acceptingInput = false;
@@ -348,9 +402,20 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     if (widget.mode == ReactGameMode.blitz) {
       _blitzDeadline = DateTime.now().add(_pausedBlitzRemaining);
     }
+
     _game.resumeEngine();
     setState(() => _paused = false);
-    if (!_handoff) _startCommand();
+
+    if (_handoff) return;
+
+    if (_pausedHadActiveCommand && _pausedCommandRemainingMs > 0) {
+      final remaining = _pausedCommandRemainingMs;
+      _pausedHadActiveCommand = false;
+      _pausedCommandRemainingMs = 0;
+      _armCommandTimer(remaining);
+    } else {
+      _startCommand();
+    }
   }
 
   void _restart() {
@@ -368,6 +433,10 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _commandTimer?.cancel();
     _nextTimer?.cancel();
     _runTimer?.cancel();
+
+    if (outcome == ReactRunOutcome.completed || outcome == ReactRunOutcome.winner) {
+      unawaited(ReactAudio.play(ReactSoundCue.completed));
+    }
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
@@ -944,6 +1013,16 @@ class _PauseOverlay extends StatelessWidget {
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'THE CURRENT COMMAND IS FROZEN',
+                  style: TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
                   ),
                 ),
                 const SizedBox(height: 18),
