@@ -7,6 +7,7 @@ import 'package:react/features/leaderboard/presentation/leaderboard_screen.dart'
 import 'package:react/features/modes/presentation/modes_screen.dart';
 import 'package:react/features/pass_it/presentation/pass_it_screen.dart';
 import 'package:react/features/results/presentation/results_screen.dart';
+import 'package:react/features/settings/presentation/command_performance_screen.dart';
 import 'package:react/features/settings/presentation/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -74,6 +75,21 @@ void main() {
     expect(find.text('RESET LOCAL PROGRESS'), findsOneWidget);
   });
 
+  testWidgets('Command performance fits and scrolls on a 320x640 screen', (tester) async {
+    await pumpAtSize(
+      tester,
+      const CommandPerformanceScreen(),
+      const Size(320, 640),
+    );
+
+    expect(find.text('COMMAND PERFORMANCE'), findsOneWidget);
+    await tester.drag(find.byType(ListView), const Offset(0, -650));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('SPREAD IT'), findsOneWidget);
+  });
+
   testWidgets('Daily fits and scrolls on a 320x640 screen', (tester) async {
     await pumpAtSize(tester, const DailyScreen(), const Size(320, 640));
 
@@ -81,7 +97,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('60'), findsOneWidget);
+    expect(find.text('LAST 7 DAYS'), findsOneWidget);
   });
 
   testWidgets('Scores fits and scrolls on a 320x640 screen', (tester) async {
