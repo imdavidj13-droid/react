@@ -14,14 +14,21 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  late bool _soundEnabled;
   late bool _visualEffectsEnabled;
   late Future<_ProfileStats> _stats;
 
   @override
   void initState() {
     super.initState();
+    _soundEnabled = ReactSettings.soundEnabled;
     _visualEffectsEnabled = ReactSettings.visualEffectsEnabled;
     _stats = _ProfileStats.load();
+  }
+
+  Future<void> _setSound(bool value) async {
+    setState(() => _soundEnabled = value);
+    await ReactSettings.setSoundEnabled(value);
   }
 
   Future<void> _setVisualEffects(bool value) async {
@@ -46,7 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: const Color(0xFF07111D),
         title: const Text('RESET LOCAL PROGRESS?'),
         content: const Text(
-          'This permanently clears local scores, detailed run stats, command performance, Daily history, Daily streak and today\'s Daily attempt. Visual settings are kept.',
+          'This permanently clears local scores, detailed run stats, command performance, Daily history and Daily streak. Game settings are kept.',
         ),
         actions: [
           TextButton(
@@ -109,9 +116,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const _SectionLabel('GAME SETTINGS'),
               const SizedBox(height: 10),
               _SettingTile(
+                icon: Icons.volume_up_rounded,
+                title: 'TEST SOUNDS',
+                subtitle: 'Temporary system sounds for gameplay and countdown feedback.',
+                value: _soundEnabled,
+                color: ReactColors.electricBlueBright,
+                onChanged: _setSound,
+              ),
+              const SizedBox(height: 10),
+              _SettingTile(
                 icon: Icons.auto_awesome_rounded,
                 title: 'VISUAL EFFECTS',
-                subtitle: 'Flame particles, bursts and pressure effects.',
+                subtitle: 'Flame particles, bursts, pulses and pressure effects.',
                 value: _visualEffectsEnabled,
                 color: ReactColors.purple,
                 onChanged: _setVisualEffects,
