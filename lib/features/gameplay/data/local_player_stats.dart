@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/settings/react_settings.dart';
 import '../domain/react_run_history_entry.dart';
 import '../domain/react_run_result.dart';
 
@@ -83,6 +84,11 @@ class LocalPlayerStats {
   }
 
   static Future<bool> recordResult(ReactRunResult result) async {
+    if (result.mode == ReactGameMode.daily &&
+        ReactSettings.dailyDevOverrideEnabled) {
+      return false;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     var isNewBest = false;
 
