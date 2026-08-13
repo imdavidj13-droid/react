@@ -9,6 +9,7 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     ReactSettings.dailyDevOverrideEnabled = false;
     ReactSettings.dailyDevModifier = 'lightsOut';
+    ReactSettings.dailyDevRunActive = false;
   });
 
   ReactRunResult result({
@@ -195,8 +196,27 @@ void main() {
     expect(await LocalPlayerStats.bestFor(ReactGameMode.daily), 10);
   });
 
+  test('persisted dev override does not suppress a normal Daily result', () async {
+    ReactSettings.dailyDevOverrideEnabled = true;
+    ReactSettings.dailyDevRunActive = false;
+
+    final newBest = await LocalPlayerStats.recordResult(
+      result(
+        mode: ReactGameMode.daily,
+        score: 12,
+        outcome: ReactRunOutcome.missedCommand,
+      ),
+    );
+
+    expect(newBest, isTrue);
+    expect(await LocalPlayerStats.bestFor(ReactGameMode.daily), 12);
+    expect(await LocalPlayerStats.runsPlayed(), 1);
+    expect(await LocalPlayerStats.hasPlayedDailyToday(), isTrue);
+  });
+
   test('Daily developer runs never alter real local records', () async {
     ReactSettings.dailyDevOverrideEnabled = true;
+    ReactSettings.dailyDevRunActive = true;
 
     final newBest = await LocalPlayerStats.recordResult(
       result(
