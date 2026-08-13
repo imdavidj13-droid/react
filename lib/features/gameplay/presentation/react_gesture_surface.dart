@@ -35,6 +35,7 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   final Map<int, Offset> _pointers = <int, Offset>{};
 
   Offset _primaryDelta = Offset.zero;
+  Offset _primaryPeakDelta = Offset.zero;
   double? _twoFingerStartDistance;
   Duration? _primaryDownAt;
   Duration? _firstTapAt;
@@ -44,6 +45,8 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   ReactCommand? _pendingMultiTouchCommand;
   bool _multiTouchSeen = false;
   bool _holdSatisfied = false;
+  bool _tapMovementInvalidated = false;
+  bool _holdMovementInvalidated = false;
   bool _secondTapStartedInWindow = false;
   bool _resolved = false;
   bool _cancelled = false;
@@ -121,9 +124,12 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
 
       _primaryPointer = event.pointer;
       _primaryDelta = Offset.zero;
+      _primaryPeakDelta = Offset.zero;
       _primaryDownAt = now;
       _multiTouchSeen = false;
       _holdSatisfied = false;
+      _tapMovementInvalidated = false;
+      _holdMovementInvalidated = false;
       _pendingMultiTouchCommand = null;
       _resolved = false;
       _cancelled = false;
@@ -135,11 +141,11 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
             _resolved ||
             _multiTouchSeen ||
             _cancelled ||
-            _blockedUntilPointersClear) {
+            _blockedUntilPointersClear ||
+            _holdMovementInvalidated) {
           return;
         }
-        if (_pointers.containsKey(_primaryPointer) &&
-            _primaryDelta.distance <= _holdMovementTolerance) {
+        if (_pointers.containsKey(_primaryPointer)) {
           _holdSatisfied = true;
         }
       });
@@ -193,7 +199,15 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
 
     if (event.pointer == _primaryPointer) {
       _primaryDelta += event.localPosition - previous;
-      if (_primaryDelta.distance > _holdMovementTolerance) {
+      if (_primaryDelta.distance > _primaryPeakDelta.distance) {
+        _primaryPeakDelta = _primaryDelta;
+      }
+
+      if (_primaryPeakDelta.distance > _tapMovementTolerance) {
+        _tapMovementInvalidated = true;
+      }
+      if (_primaryPeakDelta.distance > _holdMovementTolerance) {
+        _holdMovementInvalidated = true;
         _holdTimer?.cancel();
         _holdSatisfied = false;
       }
@@ -247,29 +261,21 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
     }
     final pressDuration = event.timeStamp - downAt;
 
-    if (_holdSatisfied) {
+    if (_holdSatisfied && !_holdMovementInvalidated) {
       _emit(ReactCommand.hold);
       _resetGestureState();
       return;
     }
 
-    final dx = _primaryDelta.dx;
-    final dy = _primaryDelta.dy;
-    final horizontal = dx.abs() >= dy.abs();
-    final distance = horizontal ? dx.abs() : dy.abs();
-    final directionalCommand = horizontal
-        ? (dx < 0 ? ReactCommand.swipeLeft : ReactCommand.swipeRight)
-        : (dy < 0 ? ReactCommand.swipeUp : ReactCommand.swipeDown);
-
-    if (distance >= _minimumSwipeDistance) {
-      _emit(directionalCommand);
+    final finalDistance = _primaryDelta.distance;
+    if (finalDistance >= _minimumSwipeDistance) {
+      _emit(_directionForDelta(_primaryDelta));
       _resetGestureState();
       return;
     }
 
     if (widget.expectedCommand == ReactCommand.hold) {
-      if (pressDuration >= _holdDuration &&
-          _primaryDelta.distance <= _holdMovementTolerance) {
+      if (pressDuration >= _holdDuration && !_holdMovementInvalidated) {
         _emit(ReactCommand.hold);
       } else {
         _emit(ReactCommand.tap);
@@ -278,7 +284,7 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       return;
     }
 
-    if (pressDuration >= _holdDuration) {
+    if (pressDuration >= _holdDuration && !_holdMovementInvalidated) {
       _emit(ReactCommand.hold);
       _resetGestureState();
       return;
@@ -286,8 +292,8 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
 
     if ((widget.expectedCommand == ReactCommand.tap ||
             widget.expectedCommand == ReactCommand.doubleTap) &&
-        _primaryDelta.distance > _tapMovementTolerance) {
-      _emit(directionalCommand);
+        _tapMovementInvalidated) {
+      _emit(_directionForDelta(_primaryPeakDelta));
       _resetGestureState();
       return;
     }
@@ -345,6 +351,13 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
     }
   }
 
+  ReactCommand _directionForDelta(Offset delta) {
+    if (delta.dx.abs() >= delta.dy.abs()) {
+      return delta.dx < 0 ? ReactCommand.swipeLeft : ReactCommand.swipeRight;
+    }
+    return delta.dy < 0 ? ReactCommand.swipeUp : ReactCommand.swipeDown;
+  }
+
   double? _currentTwoFingerDistance() {
     if (_pointers.length < 2) return null;
     final positions = _pointers.values.take(2).toList(growable: false);
@@ -354,9 +367,12 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   void _resetGestureState({bool preserveDoubleTap = false}) {
     _primaryPointer = null;
     _primaryDelta = Offset.zero;
+    _primaryPeakDelta = Offset.zero;
     _primaryDownAt = null;
     _multiTouchSeen = false;
     _holdSatisfied = false;
+    _tapMovementInvalidated = false;
+    _holdMovementInvalidated = false;
     _pendingMultiTouchCommand = null;
     _twoFingerStartDistance = null;
     _holdTimer?.cancel();
