@@ -1,6 +1,12 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/settings/react_settings.dart';
+import '../../daily/domain/daily_challenge.dart';
+import '../../daily/domain/daily_history_entry.dart';
+import '../domain/react_command.dart';
+import '../domain/react_command_performance.dart';
 import '../domain/react_run_history_entry.dart';
 import '../domain/react_run_result.dart';
 
@@ -11,12 +17,20 @@ class LocalPlayerStats {
   static String _modeRunsKey(ReactGameMode mode) => 'mode_runs_${mode.name}';
   static String _modeCommandsKey(ReactGameMode mode) => 'mode_commands_${mode.name}';
   static String _modeResponseMsKey(ReactGameMode mode) => 'mode_response_ms_${mode.name}';
+  static String _commandAttemptsKey(ReactCommand command) =>
+      'command_attempts_${command.name}';
+  static String _commandSuccessesKey(ReactCommand command) =>
+      'command_successes_${command.name}';
+  static String _commandResponseMsKey(ReactCommand command) =>
+      'command_response_ms_${command.name}';
 
   static const _runsKey = 'runs_played';
   static const _dailyLastPlayedKey = 'daily_last_played';
   static const _dailyStreakKey = 'daily_streak';
   static const _historyKey = 'recent_run_history';
+  static const _dailyHistoryKey = 'daily_history';
   static const _historyLimit = 12;
+  static const _dailyHistoryLimit = 14;
 
   static Future<int> bestFor(ReactGameMode mode) async {
     if (mode == ReactGameMode.passIt) return 0;
@@ -57,6 +71,19 @@ class LocalPlayerStats {
     return total;
   }
 
+  static Future<List<ReactCommandPerformance>> commandPerformance() async {
+    final prefs = await SharedPreferences.getInstance();
+    return [
+      for (final command in ReactCommand.values)
+        ReactCommandPerformance(
+          command: command,
+          attempts: prefs.getInt(_commandAttemptsKey(command)) ?? 0,
+          successes: prefs.getInt(_commandSuccessesKey(command)) ?? 0,
+          totalResponseMs: prefs.getInt(_commandResponseMsKey(command)) ?? 0,
+        ),
+    ];
+  }
+
   static Future<List<ReactRunHistoryEntry>> recentRuns() async {
     final prefs = await SharedPreferences.getInstance();
     final rawEntries = prefs.getStringList(_historyKey) ?? const <String>[];
@@ -66,6 +93,44 @@ class LocalPlayerStats {
         .whereType<ReactRunHistoryEntry>()
         .take(_historyLimit)
         .toList(growable: false);
+  }
+
+  static Future<List<DailyHistoryEntry>> dailyHistoryLast7() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = <String, DailyHistoryEntry>{};
+    for (final raw in prefs.getStringList(_dailyHistoryKey) ?? const <String>[]) {
+      try {
+        final decoded = jsonDecode(raw) as Map<String, dynamic>;
+        final entry = DailyHistoryEntry.tryFromJson(decoded);
+        if (entry != null) saved[entry.dateKey] = entry;
+      } catch (_) {
+        // Ignore corrupt local history rows individually.
+      }
+    }
+
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+    return [
+      for (var offset = 6; offset >= 0; offset--)
+        _dailyHistoryForDate(
+          normalizedToday.subtract(Duration(days: offset)),
+          saved,
+        ),
+    ];
+  }
+
+  static DailyHistoryEntry _dailyHistoryForDate(
+    DateTime date,
+    Map<String, DailyHistoryEntry> saved,
+  ) {
+    final key = _dateKey(date);
+    final existing = saved[key];
+    if (existing != null) return existing;
+    return DailyHistoryEntry(
+      date: date,
+      modifier: DailyChallenge.forDate(date).modifier,
+      attempted: false,
+    );
   }
 
   static Future<int> dailyStreak() async {
@@ -81,6 +146,14 @@ class LocalPlayerStats {
   static Future<void> markDailyAttemptStarted() async {
     final prefs = await SharedPreferences.getInstance();
     await _recordDaily(prefs);
+    await _upsertDailyHistory(
+      prefs,
+      DailyHistoryEntry(
+        date: _normalizedToday(),
+        modifier: DailyChallenge.forDate(DateTime.now()).modifier,
+        attempted: true,
+      ),
+    );
   }
 
   static Future<bool> recordResult(ReactRunResult result) async {
@@ -121,10 +194,38 @@ class LocalPlayerStats {
       );
     }
 
+    for (final performance in result.commandPerformance.values) {
+      if (performance.attempts <= 0) continue;
+      final command = performance.command;
+      await prefs.setInt(
+        _commandAttemptsKey(command),
+        (prefs.getInt(_commandAttemptsKey(command)) ?? 0) + performance.attempts,
+      );
+      await prefs.setInt(
+        _commandSuccessesKey(command),
+        (prefs.getInt(_commandSuccessesKey(command)) ?? 0) + performance.successes,
+      );
+      await prefs.setInt(
+        _commandResponseMsKey(command),
+        (prefs.getInt(_commandResponseMsKey(command)) ?? 0) +
+            performance.totalResponseMs,
+      );
+    }
+
     await _recordHistory(prefs, result);
 
     if (result.mode == ReactGameMode.daily) {
       await _recordDaily(prefs);
+      await _upsertDailyHistory(
+        prefs,
+        DailyHistoryEntry(
+          date: _normalizedToday(),
+          modifier: DailyChallenge.forDate(DateTime.now()).modifier,
+          attempted: true,
+          score: result.score,
+          outcome: result.outcome,
+        ),
+      );
     }
 
     return isNewBest;
@@ -139,11 +240,17 @@ class LocalPlayerStats {
       await prefs.remove(_modeCommandsKey(mode));
       await prefs.remove(_modeResponseMsKey(mode));
     }
+    for (final command in ReactCommand.values) {
+      await prefs.remove(_commandAttemptsKey(command));
+      await prefs.remove(_commandSuccessesKey(command));
+      await prefs.remove(_commandResponseMsKey(command));
+    }
 
     await prefs.remove(_runsKey);
     await prefs.remove(_dailyLastPlayedKey);
     await prefs.remove(_dailyStreakKey);
     await prefs.remove(_historyKey);
+    await prefs.remove(_dailyHistoryKey);
   }
 
   static Future<void> _recordHistory(
@@ -159,6 +266,33 @@ class LocalPlayerStats {
     await prefs.setStringList(_historyKey, next);
   }
 
+  static Future<void> _upsertDailyHistory(
+    SharedPreferences prefs,
+    DailyHistoryEntry entry,
+  ) async {
+    final decoded = <DailyHistoryEntry>[];
+    for (final raw in prefs.getStringList(_dailyHistoryKey) ?? const <String>[]) {
+      try {
+        final item = DailyHistoryEntry.tryFromJson(
+          jsonDecode(raw) as Map<String, dynamic>,
+        );
+        if (item != null && item.dateKey != entry.dateKey) decoded.add(item);
+      } catch (_) {
+        // Ignore corrupt rows instead of invalidating the complete history.
+      }
+    }
+
+    final next = <DailyHistoryEntry>[entry, ...decoded]
+      ..sort((a, b) => b.date.compareTo(a.date));
+    await prefs.setStringList(
+      _dailyHistoryKey,
+      next
+          .take(_dailyHistoryLimit)
+          .map((item) => jsonEncode(item.toJson()))
+          .toList(growable: false),
+    );
+  }
+
   static Future<void> _recordDaily(SharedPreferences prefs) async {
     final today = DateTime.now();
     final todayKey = _dateKey(today);
@@ -172,6 +306,11 @@ class LocalPlayerStats {
 
     await prefs.setString(_dailyLastPlayedKey, todayKey);
     await prefs.setInt(_dailyStreakKey, nextStreak);
+  }
+
+  static DateTime _normalizedToday() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
   }
 
   static String _dateKey(DateTime date) =>
