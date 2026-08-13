@@ -29,6 +29,28 @@ void main() {
       expect(ReactCommand.pinch.reactionWindowMs(1500), 1770);
       expect(ReactCommand.spread.reactionWindowMs(1500), 1770);
     });
+
+    test('every mode floor remains safe for every active command', () {
+      const modes = <ModeTimingRules>[
+        ReactModeTiming.classic,
+        ReactModeTiming.blitz,
+        ReactModeTiming.endless,
+        ReactModeTiming.daily,
+        ReactModeTiming.passIt,
+      ];
+
+      for (final mode in modes) {
+        final fastestBase = mode.commandDurationMsForScore(10000);
+        for (final command in ReactCommand.values) {
+          final window = command.reactionWindowMs(fastestBase);
+          expect(
+            window,
+            greaterThanOrEqualTo(command.minimumReactionWindowMs),
+            reason: '${command.name} fell below its physical floor',
+          );
+        }
+      }
+    });
   });
 
   group('classic timing', () {
@@ -90,6 +112,16 @@ void main() {
     test('is a sixty second run with a three second miss penalty', () {
       expect(ReactModeTiming.blitz.runDurationMs, 60000);
       expect(ReactModeTiming.blitz.missTimePenaltyMs, 3000);
+    });
+  });
+
+  group('pass it timing', () {
+    test('keeps generous command and handoff pacing', () {
+      expect(ReactModeTiming.passIt.commandDurationMsForScore(0), 1900);
+      expect(ReactModeTiming.passIt.commandDurationMsForScore(500), 1400);
+      expect(ReactModeTiming.passIt.successDelayMsForScore(0), 700);
+      expect(ReactModeTiming.passIt.successDelayMsForScore(500), 600);
+      expect(ReactModeTiming.passIt.missDelayMs, 850);
     });
   });
 }
