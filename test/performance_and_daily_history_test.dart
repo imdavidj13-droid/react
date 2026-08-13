@@ -15,7 +15,7 @@ void main() {
 
   test('aggregates per-command attempts successes misses and reaction time', () async {
     await LocalPlayerStats.recordResult(
-      ReactRunResult(
+      const ReactRunResult(
         mode: ReactGameMode.classic,
         score: 2,
         successfulCommands: 2,
@@ -23,13 +23,13 @@ void main() {
         outcome: ReactRunOutcome.missedCommand,
         misses: 1,
         commandPerformance: {
-          ReactCommand.tap: const ReactCommandPerformance(
+          ReactCommand.tap: ReactCommandPerformance(
             command: ReactCommand.tap,
             attempts: 2,
             successes: 1,
             totalResponseMs: 500,
           ),
-          ReactCommand.hold: const ReactCommandPerformance(
+          ReactCommand.hold: ReactCommandPerformance(
             command: ReactCommand.hold,
             attempts: 1,
             successes: 1,
@@ -56,14 +56,14 @@ void main() {
   test('command performance accumulates across runs and resets', () async {
     for (var i = 0; i < 2; i++) {
       await LocalPlayerStats.recordResult(
-        ReactRunResult(
+        const ReactRunResult(
           mode: ReactGameMode.blitz,
           score: 1,
           successfulCommands: 1,
           averageTimeSeconds: .4,
           outcome: ReactRunOutcome.timeUp,
           commandPerformance: {
-            ReactCommand.swipeLeft: const ReactCommandPerformance(
+            ReactCommand.swipeLeft: ReactCommandPerformance(
               command: ReactCommand.swipeLeft,
               attempts: 1,
               successes: 1,
