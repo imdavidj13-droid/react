@@ -26,12 +26,14 @@ class _EndlessScreenState extends State<EndlessScreen> {
     if (mounted) setState(() => _best = best);
   }
 
-  void _start(BuildContext context) {
-    Navigator.of(context).push(
+  Future<void> _start(BuildContext context) async {
+    await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => const ReactRunLaunchScreen(mode: ReactGameMode.endless),
       ),
     );
+    if (!mounted) return;
+    await _loadBest();
   }
 
   @override
