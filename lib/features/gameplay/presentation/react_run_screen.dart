@@ -8,7 +8,6 @@ import '../../../core/audio/react_audio.dart';
 import '../../../core/settings/react_settings.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../../game/react_game.dart';
-import '../../daily/domain/daily_challenge.dart';
 import '../../modes/domain/mode_timing_rules.dart';
 import '../../results/presentation/results_screen.dart';
 import '../domain/react_command.dart';
@@ -27,22 +26,20 @@ class ReactRunScreen extends StatefulWidget {
 class _ReactRunScreenState extends State<ReactRunScreen>
     with WidgetsBindingObserver {
   static const _tick = Duration(milliseconds: 32);
-  static const _dailyTarget = 30;
 
   late final ReactGame _game;
   late final Random _random;
   late final List<int> _playerLives;
-  late final DailyChallenge _dailyChallenge;
+
+  final Stopwatch _commandClock = Stopwatch();
+  final Stopwatch _blitzClock = Stopwatch();
+  final Stopwatch _transitionClock = Stopwatch();
 
   Timer? _commandTimer;
   Timer? _nextTimer;
   Timer? _runTimer;
-  Timer? _dailyObscureTimer;
 
   ReactCommand _command = ReactCommand.tap;
-  DateTime _commandStartedAt = DateTime.now();
-  DateTime? _blitzDeadline;
-  Duration _pausedBlitzRemaining = Duration.zero;
 
   double _progress = 1;
   int _score = 0;
@@ -51,7 +48,11 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   int _totalResponseMs = 0;
   int _lives = 3;
   int _currentPlayer = 0;
-  int _dailySurgeRemaining = 0;
+  int _commandElapsedBaseMs = 0;
+  int _pausedCommandRemainingMs = 0;
+  int _blitzPenaltyMs = 0;
+  int _pendingTransitionDurationMs = 0;
+  int _pendingTransitionRemainingMs = 0;
 
   bool _acceptingInput = false;
   bool _finished = false;
@@ -59,60 +60,41 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   bool _handoff = false;
   bool _pausedHadActiveCommand = false;
   bool _blitzWarningPlayed = false;
-  bool _dailyCommandObscured = false;
-  int _pausedCommandRemainingMs = 0;
+
+  VoidCallback? _pendingTransitionAction;
   String? _feedback;
 
   ModeTimingRules get _timing => switch (widget.mode) {
         ReactGameMode.classic => ReactModeTiming.classic,
         ReactGameMode.blitz => ReactModeTiming.blitz,
         ReactGameMode.endless => ReactModeTiming.endless,
+        // Daily uses DailyRunScreen in all normal navigation. Keeping this
+        // mapping makes accidental construction safe without duplicating its
+        // modifier/state-machine implementation here.
         ReactGameMode.daily => ReactModeTiming.daily,
         ReactGameMode.passIt => ReactModeTiming.passIt,
       };
 
-  bool get _dailyLightsOut =>
-      widget.mode == ReactGameMode.daily &&
-      _dailyChallenge.modifier == DailyModifier.lightsOut;
-
-  bool get _dailyNoClock =>
-      widget.mode == ReactGameMode.daily &&
-      _dailyChallenge.modifier == DailyModifier.noClock;
-
-  bool get _dailySurgeCommand =>
-      widget.mode == ReactGameMode.daily &&
-      _dailyChallenge.modifier == DailyModifier.surge &&
-      _dailySurgeRemaining > 0;
-
   int get _baseCommandMs => _timing.commandDurationMsForScore(_score);
 
-  int get _commandDurationMs {
-    var base = _baseCommandMs;
-    if (_dailySurgeCommand) {
-      base = max(650, (base * .62).round());
-    }
+  int get _commandDurationMs => _command.reactionWindowMs(_baseCommandMs);
 
-    final multiplier = switch (_command) {
-      ReactCommand.tap => 1.0,
-      ReactCommand.doubleTap => 1.10,
-      ReactCommand.hold => 1.22,
-      ReactCommand.swipeLeft ||
-      ReactCommand.swipeRight ||
-      ReactCommand.swipeUp ||
-      ReactCommand.swipeDown => 1.0,
-      ReactCommand.pinch || ReactCommand.spread => 1.18,
-    };
-    return (base * multiplier).round();
-  }
+  int get _commandElapsedMs =>
+      _commandElapsedBaseMs + _commandClock.elapsedMilliseconds;
+
+  int get _commandRemainingMs =>
+      max(0, _commandDurationMs - _commandElapsedMs);
 
   double get _averageTimeSeconds => _successfulCommands == 0
       ? 0
       : (_totalResponseMs / _successfulCommands) / 1000;
 
   int get _blitzMsRemaining {
-    final deadline = _blitzDeadline;
-    if (deadline == null) return _timing.runDurationMs ?? 0;
-    return max(0, deadline.difference(DateTime.now()).inMilliseconds);
+    final runDuration = _timing.runDurationMs ?? 0;
+    return max(
+      0,
+      runDuration - _blitzClock.elapsedMilliseconds - _blitzPenaltyMs,
+    );
   }
 
   int get _alivePlayers => _playerLives.where((lives) => lives > 0).length;
@@ -121,8 +103,6 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
-    _dailyChallenge = DailyChallenge.today();
 
     final passItPlayers = ReactSettings.passItPlayerCount.clamp(2, 4).toInt();
     _playerLives = List<int>.filled(
@@ -136,14 +116,10 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         intensity: _initialFlameIntensity(widget.mode),
       );
 
-    _random = widget.mode == ReactGameMode.daily
-        ? Random(_dailyChallenge.seed)
-        : Random();
+    _random = Random();
 
     if (widget.mode == ReactGameMode.blitz) {
-      _blitzDeadline = DateTime.now().add(
-        Duration(milliseconds: _timing.runDurationMs!),
-      );
+      _blitzClock.start();
       _runTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
         if (!mounted || _finished || _paused) return;
 
@@ -183,20 +159,15 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _commandTimer?.cancel();
     _nextTimer?.cancel();
     _runTimer?.cancel();
-    _dailyObscureTimer?.cancel();
+    _commandClock.stop();
+    _blitzClock.stop();
+    _transitionClock.stop();
     super.dispose();
   }
 
   void _startCommand() {
     _commandTimer?.cancel();
-    _nextTimer?.cancel();
-    _dailyObscureTimer?.cancel();
     if (!mounted || _finished || _paused || _handoff) return;
-
-    if (widget.mode == ReactGameMode.daily && _score >= _dailyTarget) {
-      _finish(ReactRunOutcome.completed);
-      return;
-    }
 
     if (widget.mode == ReactGameMode.passIt && _alivePlayers <= 1) {
       final winner = _playerLives.indexWhere((lives) => lives > 0) + 1;
@@ -208,29 +179,22 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     setState(() {
       _command = next;
       _progress = 1;
-      _feedback = _dailySurgeCommand ? 'SURGE' : null;
-      _dailyCommandObscured = false;
+      _feedback = null;
     });
 
+    _syncFlameIntensity();
     unawaited(ReactAudio.play(ReactSoundCue.command));
     _armCommandTimer(_commandDurationMs);
-
-    if (_dailyLightsOut) {
-      _dailyObscureTimer = Timer(const Duration(milliseconds: 650), () {
-        if (!mounted || _finished || _paused || !_acceptingInput) return;
-        setState(() => _dailyCommandObscured = true);
-      });
-    }
   }
 
   void _armCommandTimer(int remainingMs) {
     final fullDuration = _commandDurationMs;
     final safeRemaining = remainingMs.clamp(1, fullDuration).toInt();
-    final elapsedBeforePause = fullDuration - safeRemaining;
 
-    _commandStartedAt = DateTime.now().subtract(
-      Duration(milliseconds: elapsedBeforePause),
-    );
+    _commandElapsedBaseMs = fullDuration - safeRemaining;
+    _commandClock
+      ..reset()
+      ..start();
 
     setState(() {
       _progress = safeRemaining / fullDuration;
@@ -241,12 +205,13 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _commandTimer = Timer.periodic(_tick, (_) {
       if (!mounted || _finished || _paused || !_acceptingInput) return;
 
-      final elapsed = DateTime.now().difference(_commandStartedAt).inMilliseconds;
-      final nextProgress = 1 - (elapsed / _commandDurationMs);
-      if (nextProgress <= 0) {
+      final remaining = _commandRemainingMs;
+      if (remaining <= 0) {
         _miss();
         return;
       }
+
+      final nextProgress = remaining / _commandDurationMs;
       setState(() => _progress = nextProgress.clamp(0.0, 1.0));
     });
   }
@@ -263,25 +228,15 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   void _complete() {
     if (!_acceptingInput || _finished) return;
     _commandTimer?.cancel();
-    _dailyObscureTimer?.cancel();
-    final responseMs = DateTime.now().difference(_commandStartedAt).inMilliseconds;
-    final wasDailySurge = _dailySurgeCommand;
+    _commandClock.stop();
+
+    final responseMs = _commandElapsedMs.clamp(0, _commandDurationMs);
 
     setState(() {
       _acceptingInput = false;
       _score += 1;
       _successfulCommands += 1;
       _totalResponseMs += responseMs;
-
-      if (widget.mode == ReactGameMode.daily &&
-          _dailyChallenge.modifier == DailyModifier.surge) {
-        if (wasDailySurge) {
-          _dailySurgeRemaining = max(0, _dailySurgeRemaining - 1);
-        } else if (_score % 5 == 0 && _score < _dailyTarget) {
-          _dailySurgeRemaining = 3;
-        }
-      }
-
       _feedback = responseMs <= 650
           ? '+1  PERFECT'
           : responseMs <= 1150
@@ -298,19 +253,16 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       return;
     }
 
-    final delay = widget.mode == ReactGameMode.daily &&
-            _dailyChallenge.modifier == DailyModifier.surge &&
-            _dailySurgeRemaining > 0
-        ? (wasDailySurge ? 90 : 260)
-        : _timing.successDelayMsForScore(_score);
-
-    _nextTimer = Timer(Duration(milliseconds: delay), _startCommand);
+    _scheduleTransition(
+      _timing.successDelayMsForScore(_score),
+      _startCommand,
+    );
   }
 
   void _miss() {
     if (!_acceptingInput || _finished) return;
     _commandTimer?.cancel();
-    _dailyObscureTimer?.cancel();
+    _commandClock.stop();
     _game.triggerMiss();
 
     switch (widget.mode) {
@@ -324,47 +276,51 @@ class _ReactRunScreenState extends State<ReactRunScreen>
           _feedback = 'MISS  •  $remaining LIVES LEFT';
         });
         if (remaining <= 0) {
-          _nextTimer = Timer(
-            const Duration(milliseconds: 420),
+          _scheduleTransition(
+            420,
             () => _finish(ReactRunOutcome.missedCommand),
           );
         } else {
-          _nextTimer = Timer(
-            Duration(milliseconds: _timing.missDelayMs),
-            _startCommand,
-          );
+          _scheduleTransition(_timing.missDelayMs, _startCommand);
         }
         return;
 
       case ReactGameMode.blitz:
         final penalty = _timing.missTimePenaltyMs;
-        final remaining = max(0, _blitzMsRemaining - penalty);
-        _blitzDeadline = DateTime.now().add(Duration(milliseconds: remaining));
+        _blitzPenaltyMs += penalty;
         unawaited(ReactAudio.play(ReactSoundCue.miss));
         setState(() {
           _acceptingInput = false;
           _misses += 1;
           _feedback = 'MISS  -${penalty ~/ 1000} SEC';
         });
-        if (remaining <= 0) {
+        if (_blitzMsRemaining <= 0) {
           _finish(ReactRunOutcome.timeUp);
         } else {
-          _nextTimer = Timer(
-            Duration(milliseconds: _timing.missDelayMs),
-            _startCommand,
-          );
+          _scheduleTransition(_timing.missDelayMs, _startCommand);
         }
         return;
 
       case ReactGameMode.endless:
         unawaited(ReactAudio.play(ReactSoundCue.miss));
-        setState(() => _misses += 1);
+        setState(() {
+          _acceptingInput = false;
+          _misses += 1;
+          _feedback = 'MISS';
+        });
         _finish(ReactRunOutcome.missedCommand);
         return;
 
       case ReactGameMode.daily:
+        // Daily gameplay is owned by DailyRunScreen. If this screen is ever
+        // constructed directly for Daily, fail closed rather than running a
+        // second modifier implementation.
         unawaited(ReactAudio.play(ReactSoundCue.miss));
-        setState(() => _misses += 1);
+        setState(() {
+          _acceptingInput = false;
+          _misses += 1;
+          _feedback = 'MISS';
+        });
         _finish(ReactRunOutcome.missedCommand);
         return;
 
@@ -386,9 +342,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       ReactGameMode.classic => (.18 + _score * .008).clamp(.18, .48),
       ReactGameMode.blitz => (.45 + _score * .006).clamp(.45, .72),
       ReactGameMode.endless => (.24 + _score * .035).clamp(.24, 1.0),
-      ReactGameMode.daily => _dailySurgeCommand
-          ? .92
-          : (.28 + _score * .014).clamp(.28, .72),
+      ReactGameMode.daily => (.28 + _score * .014).clamp(.28, .72),
       ReactGameMode.passIt => .30,
     };
     _game.setIntensity(intensity.toDouble());
@@ -399,8 +353,8 @@ class _ReactRunScreenState extends State<ReactRunScreen>
 
     if (_alivePlayers <= 1) {
       final winner = _playerLives.indexWhere((lives) => lives > 0) + 1;
-      _nextTimer = Timer(
-        const Duration(milliseconds: 450),
+      _scheduleTransition(
+        450,
         () => _finish(ReactRunOutcome.winner, winnerPlayer: winner),
       );
       return;
@@ -411,7 +365,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       candidate = (candidate + 1) % _playerLives.length;
     } while (_playerLives[candidate] <= 0);
 
-    _nextTimer = Timer(const Duration(milliseconds: 320), () {
+    _scheduleTransition(320, () {
       if (!mounted || _finished) return;
       setState(() {
         _currentPlayer = candidate;
@@ -423,11 +377,70 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   }
 
   void _beginPassItTurn() {
+    if (_finished || _paused || !_handoff) return;
     setState(() {
       _handoff = false;
       _feedback = null;
     });
     _startCommand();
+  }
+
+  void _scheduleTransition(int durationMs, VoidCallback action) {
+    _nextTimer?.cancel();
+    _transitionClock
+      ..stop()
+      ..reset()
+      ..start();
+    _pendingTransitionDurationMs = max(1, durationMs);
+    _pendingTransitionRemainingMs = _pendingTransitionDurationMs;
+    _pendingTransitionAction = action;
+    _nextTimer = Timer(
+      Duration(milliseconds: _pendingTransitionDurationMs),
+      _runPendingTransition,
+    );
+  }
+
+  void _runPendingTransition() {
+    final action = _pendingTransitionAction;
+    _clearPendingTransition();
+    if (!mounted || _finished || _paused || action == null) return;
+    action();
+  }
+
+  void _pausePendingTransition() {
+    if (_pendingTransitionAction == null) return;
+    _pendingTransitionRemainingMs = max(
+      1,
+      _pendingTransitionDurationMs - _transitionClock.elapsedMilliseconds,
+    );
+    _nextTimer?.cancel();
+    _transitionClock.stop();
+  }
+
+  void _resumePendingTransition() {
+    if (_pendingTransitionAction == null) return;
+    final remaining = max(1, _pendingTransitionRemainingMs);
+    _pendingTransitionDurationMs = remaining;
+    _pendingTransitionRemainingMs = remaining;
+    _transitionClock
+      ..reset()
+      ..start();
+    _nextTimer?.cancel();
+    _nextTimer = Timer(
+      Duration(milliseconds: remaining),
+      _runPendingTransition,
+    );
+  }
+
+  void _clearPendingTransition() {
+    _nextTimer?.cancel();
+    _nextTimer = null;
+    _transitionClock
+      ..stop()
+      ..reset();
+    _pendingTransitionDurationMs = 0;
+    _pendingTransitionRemainingMs = 0;
+    _pendingTransitionAction = null;
   }
 
   void _setPaused(bool value) {
@@ -436,35 +449,28 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     if (value) {
       _pausedHadActiveCommand = _acceptingInput && !_handoff;
       if (_pausedHadActiveCommand) {
-        _pausedCommandRemainingMs = max(
-          1,
-          (_commandDurationMs * _progress).round(),
-        );
+        _pausedCommandRemainingMs = max(1, _commandRemainingMs);
+        _commandClock.stop();
       } else {
         _pausedCommandRemainingMs = 0;
       }
 
       _commandTimer?.cancel();
-      _nextTimer?.cancel();
-      _dailyObscureTimer?.cancel();
-      _game.pauseEngine();
-
+      _pausePendingTransition();
       if (widget.mode == ReactGameMode.blitz) {
-        _pausedBlitzRemaining = Duration(milliseconds: _blitzMsRemaining);
+        _blitzClock.stop();
       }
+      _game.pauseEngine();
 
       setState(() {
         _paused = true;
         _acceptingInput = false;
-        if (_dailyLightsOut && _pausedHadActiveCommand) {
-          _dailyCommandObscured = true;
-        }
       });
       return;
     }
 
-    if (widget.mode == ReactGameMode.blitz) {
-      _blitzDeadline = DateTime.now().add(_pausedBlitzRemaining);
+    if (widget.mode == ReactGameMode.blitz && !_blitzClock.isRunning) {
+      _blitzClock.start();
     }
 
     _game.resumeEngine();
@@ -477,12 +483,19 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       _pausedHadActiveCommand = false;
       _pausedCommandRemainingMs = 0;
       _armCommandTimer(remaining);
-    } else {
-      _startCommand();
+      return;
     }
+
+    if (_pendingTransitionAction != null) {
+      _resumePendingTransition();
+      return;
+    }
+
+    _startCommand();
   }
 
   void _restart() {
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => ReactRunScreen(mode: widget.mode),
@@ -495,9 +508,10 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _finished = true;
     _acceptingInput = false;
     _commandTimer?.cancel();
-    _nextTimer?.cancel();
     _runTimer?.cancel();
-    _dailyObscureTimer?.cancel();
+    _clearPendingTransition();
+    _commandClock.stop();
+    _blitzClock.stop();
     _game.pauseEngine();
     Navigator.of(context).pop();
   }
@@ -507,9 +521,10 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _finished = true;
     _acceptingInput = false;
     _commandTimer?.cancel();
-    _nextTimer?.cancel();
     _runTimer?.cancel();
-    _dailyObscureTimer?.cancel();
+    _clearPendingTransition();
+    _commandClock.stop();
+    _blitzClock.stop();
 
     if (outcome == ReactRunOutcome.completed || outcome == ReactRunOutcome.winner) {
       unawaited(ReactAudio.play(ReactSoundCue.completed));
@@ -550,7 +565,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         ReactGameMode.classic => List.filled(_lives, '♥').join(' '),
         ReactGameMode.blitz => '${(_blitzMsRemaining / 1000).ceil()}s',
         ReactGameMode.endless => '${(_baseCommandMs / 1000).toStringAsFixed(2)}s',
-        ReactGameMode.daily => '$_score/$_dailyTarget',
+        ReactGameMode.daily => 'DAILY',
         ReactGameMode.passIt =>
           'P${_currentPlayer + 1} ${List.filled(_playerLives[_currentPlayer], '♥').join()}',
       };
@@ -572,7 +587,8 @@ class _ReactRunScreenState extends State<ReactRunScreen>
             SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final arenaSize = constraints.maxWidth.clamp(318.0, 390.0).toDouble();
+                  final arenaSize =
+                      constraints.maxWidth.clamp(318.0, 390.0).toDouble();
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
                     child: Column(
@@ -597,9 +613,6 @@ class _ReactRunScreenState extends State<ReactRunScreen>
                                 progress: _progress,
                                 commandDurationMs: _commandDurationMs,
                                 accent: _modeColor(widget.mode),
-                                obscureCommand: _dailyCommandObscured,
-                                hideClock: _dailyNoClock,
-                                surgeActive: _dailySurgeCommand,
                               ),
                             ),
                           ),
@@ -615,9 +628,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
                                 style: TextStyle(
                                   color: _feedback?.startsWith('MISS') == true
                                       ? ReactColors.coral
-                                      : _dailySurgeCommand
-                                          ? ReactColors.coral
-                                          : ReactColors.electricBlueBright,
+                                      : ReactColors.electricBlueBright,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 2,
@@ -812,9 +823,6 @@ class _Arena extends StatelessWidget {
     required this.progress,
     required this.commandDurationMs,
     required this.accent,
-    required this.obscureCommand,
-    required this.hideClock,
-    required this.surgeActive,
   });
 
   final double size;
@@ -822,14 +830,10 @@ class _Arena extends StatelessWidget {
   final double progress;
   final int commandDurationMs;
   final Color accent;
-  final bool obscureCommand;
-  final bool hideClock;
-  final bool surgeActive;
 
   @override
   Widget build(BuildContext context) {
     final seconds = (commandDurationMs * progress / 1000).clamp(0, 9.9);
-    final arenaAccent = surgeActive ? ReactColors.coral : accent;
 
     return SizedBox.square(
       dimension: size,
@@ -838,11 +842,7 @@ class _Arena extends StatelessWidget {
         children: [
           CustomPaint(
             size: Size.square(size),
-            painter: _RingPainter(
-              progress: progress,
-              accent: arenaAccent,
-              showTimer: !hideClock,
-            ),
+            painter: _RingPainter(progress: progress, accent: accent),
           ),
           Container(
             width: size * .69,
@@ -850,16 +850,13 @@ class _Arena extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF050A13),
-              border: Border.all(
-                color: surgeActive ? ReactColors.coral : const Color(0xFF153B65),
-                width: surgeActive ? 2 : 1.5,
-              ),
+              border: Border.all(color: const Color(0xFF153B65), width: 1.5),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  obscureCommand ? '?' : command.title,
+                  command.title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: ReactColors.textPrimary,
@@ -870,17 +867,16 @@ class _Arena extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 Icon(
-                  obscureCommand ? Icons.visibility_off_rounded : command.icon,
-                  color: surgeActive ? ReactColors.coral : ReactColors.electricBlueBright,
-                  size: obscureCommand
-                      ? 76
-                      : command == ReactCommand.pinch || command == ReactCommand.spread
-                          ? 88
-                          : 96,
+                  command.icon,
+                  color: ReactColors.electricBlueBright,
+                  size: command == ReactCommand.pinch ||
+                          command == ReactCommand.spread
+                      ? 88
+                      : 96,
                 ),
                 const SizedBox(height: 15),
                 Text(
-                  obscureCommand ? 'REMEMBER THE COMMAND' : command.hint,
+                  command.hint,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: ReactColors.textSecondary,
@@ -892,61 +888,39 @@ class _Arena extends StatelessWidget {
               ],
             ),
           ),
-          if (!hideClock)
-            Positioned(
-              top: size * .015,
-              child: Container(
-                width: 76,
-                height: 76,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF07111D),
-                  border: Border.all(color: const Color(0xFF31577E), width: 2),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      seconds.toStringAsFixed(2),
-                      style: TextStyle(
-                        color: progress < .2 ? ReactColors.coral : arenaAccent,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const Text(
-                      'SEC',
-                      style: TextStyle(
-                        color: ReactColors.textSecondary,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
+          Positioned(
+            top: size * .015,
+            child: Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF07111D),
+                border: Border.all(color: const Color(0xFF31577E), width: 2),
               ),
-            ),
-          if (surgeActive)
-            Positioned(
-              bottom: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF07111D),
-                  borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: ReactColors.coral),
-                ),
-                child: const Text(
-                  'SURGE',
-                  style: TextStyle(
-                    color: ReactColors.coral,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    seconds.toStringAsFixed(2),
+                    style: TextStyle(
+                      color: progress < .2 ? ReactColors.coral : accent,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
-                ),
+                  const Text(
+                    'SEC',
+                    style: TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
         ],
       ),
     );
@@ -954,15 +928,10 @@ class _Arena extends StatelessWidget {
 }
 
 class _RingPainter extends CustomPainter {
-  const _RingPainter({
-    required this.progress,
-    required this.accent,
-    required this.showTimer,
-  });
+  const _RingPainter({required this.progress, required this.accent});
 
   final double progress;
   final Color accent;
-  final bool showTimer;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -979,13 +948,29 @@ class _RingPainter extends CustomPainter {
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
     deco.color = ReactColors.electricBlueBright.withValues(alpha: .7);
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), .8, 1.45, false, deco);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      .8,
+      1.45,
+      false,
+      deco,
+    );
     deco.color = ReactColors.lime.withValues(alpha: .7);
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), 3.0, 1.25, false, deco);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      3.0,
+      1.25,
+      false,
+      deco,
+    );
     deco.color = ReactColors.coral.withValues(alpha: .7);
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), 4.75, 1.1, false, deco);
-
-    if (!showTimer) return;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      4.75,
+      1.1,
+      false,
+      deco,
+    );
 
     final timerRadius = radius + 14;
     final track = Paint()
@@ -1010,9 +995,7 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RingPainter oldDelegate) =>
-      oldDelegate.progress != progress ||
-      oldDelegate.accent != accent ||
-      oldDelegate.showTimer != showTimer;
+      oldDelegate.progress != progress || oldDelegate.accent != accent;
 }
 
 class _BottomBar extends StatelessWidget {
@@ -1070,6 +1053,7 @@ class _BottomBar extends StatelessWidget {
 
 class _Metric extends StatelessWidget {
   const _Metric({required this.label, required this.value});
+
   final String label;
   final String value;
 
