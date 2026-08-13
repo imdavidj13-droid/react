@@ -27,11 +27,6 @@ class _DailyScreenState extends State<DailyScreen> {
   }
 
   Future<void> _start() async {
-    await LocalPlayerStats.markDailyAttemptStarted();
-    if (!mounted) return;
-
-    setState(_reload);
-
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => const ReactRunLaunchScreen(mode: ReactGameMode.daily),
@@ -300,7 +295,7 @@ class _ChallengeCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      '20 COMMANDS • SAME ORDER ALL DAY',
+                      '40 COMMANDS • SPEED RISES • SAME ORDER ALL DAY',
                       style: TextStyle(
                         color: ReactColors.lime,
                         fontSize: 8,
@@ -348,7 +343,7 @@ class _ChallengeCard extends StatelessWidget {
               const Expanded(
                 child: _Metric(
                   label: 'TARGET',
-                  value: '20',
+                  value: '40',
                   color: ReactColors.purple,
                 ),
               ),
@@ -412,7 +407,7 @@ class _LocalDailyInfo extends StatelessWidget {
     final title = playedToday ? 'NEXT CHALLENGE TOMORROW' : 'LOCAL DAILY MODE';
     final detail = playedToday
         ? 'Challenge #${challenge.id} is locked. A new ID and command order unlock at local midnight.'
-        : 'Challenge #${challenge.id} stays fixed for the entire local day on this device.';
+        : 'Challenge #${challenge.id} stays fixed for the entire local day. One miss ends the run, and the pace tightens as you progress.';
 
     return Container(
       width: double.infinity,
