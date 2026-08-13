@@ -81,7 +81,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('40'), findsOneWidget);
+    expect(find.text('60'), findsOneWidget);
   });
 
   testWidgets('Scores fits and scrolls on a 320x640 screen', (tester) async {
