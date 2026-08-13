@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import '../../../core/settings/react_settings.dart';
+
 enum DailyModifier {
   lightsOut,
   surge,
@@ -62,7 +64,10 @@ class DailyChallenge {
   final String id;
   final DailyModifier modifier;
 
-  factory DailyChallenge.forDate(DateTime input) {
+  factory DailyChallenge.forDate(
+    DateTime input, {
+    DailyModifier? modifierOverride,
+  }) {
     final date = DateTime(input.year, input.month, input.day);
     final dayOfYear = date.difference(DateTime(date.year, 1, 1)).inDays + 1;
     final seed = date.year * 10000 + date.month * 100 + date.day;
@@ -73,7 +78,7 @@ class DailyChallenge {
         weekStart.year * 10000 + weekStart.month * 100 + weekStart.day;
     final weeklyDeck = List<DailyModifier>.of(DailyModifier.values)
       ..shuffle(Random(weekSeed));
-    final modifier = weeklyDeck[date.weekday - 1];
+    final modifier = modifierOverride ?? weeklyDeck[date.weekday - 1];
 
     return DailyChallenge._(
       date: date,
@@ -83,7 +88,18 @@ class DailyChallenge {
     );
   }
 
-  static DailyChallenge today() => DailyChallenge.forDate(DateTime.now());
+  static DailyChallenge today() {
+    DailyModifier? override;
+    if (ReactSettings.dailyDevOverrideEnabled) {
+      for (final modifier in DailyModifier.values) {
+        if (modifier.name == ReactSettings.dailyDevModifier) {
+          override = modifier;
+          break;
+        }
+      }
+    }
+    return DailyChallenge.forDate(DateTime.now(), modifierOverride: override);
+  }
 
   String get dateLabel {
     const months = [
