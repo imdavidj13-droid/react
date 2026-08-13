@@ -39,19 +39,21 @@ void main() {
   });
 
   group('daily timing', () {
-    test('ramps across the full 40-command challenge', () {
+    test('ramps across the full 60-command challenge', () {
       expect(ReactModeTiming.daily.commandDurationMsForScore(0), 1850);
-      expect(ReactModeTiming.daily.commandDurationMsForScore(4), 1750);
-      expect(ReactModeTiming.daily.commandDurationMsForScore(20), 1350);
-      expect(ReactModeTiming.daily.commandDurationMsForScore(36), 1000);
-      expect(ReactModeTiming.daily.commandDurationMsForScore(500), 1000);
+      expect(ReactModeTiming.daily.commandDurationMsForScore(5), 1775);
+      expect(ReactModeTiming.daily.commandDurationMsForScore(30), 1400);
+      expect(ReactModeTiming.daily.commandDurationMsForScore(55), 1025);
+      expect(ReactModeTiming.daily.commandDurationMsForScore(60), 950);
+      expect(ReactModeTiming.daily.commandDurationMsForScore(500), 950);
     });
 
     test('transition gap keeps tightening into the closing phase', () {
       expect(ReactModeTiming.daily.successDelayMsForScore(0), 360);
-      expect(ReactModeTiming.daily.successDelayMsForScore(20), 235);
-      expect(ReactModeTiming.daily.successDelayMsForScore(36), 140);
-      expect(ReactModeTiming.daily.successDelayMsForScore(500), 140);
+      expect(ReactModeTiming.daily.successDelayMsForScore(30), 240);
+      expect(ReactModeTiming.daily.successDelayMsForScore(55), 140);
+      expect(ReactModeTiming.daily.successDelayMsForScore(60), 120);
+      expect(ReactModeTiming.daily.successDelayMsForScore(500), 120);
     });
   });
 
