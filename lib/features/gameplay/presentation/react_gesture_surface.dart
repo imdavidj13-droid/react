@@ -36,8 +36,8 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
 
   Offset _primaryDelta = Offset.zero;
   double? _twoFingerStartDistance;
-  DateTime? _primaryDownAt;
-  DateTime? _firstTapAt;
+  Duration? _primaryDownAt;
+  Duration? _firstTapAt;
   Timer? _doubleTapTimer;
   Timer? _holdTimer;
   int? _primaryPointer;
@@ -81,11 +81,11 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
     if (!widget.enabled) return;
 
     if (_pointers.length == 1) {
-      final now = DateTime.now();
+      final now = event.timeStamp;
       final firstTapAt = _firstTapAt;
       _secondTapStartedInWindow = widget.expectedCommand == ReactCommand.doubleTap &&
           firstTapAt != null &&
-          now.difference(firstTapAt) <= _doubleTapWindow;
+          now - firstTapAt <= _doubleTapWindow;
       if (_secondTapStartedInWindow) {
         _doubleTapTimer?.cancel();
       }
@@ -206,7 +206,7 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       _resetGestureState();
       return;
     }
-    final pressDuration = DateTime.now().difference(downAt);
+    final pressDuration = event.timeStamp - downAt;
 
     if (_holdSatisfied) {
       _emit(ReactCommand.hold);
@@ -268,8 +268,7 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
         return;
       }
 
-      final now = DateTime.now();
-      _firstTapAt = now;
+      _firstTapAt = event.timeStamp;
       _doubleTapTimer?.cancel();
       _doubleTapTimer = Timer(_doubleTapWindow, () {
         if (!mounted || _resolved || !widget.enabled || _cancelled) return;
