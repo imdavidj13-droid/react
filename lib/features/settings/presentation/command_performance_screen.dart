@@ -8,6 +8,8 @@ import '../../gameplay/domain/react_command_performance.dart';
 class CommandPerformanceScreen extends StatelessWidget {
   const CommandPerformanceScreen({super.key});
 
+  static const _minimumSummarySample = 5;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,14 +23,17 @@ class CommandPerformanceScreen extends StatelessWidget {
                   for (final command in ReactCommand.values)
                     ReactCommandPerformance(command: command),
                 ];
-            final attempted = stats.where((item) => item.attempts > 0).toList();
-            final weakest = attempted.isEmpty
+            final weakestCandidates = stats
+                .where((item) => item.attempts >= _minimumSummarySample)
+                .toList();
+            final weakest = weakestCandidates.isEmpty
                 ? null
-                : (attempted.toList()
+                : (weakestCandidates.toList()
                       ..sort((a, b) => a.accuracy.compareTo(b.accuracy)))
                     .first;
-            final fastestCandidates =
-                stats.where((item) => item.successes > 0).toList();
+            final fastestCandidates = stats
+                .where((item) => item.successes >= _minimumSummarySample)
+                .toList();
             final fastest = fastestCandidates.isEmpty
                 ? null
                 : (fastestCandidates.toList()
@@ -71,7 +76,7 @@ class CommandPerformanceScreen extends StatelessWidget {
                             label: 'WEAKEST',
                             value: weakest?.command.title ?? '--',
                             detail: weakest == null
-                                ? 'PLAY TO BUILD DATA'
+                                ? 'NEED 5 ATTEMPTS'
                                 : '${(weakest.accuracy * 100).round()}% ACCURACY',
                             color: ReactColors.coral,
                           ),
@@ -82,7 +87,7 @@ class CommandPerformanceScreen extends StatelessWidget {
                             label: 'FASTEST',
                             value: fastest?.command.title ?? '--',
                             detail: fastest == null
-                                ? 'PLAY TO BUILD DATA'
+                                ? 'NEED 5 CLEARS'
                                 : '${fastest.averageReactionSeconds.toStringAsFixed(2)}s AVG',
                             color: ReactColors.lime,
                           ),
