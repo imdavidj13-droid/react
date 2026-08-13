@@ -38,6 +38,22 @@ void main() {
     });
   });
 
+  group('daily timing', () {
+    test('starts readable then ramps hard to a sub-second floor', () {
+      expect(ReactModeTiming.daily.commandDurationMsForScore(0), 1750);
+      expect(ReactModeTiming.daily.commandDurationMsForScore(2), 1650);
+      expect(ReactModeTiming.daily.commandDurationMsForScore(10), 1250);
+      expect(ReactModeTiming.daily.commandDurationMsForScore(18), 900);
+      expect(ReactModeTiming.daily.commandDurationMsForScore(500), 900);
+    });
+
+    test('transition gap tightens through the challenge', () {
+      expect(ReactModeTiming.daily.successDelayMsForScore(0), 340);
+      expect(ReactModeTiming.daily.successDelayMsForScore(10), 190);
+      expect(ReactModeTiming.daily.successDelayMsForScore(500), 120);
+    });
+  });
+
   group('blitz timing', () {
     test('is a sixty second run with a three second miss penalty', () {
       expect(ReactModeTiming.blitz.runDurationMs, 60000);
