@@ -12,6 +12,17 @@ void main() {
     ReactSettings.passItPlayerCount = 2;
   });
 
+  Future<void> pumpPassIt(WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ReactRunScreen(mode: ReactGameMode.passIt),
+      ),
+    );
+    expect(find.text('PASS TO PLAYER 1'), findsOneWidget);
+    await tester.tap(find.text('I’M READY'));
+    await tester.pump();
+  }
+
   Future<void> performVisibleCommand(WidgetTester tester) async {
     final command = ReactCommand.values.singleWhere(
       (candidate) => find.text(candidate.title).evaluate().isNotEmpty,
@@ -69,30 +80,27 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('Pass It keeps player after success and passes only after life loss',
+  testWidgets('Pass It keeps the same player after a successful command',
       (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ReactRunScreen(mode: ReactGameMode.passIt),
-      ),
-    );
-
-    expect(find.text('PASS TO PLAYER 1'), findsOneWidget);
-    expect(find.text('PLAYER 1  •  3 LIVES  •  TAP WHEN READY'), findsOneWidget);
-
-    await tester.tap(find.text('I’M READY'));
-    await tester.pump();
+    await pumpPassIt(tester);
 
     await performVisibleCommand(tester);
     await tester.pump(const Duration(milliseconds: 750));
 
     expect(find.text('PASS TO PLAYER 2'), findsNothing);
     expect(find.text('P1  3♥'), findsOneWidget);
+  });
 
-    // Let Player 1's next command expire. Pass It's longest active command
-    // window is below 2.4 seconds at the starting pace.
-    await tester.pump(const Duration(milliseconds: 2500));
-    await tester.pump(const Duration(milliseconds: 350));
+  testWidgets('Pass It removes one life before handing to the next player',
+      (tester) async {
+    await pumpPassIt(tester);
+
+    // The slowest starting Pass It command is under 2.4 seconds. Advance past
+    // that window, then give the periodic deadline check and handoff transition
+    // their own deterministic pumps.
+    await tester.pump(const Duration(milliseconds: 2400));
+    await tester.pump(const Duration(milliseconds: 40));
+    await tester.pump(const Duration(milliseconds: 320));
 
     expect(find.text('PLAYER 1 LOST A LIFE'), findsOneWidget);
     expect(find.text('PASS TO PLAYER 2'), findsOneWidget);
