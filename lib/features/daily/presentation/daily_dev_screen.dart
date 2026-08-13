@@ -38,8 +38,7 @@ class _DailyDevScreenState extends State<DailyDevScreen> {
   }
 
   Future<void> _launch() async {
-    if (!_enabled) await _setEnabled(true);
-    if (!mounted) return;
+    if (!_enabled || !mounted) return;
 
     ReactSettings.dailyDevRunActive = true;
     try {
@@ -74,7 +73,7 @@ class _DailyDevScreenState extends State<DailyDevScreen> {
               onChanged: _setEnabled,
               activeThumbColor: ReactColors.electricBlueBright,
               title: const Text(
-                'OVERRIDE DEV RUN MODIFIER',
+                'ENABLE DEV MODIFIER RUNS',
                 style: TextStyle(
                   color: ReactColors.textPrimary,
                   fontWeight: FontWeight.w900,
@@ -152,16 +151,18 @@ class _DailyDevScreenState extends State<DailyDevScreen> {
             SizedBox(
               height: 56,
               child: FilledButton.icon(
-                onPressed: _launch,
+                onPressed: _enabled ? _launch : null,
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFF168CFF),
+                  disabledBackgroundColor: const Color(0xFF0C243B),
+                  disabledForegroundColor: ReactColors.textSecondary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28),
                   ),
                 ),
                 icon: const Icon(Icons.science_rounded),
                 label: Text(
-                  'TEST ${_modifier.label}',
+                  _enabled ? 'TEST ${_modifier.label}' : 'ENABLE DEV RUNS TO TEST',
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1,
