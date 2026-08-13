@@ -12,6 +12,7 @@ import '../../modes/domain/mode_timing_rules.dart';
 import '../../results/presentation/results_screen.dart';
 import '../domain/react_command.dart';
 import '../domain/react_run_result.dart';
+import '../domain/run_command_performance_tracker.dart';
 import 'react_gesture_surface.dart';
 
 class ReactRunScreen extends StatefulWidget {
@@ -34,6 +35,8 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   final Stopwatch _commandClock = Stopwatch();
   final Stopwatch _blitzClock = Stopwatch();
   final Stopwatch _transitionClock = Stopwatch();
+  final RunCommandPerformanceTracker _commandTracker =
+      RunCommandPerformanceTracker();
 
   Timer? _commandTimer;
   Timer? _nextTimer;
@@ -253,6 +256,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
 
     final responseMs =
         _commandElapsedMs.clamp(0, _commandDurationMs).toInt();
+    _commandTracker.recordSuccess(_command, responseMs);
 
     setState(() {
       _acceptingInput = false;
@@ -273,9 +277,6 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _game.triggerSuccess();
     _syncFlameIntensity();
 
-    // In Pass It, a successful player keeps the phone and immediately faces
-    // another command. Only that player's current turn streak affects the pace,
-    // so the next player does not inherit an accelerated command window.
     _scheduleTransition(
       _timing.successDelayMsForScore(_timingScore),
       _startCommand,
@@ -286,6 +287,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     if (!_acceptingInput || _finished) return;
     _commandTimer?.cancel();
     _commandClock.stop();
+    _commandTracker.recordMiss(_command);
     _game.triggerMiss();
 
     switch (widget.mode) {
@@ -605,6 +607,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
             playerLives: widget.mode == ReactGameMode.passIt
                 ? List<int>.unmodifiable(_playerLives)
                 : null,
+            commandPerformance: _commandTracker.snapshot(),
           ),
         ),
       ),
@@ -1312,7 +1315,9 @@ class _HandoffOverlay extends StatelessWidget {
                 Text(
                   matchOver
                       ? 'PLAYER $winnerPlayer WINS'
-                      : 'PASS TO PLAYER $player',
+                      : hasLifeLoss
+                          ? 'PASS TO PLAYER $player'
+                          : 'PLAYER $player STARTS',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: matchOver ? ReactColors.lime : ReactColors.textPrimary,
