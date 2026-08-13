@@ -9,6 +9,7 @@ import '../../../core/theme/react_colors.dart';
 import '../../../game/react_game.dart';
 import '../../gameplay/domain/react_command.dart';
 import '../../gameplay/domain/react_run_result.dart';
+import '../../gameplay/domain/run_command_performance_tracker.dart';
 import '../../gameplay/presentation/react_gesture_surface.dart';
 import '../../modes/domain/mode_timing_rules.dart';
 import '../../results/presentation/results_screen.dart';
@@ -25,7 +26,6 @@ class DailyRunScreen extends StatefulWidget {
 
 class _DailyRunScreenState extends State<DailyRunScreen>
     with WidgetsBindingObserver {
-  static const int target = 60;
   static const _tick = Duration(milliseconds: 32);
   static const _lightsOutVisibleMs = 650;
 
@@ -36,6 +36,8 @@ class _DailyRunScreenState extends State<DailyRunScreen>
 
   final Stopwatch _commandClock = Stopwatch();
   final Stopwatch _transitionClock = Stopwatch();
+  final RunCommandPerformanceTracker _commandTracker =
+      RunCommandPerformanceTracker();
 
   Timer? _commandTimer;
   Timer? _nextTimer;
@@ -220,7 +222,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     _obscureTimer?.cancel();
     if (!mounted || _finished || _paused) return;
 
-    if (_score >= target) {
+    if (_score >= dailyTarget) {
       _finish(ReactRunOutcome.completed);
       return;
     }
@@ -324,6 +326,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     final completedCommand = _command;
     final wasSurge = _surgeCommand;
     final wasRedline = _redlineCommand;
+    _commandTracker.recordSuccess(_command, responseMs);
 
     setState(() {
       _acceptingInput = false;
@@ -333,12 +336,12 @@ class _DailyRunScreenState extends State<DailyRunScreen>
       if (_isSurge) {
         if (wasSurge) {
           _surgeRemaining = max(0, _surgeRemaining - 1);
-        } else if (_score % 5 == 0 && _score < target) {
+        } else if (_score % 5 == 0 && _score < dailyTarget) {
           _surgeRemaining = 3;
         }
       }
 
-      if (_isEcho && _score % 6 == 0 && _score < target) {
+      if (_isEcho && _score % 6 == 0 && _score < dailyTarget) {
         _echoNext = true;
       }
 
@@ -352,7 +355,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     unawaited(ReactAudio.play(ReactSoundCue.success));
     _game.triggerSuccess();
 
-    if (_score >= target) {
+    if (_score >= dailyTarget) {
       _scheduleFinish(260, ReactRunOutcome.completed);
       return;
     }
@@ -383,6 +386,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     _commandTimer?.cancel();
     _obscureTimer?.cancel();
     _commandClock.stop();
+    _commandTracker.recordMiss(_command);
     _game.triggerMiss();
     unawaited(ReactAudio.play(ReactSoundCue.miss));
     setState(() {
@@ -476,6 +480,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
             misses: _misses,
             failedCommand:
                 outcome == ReactRunOutcome.missedCommand ? _command : null,
+            commandPerformance: _commandTracker.snapshot(),
           ),
         ),
       ),
@@ -650,7 +655,7 @@ class _DailyHeader extends StatelessWidget {
             Expanded(
               child: _HudCard(
                 label: 'STEP',
-                value: '$score/${_DailyRunScreenState.target}',
+                value: '$score/$dailyTarget',
                 color: ReactColors.purple,
                 compact: true,
               ),
@@ -936,7 +941,7 @@ class _DailyBottomBar extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            '$score / ${_DailyRunScreenState.target}',
+            '$score / $dailyTarget',
             style: const TextStyle(
               color: ReactColors.lime,
               fontSize: 15,
