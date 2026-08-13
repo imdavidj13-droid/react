@@ -9,9 +9,14 @@ import '../domain/react_run_result.dart';
 import 'react_run_screen.dart';
 
 class ReactRunLaunchScreen extends StatefulWidget {
-  const ReactRunLaunchScreen({required this.mode, super.key});
+  const ReactRunLaunchScreen({
+    required this.mode,
+    this.consumeDailyAttempt = true,
+    super.key,
+  });
 
   final ReactGameMode mode;
+  final bool consumeDailyAttempt;
 
   @override
   State<ReactRunLaunchScreen> createState() => _ReactRunLaunchScreenState();
@@ -65,7 +70,7 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen>
   }
 
   Future<void> _beginRun() async {
-    if (widget.mode == ReactGameMode.daily) {
+    if (widget.mode == ReactGameMode.daily && widget.consumeDailyAttempt) {
       await LocalPlayerStats.markDailyAttemptStarted();
     }
     if (!mounted) return;
