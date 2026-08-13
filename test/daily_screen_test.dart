@@ -20,5 +20,6 @@ void main() {
     expect(find.text(today.modifier.shortRule), findsOneWidget);
     expect(find.text('60'), findsOneWidget);
     expect(find.text('PLAY DAILY'), findsOneWidget);
+    expect(find.text('THIS WEEK'), findsOneWidget);
   });
 }
