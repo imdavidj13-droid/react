@@ -84,9 +84,9 @@ class _PassItScreenState extends State<PassItScreen> {
                       SizedBox(width: 9),
                       Expanded(
                         child: _RuleCard(
-                          icon: Icons.swap_horiz_rounded,
-                          value: '1 CMD',
-                          label: 'PER TURN',
+                          icon: Icons.heart_broken_rounded,
+                          value: 'MISS',
+                          label: 'THEN PASS',
                           color: ReactColors.lime,
                         ),
                       ),
@@ -204,7 +204,7 @@ class _Hero extends StatelessWidget {
                 ),
                 SizedBox(height: 9),
                 Text(
-                  'Complete one command, then hand the phone over. Miss and you lose a life. Last player standing wins.',
+                  'Keep clearing commands while you have the phone. Miss and you lose a life, then pass it to the next player. Last player standing wins.',
                   style: TextStyle(
                     color: ReactColors.textSecondary,
                     fontSize: 10.5,
@@ -453,7 +453,7 @@ class _RoundPreview extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '$playerCount PLAYERS • ONE COMMAND EACH • THEN PASS',
+              '$playerCount PLAYERS • KEEP PLAYING UNTIL YOU MISS • THEN PASS',
               style: const TextStyle(
                 color: ReactColors.textPrimary,
                 fontSize: 9.5,
