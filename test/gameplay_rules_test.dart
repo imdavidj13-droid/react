@@ -9,6 +9,26 @@ void main() {
       expect(ReactCommand.values, contains(ReactCommand.pinch));
       expect(ReactCommand.values, contains(ReactCommand.spread));
     });
+
+    test('complex commands have protected reaction floors', () {
+      expect(ReactCommand.tap.reactionWindowMs(300), 650);
+      expect(ReactCommand.doubleTap.reactionWindowMs(300), 900);
+      expect(ReactCommand.hold.reactionWindowMs(300), 1000);
+      expect(ReactCommand.swipeLeft.reactionWindowMs(300), 750);
+      expect(ReactCommand.swipeRight.reactionWindowMs(300), 750);
+      expect(ReactCommand.swipeUp.reactionWindowMs(300), 750);
+      expect(ReactCommand.swipeDown.reactionWindowMs(300), 750);
+      expect(ReactCommand.pinch.reactionWindowMs(300), 1050);
+      expect(ReactCommand.spread.reactionWindowMs(300), 1050);
+    });
+
+    test('command multipliers still apply above their minimum floors', () {
+      expect(ReactCommand.tap.reactionWindowMs(1500), 1500);
+      expect(ReactCommand.doubleTap.reactionWindowMs(1500), 1650);
+      expect(ReactCommand.hold.reactionWindowMs(1500), 1830);
+      expect(ReactCommand.pinch.reactionWindowMs(1500), 1770);
+      expect(ReactCommand.spread.reactionWindowMs(1500), 1770);
+    });
   });
 
   group('classic timing', () {
@@ -25,11 +45,11 @@ void main() {
   });
 
   group('endless timing', () {
-    test('ramps aggressively to its floor', () {
+    test('ramps aggressively to its safer floor', () {
       expect(ReactModeTiming.endless.commandDurationMsForScore(0), 2000);
       expect(ReactModeTiming.endless.commandDurationMsForScore(2), 1900);
-      expect(ReactModeTiming.endless.commandDurationMsForScore(24), 800);
-      expect(ReactModeTiming.endless.commandDurationMsForScore(500), 800);
+      expect(ReactModeTiming.endless.commandDurationMsForScore(22), 900);
+      expect(ReactModeTiming.endless.commandDurationMsForScore(500), 900);
     });
 
     test('transition gap collapses at high scores', () {
@@ -54,6 +74,15 @@ void main() {
       expect(ReactModeTiming.daily.successDelayMsForScore(55), 140);
       expect(ReactModeTiming.daily.successDelayMsForScore(60), 120);
       expect(ReactModeTiming.daily.successDelayMsForScore(500), 120);
+    });
+
+    test('redline-style compressed bases cannot break physical floors', () {
+      const compressedBase = 600;
+      expect(ReactCommand.tap.reactionWindowMs(compressedBase), 650);
+      expect(ReactCommand.doubleTap.reactionWindowMs(compressedBase), 900);
+      expect(ReactCommand.hold.reactionWindowMs(compressedBase), 1000);
+      expect(ReactCommand.pinch.reactionWindowMs(compressedBase), 1050);
+      expect(ReactCommand.spread.reactionWindowMs(compressedBase), 1050);
     });
   });
 
