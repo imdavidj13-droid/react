@@ -43,19 +43,19 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    unawaited(ReactAudio.play(ReactSoundCue.command));
+    unawaited(ReactAudio.play(ReactSoundCue.countdownTick));
     _timer = Timer.periodic(const Duration(milliseconds: 650), (_) {
       if (!mounted || _suspended || _launching) return;
 
       if (_count > 1) {
         setState(() => _count -= 1);
-        unawaited(ReactAudio.play(ReactSoundCue.command));
+        unawaited(ReactAudio.play(ReactSoundCue.countdownTick));
         return;
       }
 
       if (!_go) {
         setState(() => _go = true);
-        unawaited(ReactAudio.play(ReactSoundCue.success));
+        unawaited(ReactAudio.play(ReactSoundCue.countdownGo));
         return;
       }
 
