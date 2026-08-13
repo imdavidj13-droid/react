@@ -75,7 +75,7 @@ abstract final class ReactModeTiming {
 
   static const endless = ModeTimingRules(
     startCommandMs: 2000,
-    minimumCommandMs: 800,
+    minimumCommandMs: 900,
     commandSpeedStepMs: 100,
     commandSpeedStepEveryPoints: 2,
     startSuccessDelayMs: 300,
