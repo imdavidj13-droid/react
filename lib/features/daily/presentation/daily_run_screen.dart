@@ -74,18 +74,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     var base = _baseCommandMs;
     if (_surgeCommand) base = max(650, (base * .62).round());
     if (_redlineCommand) base = max(600, (base * .55).round());
-
-    final multiplier = switch (_command) {
-      ReactCommand.tap => 1.0,
-      ReactCommand.doubleTap => 1.10,
-      ReactCommand.hold => 1.22,
-      ReactCommand.swipeLeft ||
-      ReactCommand.swipeRight ||
-      ReactCommand.swipeUp ||
-      ReactCommand.swipeDown => 1.0,
-      ReactCommand.pinch || ReactCommand.spread => 1.18,
-    };
-    return (base * multiplier).round();
+    return _command.reactionWindowMs(base);
   }
 
   double get _averageTimeSeconds =>
@@ -165,6 +154,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
                   : null;
     });
 
+    _syncFlameIntensity();
     unawaited(ReactAudio.play(ReactSoundCue.command));
     _armCommandTimer(_commandDurationMs);
 
@@ -231,6 +221,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     final responseMs = DateTime.now().difference(_commandStartedAt).inMilliseconds;
     final completedCommand = _command;
     final wasSurge = _surgeCommand;
+    final wasRedline = _redlineCommand;
 
     setState(() {
       _acceptingInput = false;
@@ -258,7 +249,6 @@ class _DailyRunScreenState extends State<DailyRunScreen>
 
     unawaited(ReactAudio.play(ReactSoundCue.success));
     _game.triggerSuccess();
-    _syncFlameIntensity();
 
     if (_score >= target) {
       _nextTimer = Timer(
@@ -277,14 +267,20 @@ class _DailyRunScreenState extends State<DailyRunScreen>
       return;
     }
 
-    final delay = _successDelayMs(wasSurge: wasSurge);
+    final delay = _successDelayMs(
+      wasSurge: wasSurge,
+      wasRedline: wasRedline,
+    );
     _nextTimer = Timer(Duration(milliseconds: delay), _startCommand);
   }
 
-  int _successDelayMs({required bool wasSurge}) {
+  int _successDelayMs({
+    required bool wasSurge,
+    required bool wasRedline,
+  }) {
     if (_isChain) return 70;
     if (_isSurge && _surgeRemaining > 0) return wasSurge ? 90 : 220;
-    if (_isRedline && _redlineCommand) return 180;
+    if (_isRedline && wasRedline) return 180;
     return _timing.successDelayMsForScore(_score);
   }
 
@@ -539,7 +535,13 @@ class _DailyHeader extends StatelessWidget {
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(child: _HudCard(label: 'SCORE', value: '$score', color: ReactColors.lime)),
+            Expanded(
+              child: _HudCard(
+                label: 'SCORE',
+                value: '$score',
+                color: ReactColors.lime,
+              ),
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: _HudCard(
@@ -553,7 +555,7 @@ class _DailyHeader extends StatelessWidget {
             Expanded(
               child: _HudCard(
                 label: 'STEP',
-                value: '$score/$target',
+                value: '$score/${_DailyRunScreenState.target}',
                 color: ReactColors.purple,
                 compact: true,
               ),
@@ -802,7 +804,10 @@ class _DailyRingPainter extends CustomPainter {
 }
 
 class _DailyBottomBar extends StatelessWidget {
-  const _DailyBottomBar({required this.score, required this.averageTimeSeconds});
+  const _DailyBottomBar({
+    required this.score,
+    required this.averageTimeSeconds,
+  });
 
   final int score;
   final double averageTimeSeconds;
@@ -819,7 +824,11 @@ class _DailyBottomBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.calendar_month_rounded, color: ReactColors.electricBlueBright, size: 21),
+          const Icon(
+            Icons.calendar_month_rounded,
+            color: ReactColors.electricBlueBright,
+            size: 21,
+          ),
           const SizedBox(width: 8),
           const Text(
             'DAILY',
@@ -832,7 +841,7 @@ class _DailyBottomBar extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            '$score / $target',
+            '$score / ${_DailyRunScreenState.target}',
             style: const TextStyle(
               color: ReactColors.lime,
               fontSize: 15,
@@ -841,7 +850,9 @@ class _DailyBottomBar extends StatelessWidget {
           ),
           const SizedBox(width: 18),
           Text(
-            averageTimeSeconds == 0 ? '--' : '${averageTimeSeconds.toStringAsFixed(2)}s',
+            averageTimeSeconds == 0
+                ? '--'
+                : '${averageTimeSeconds.toStringAsFixed(2)}s',
             style: const TextStyle(
               color: ReactColors.textPrimary,
               fontSize: 13,
@@ -876,7 +887,11 @@ class _DailyPauseOverlay extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.pause_circle_outline_rounded, color: ReactColors.electricBlueBright, size: 52),
+              const Icon(
+                Icons.pause_circle_outline_rounded,
+                color: ReactColors.electricBlueBright,
+                size: 52,
+              ),
               const SizedBox(height: 12),
               const Text(
                 'DAILY PAUSED',
