@@ -9,6 +9,11 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     ReactSettings.dailyDevOverrideEnabled = true;
     ReactSettings.dailyDevModifier = 'redline';
+    ReactSettings.dailyDevRunActive = true;
+  });
+
+  tearDown(() {
+    ReactSettings.dailyDevRunActive = false;
   });
 
   testWidgets('Daily gameplay shell renders sixty-step modifier run',
