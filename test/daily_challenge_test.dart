@@ -19,6 +19,26 @@ void main() {
     expect(dayAfter.id, '2028-061');
   });
 
+  test('modifier rotation is deterministic and changes day to day', () {
+    final first = DailyChallenge.forDate(DateTime(2026, 1, 1));
+    final second = DailyChallenge.forDate(DateTime(2026, 1, 2));
+    final third = DailyChallenge.forDate(DateTime(2026, 1, 3));
+    final fourth = DailyChallenge.forDate(DateTime(2026, 1, 4));
+
+    expect(first.modifier, DailyModifier.lightsOut);
+    expect(second.modifier, DailyModifier.surge);
+    expect(third.modifier, DailyModifier.noClock);
+    expect(fourth.modifier, DailyModifier.lightsOut);
+  });
+
+  test('each modifier has player-facing rule copy', () {
+    for (final modifier in DailyModifier.values) {
+      expect(modifier.label, isNotEmpty);
+      expect(modifier.shortRule, isNotEmpty);
+      expect(modifier.description, isNotEmpty);
+    }
+  });
+
   test('next reset is local midnight on the following day', () {
     final challenge = DailyChallenge.forDate(DateTime(2026, 12, 31, 23, 59));
 
