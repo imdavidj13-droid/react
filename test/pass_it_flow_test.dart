@@ -23,10 +23,12 @@ void main() {
     await tester.pump();
   }
 
+  ReactCommand visibleCommand() => ReactCommand.values.singleWhere(
+        (candidate) => find.text(candidate.title).evaluate().isNotEmpty,
+      );
+
   Future<void> performVisibleCommand(WidgetTester tester) async {
-    final command = ReactCommand.values.singleWhere(
-      (candidate) => find.text(candidate.title).evaluate().isNotEmpty,
-    );
+    final command = visibleCommand();
     final target = find.text(command.title);
     final center = tester.getCenter(target);
 
@@ -80,6 +82,21 @@ void main() {
     await tester.pump();
   }
 
+  Future<void> performWrongCommand(WidgetTester tester) async {
+    final expected = visibleCommand();
+    final target = find.text(expected.title);
+    final center = tester.getCenter(target);
+
+    final gesture = await tester.startGesture(center);
+    await gesture.moveBy(
+      expected == ReactCommand.swipeRight
+          ? const Offset(-90, 0)
+          : const Offset(90, 0),
+    );
+    await gesture.up();
+    await tester.pump();
+  }
+
   testWidgets('Pass It keeps the same player after a successful command',
       (tester) async {
     await pumpPassIt(tester);
@@ -95,11 +112,9 @@ void main() {
       (tester) async {
     await pumpPassIt(tester);
 
-    // The slowest starting Pass It command is under 2.4 seconds. Advance past
-    // that window, then give the periodic deadline check and handoff transition
-    // their own deterministic pumps.
-    await tester.pump(const Duration(milliseconds: 2400));
-    await tester.pump(const Duration(milliseconds: 40));
+    // Trigger a deterministic miss rather than relying on Flutter's fake test
+    // clock to advance the production Stopwatch used for reaction deadlines.
+    await performWrongCommand(tester);
     await tester.pump(const Duration(milliseconds: 320));
 
     expect(find.text('PLAYER 1 LOST A LIFE'), findsOneWidget);
