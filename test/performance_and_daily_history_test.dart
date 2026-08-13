@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:react/core/settings/react_settings.dart';
+import 'package:react/features/daily/domain/daily_challenge.dart';
 import 'package:react/features/gameplay/data/local_player_stats.dart';
 import 'package:react/features/gameplay/domain/react_command.dart';
 import 'package:react/features/gameplay/domain/react_command_performance.dart';
@@ -132,6 +133,36 @@ void main() {
     expect(today.outcome, ReactRunOutcome.missedCommand);
   });
 
+  test('Daily modifier best keeps the highest score for today rule', () async {
+    final modifier = DailyChallenge.today().modifier;
+
+    await LocalPlayerStats.recordResult(
+      const ReactRunResult(
+        mode: ReactGameMode.daily,
+        score: 17,
+        successfulCommands: 17,
+        averageTimeSeconds: .81,
+        outcome: ReactRunOutcome.missedCommand,
+        misses: 1,
+      ),
+    );
+    await LocalPlayerStats.recordResult(
+      const ReactRunResult(
+        mode: ReactGameMode.daily,
+        score: 11,
+        successfulCommands: 11,
+        averageTimeSeconds: .86,
+        outcome: ReactRunOutcome.missedCommand,
+        misses: 1,
+      ),
+    );
+
+    expect(await LocalPlayerStats.dailyBestForModifier(modifier), 17);
+
+    await LocalPlayerStats.resetProgress();
+    expect(await LocalPlayerStats.dailyBestForModifier(modifier), 0);
+  });
+
   test('duplicate Daily attempt start never erases an existing result', () async {
     await LocalPlayerStats.recordResult(
       const ReactRunResult(
@@ -153,7 +184,9 @@ void main() {
     expect(today.outcome, ReactRunOutcome.missedCommand);
   });
 
-  test('developer Daily result never changes real Daily history', () async {
+  test('developer Daily result never changes real Daily history or modifier best',
+      () async {
+    final modifier = DailyChallenge.today().modifier;
     ReactSettings.dailyDevRunActive = true;
     await LocalPlayerStats.recordResult(
       const ReactRunResult(
@@ -168,5 +201,6 @@ void main() {
     final history = await LocalPlayerStats.dailyHistoryLast7();
     expect(history.last.attempted, isFalse);
     expect(history.last.score, isNull);
+    expect(await LocalPlayerStats.dailyBestForModifier(modifier), 0);
   });
 }
