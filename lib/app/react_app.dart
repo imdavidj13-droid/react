@@ -29,7 +29,7 @@ class _DebugHome extends StatelessWidget {
       children: [
         const HomeScreen(),
         Positioned(
-          right: 12,
+          left: 12,
           top: MediaQuery.paddingOf(context).top + 10,
           child: Material(
             color: Colors.transparent,
