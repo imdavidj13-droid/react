@@ -4,7 +4,7 @@ import 'package:react/features/gameplay/domain/react_run_result.dart';
 import 'package:react/features/results/domain/run_comparison.dart';
 
 void main() {
-  const previous = ReactRunHistoryEntry(
+  final previous = ReactRunHistoryEntry(
     mode: ReactGameMode.classic,
     score: 18,
     successfulCommands: 18,
