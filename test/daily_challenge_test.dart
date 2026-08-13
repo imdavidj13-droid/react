@@ -1,7 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:react/core/settings/react_settings.dart';
 import 'package:react/features/daily/domain/daily_challenge.dart';
 
 void main() {
+  setUp(() {
+    ReactSettings.dailyDevOverrideEnabled = false;
+    ReactSettings.dailyDevModifier = 'lightsOut';
+    ReactSettings.dailyDevRunActive = false;
+  });
+
   test('builds a stable seed from the calendar date', () {
     final challenge = DailyChallenge.forDate(DateTime(2026, 8, 12, 18, 45));
 
@@ -49,6 +56,27 @@ void main() {
     );
 
     expect(challenge.modifier, DailyModifier.redline);
+  });
+
+  test('normal Daily ignores persisted developer override state', () {
+    ReactSettings.dailyDevOverrideEnabled = true;
+    ReactSettings.dailyDevModifier = DailyModifier.redline.name;
+    ReactSettings.dailyDevRunActive = false;
+
+    final today = DateTime.now();
+    final expected = DailyChallenge.forDate(today);
+    final actual = DailyChallenge.today();
+
+    expect(actual.modifier, expected.modifier);
+    expect(actual.seed, expected.seed);
+  });
+
+  test('active developer run can use the selected modifier', () {
+    ReactSettings.dailyDevOverrideEnabled = true;
+    ReactSettings.dailyDevModifier = DailyModifier.redline.name;
+    ReactSettings.dailyDevRunActive = true;
+
+    expect(DailyChallenge.today().modifier, DailyModifier.redline);
   });
 
   test('each modifier has player-facing rule copy', () {
