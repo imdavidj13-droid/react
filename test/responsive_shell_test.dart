@@ -97,7 +97,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('LAST 7 DAYS'), findsOneWidget);
+    expect(find.text('THIS WEEK'), findsOneWidget);
   });
 
   testWidgets('Scores fits and scrolls on a 320x640 screen', (tester) async {
