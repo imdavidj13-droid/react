@@ -97,6 +97,20 @@ void main() {
     await tester.pump();
   }
 
+  Future<void> loseLifeAndReadyNextPlayer(
+    WidgetTester tester, {
+    required int lostPlayer,
+    required int nextPlayer,
+  }) async {
+    await performWrongCommand(tester);
+    await tester.pump(const Duration(milliseconds: 320));
+
+    expect(find.text('PLAYER $lostPlayer LOST A LIFE'), findsOneWidget);
+    expect(find.text('PASS TO PLAYER $nextPlayer'), findsOneWidget);
+    await tester.tap(find.text('I’M READY'));
+    await tester.pump();
+  }
+
   testWidgets('Pass It keeps the same player after a successful command',
       (tester) async {
     await pumpPassIt(tester);
@@ -112,8 +126,6 @@ void main() {
       (tester) async {
     await pumpPassIt(tester);
 
-    // Trigger a deterministic miss rather than relying on Flutter's fake test
-    // clock to advance the production Stopwatch used for reaction deadlines.
     await performWrongCommand(tester);
     await tester.pump(const Duration(milliseconds: 320));
 
@@ -122,5 +134,24 @@ void main() {
     expect(find.text('PLAYER 2  •  3 LIVES  •  TAP WHEN READY'), findsOneWidget);
     expect(find.textContaining('3  ♥ ♥ ♥'), findsOneWidget);
     expect(find.textContaining('2  ♥ ♥'), findsOneWidget);
+  });
+
+  testWidgets('Pass It ends with the last living player as winner',
+      (tester) async {
+    await pumpPassIt(tester);
+
+    await loseLifeAndReadyNextPlayer(tester, lostPlayer: 1, nextPlayer: 2);
+    await loseLifeAndReadyNextPlayer(tester, lostPlayer: 2, nextPlayer: 1);
+    await loseLifeAndReadyNextPlayer(tester, lostPlayer: 1, nextPlayer: 2);
+    await loseLifeAndReadyNextPlayer(tester, lostPlayer: 2, nextPlayer: 1);
+
+    await performWrongCommand(tester);
+    await tester.pump(const Duration(milliseconds: 320));
+
+    expect(find.text('PLAYER 1 LOST A LIFE'), findsOneWidget);
+    expect(find.textContaining('0  OUT'), findsOneWidget);
+    expect(find.text('PLAYER 2 WINS'), findsOneWidget);
+    expect(find.text('LAST PLAYER STANDING'), findsOneWidget);
+    expect(find.text('SHOW RESULTS'), findsOneWidget);
   });
 }
