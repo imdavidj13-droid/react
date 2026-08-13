@@ -28,8 +28,7 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   static const _minimumPinchSpreadDelta = 18.0;
   static const _pinchRatio = 0.88;
   static const _spreadRatio = 1.12;
-  static const _doubleTapMinimumGap = Duration(milliseconds: 160);
-  static const _doubleTapWindow = Duration(milliseconds: 600);
+  static const _doubleTapWindow = Duration(milliseconds: 420);
   static const _holdDuration = Duration(milliseconds: 360);
   static const _holdMovementTolerance = 24.0;
 
@@ -115,12 +114,10 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
     if (_pointers.length == 1) {
       final now = event.timeStamp;
       final firstTapAt = _firstTapAt;
-      final tapGap = firstTapAt == null ? null : now - firstTapAt;
       _secondTapStartedInWindow =
           widget.expectedCommand == ReactCommand.doubleTap &&
-              tapGap != null &&
-              tapGap >= _doubleTapMinimumGap &&
-              tapGap <= _doubleTapWindow;
+              firstTapAt != null &&
+              now - firstTapAt <= _doubleTapWindow;
       if (_secondTapStartedInWindow) {
         _doubleTapTimer?.cancel();
       }
