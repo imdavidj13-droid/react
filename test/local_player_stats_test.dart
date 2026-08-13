@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:react/core/settings/react_settings.dart';
 import 'package:react/features/gameplay/data/local_player_stats.dart';
 import 'package:react/features/gameplay/domain/react_run_result.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
+    ReactSettings.dailyDevOverrideEnabled = false;
+    ReactSettings.dailyDevModifier = 'lightsOut';
   });
 
   ReactRunResult result({
@@ -190,6 +193,26 @@ void main() {
 
     expect(await LocalPlayerStats.dailyStreak(), 1);
     expect(await LocalPlayerStats.bestFor(ReactGameMode.daily), 10);
+  });
+
+  test('Daily developer runs never alter real local records', () async {
+    ReactSettings.dailyDevOverrideEnabled = true;
+
+    final newBest = await LocalPlayerStats.recordResult(
+      result(
+        mode: ReactGameMode.daily,
+        score: 60,
+        outcome: ReactRunOutcome.completed,
+      ),
+    );
+
+    expect(newBest, isFalse);
+    expect(await LocalPlayerStats.bestFor(ReactGameMode.daily), 0);
+    expect(await LocalPlayerStats.runsPlayed(), 0);
+    expect(await LocalPlayerStats.runsFor(ReactGameMode.daily), 0);
+    expect(await LocalPlayerStats.recentRuns(), isEmpty);
+    expect(await LocalPlayerStats.dailyStreak(), 0);
+    expect(await LocalPlayerStats.hasPlayedDailyToday(), isFalse);
   });
 
   test('reset clears progress, detailed stats, history, and daily state', () async {
