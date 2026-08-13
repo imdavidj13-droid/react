@@ -100,6 +100,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 icon: Icons.calendar_month_rounded,
                                 label: 'DAILY',
                                 color: ReactColors.lime,
+                                status: stats.dailyPlayedToday ? 'DONE' : 'READY',
+                                statusColor: stats.dailyPlayedToday
+                                    ? ReactColors.lime
+                                    : ReactColors.electricBlueBright,
                                 onTap: () => _open(context, const DailyScreen()),
                               ),
                             ),
@@ -137,6 +141,7 @@ class _HomeStats {
     this.endlessBest = 0,
     this.dailyStreak = 0,
     this.runsPlayed = 0,
+    this.dailyPlayedToday = false,
   });
 
   final int classicBest;
@@ -144,21 +149,24 @@ class _HomeStats {
   final int endlessBest;
   final int dailyStreak;
   final int runsPlayed;
+  final bool dailyPlayedToday;
 
   static Future<_HomeStats> load() async {
-    final values = await Future.wait<int>([
+    final values = await Future.wait<Object>([
       LocalPlayerStats.bestFor(ReactGameMode.classic),
       LocalPlayerStats.bestFor(ReactGameMode.blitz),
       LocalPlayerStats.bestFor(ReactGameMode.endless),
       LocalPlayerStats.dailyStreak(),
       LocalPlayerStats.runsPlayed(),
+      LocalPlayerStats.hasPlayedDailyToday(),
     ]);
     return _HomeStats(
-      classicBest: values[0],
-      blitzBest: values[1],
-      endlessBest: values[2],
-      dailyStreak: values[3],
-      runsPlayed: values[4],
+      classicBest: values[0] as int,
+      blitzBest: values[1] as int,
+      endlessBest: values[2] as int,
+      dailyStreak: values[3] as int,
+      runsPlayed: values[4] as int,
+      dailyPlayedToday: values[5] as bool,
     );
   }
 }
@@ -595,12 +603,16 @@ class _NavTile extends StatelessWidget {
     required this.label,
     required this.color,
     required this.onTap,
+    this.status,
+    this.statusColor,
   });
 
   final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
+  final String? status;
+  final Color? statusColor;
 
   @override
   Widget build(BuildContext context) {
@@ -614,22 +626,52 @@ class _NavTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFF2A3A52)),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            Icon(icon, color: color, size: 25),
-            const SizedBox(height: 7),
-            FittedBox(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: ReactColors.textSecondary,
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: .7,
-                ),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: color, size: 25),
+                  const SizedBox(height: 7),
+                  FittedBox(
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        color: ReactColors.textSecondary,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: .7,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+            if (status != null)
+              Positioned(
+                top: 7,
+                right: 7,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF050A13),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: (statusColor ?? color).withValues(alpha: .55),
+                    ),
+                  ),
+                  child: Text(
+                    status!,
+                    style: TextStyle(
+                      color: statusColor ?? color,
+                      fontSize: 6.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .4,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
