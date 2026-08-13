@@ -92,7 +92,8 @@ class DailyChallenge {
 
   static DailyChallenge today() {
     DailyModifier? override;
-    if (ReactSettings.dailyDevOverrideEnabled) {
+    if (ReactSettings.dailyDevRunActive &&
+        ReactSettings.dailyDevOverrideEnabled) {
       for (final modifier in DailyModifier.values) {
         if (modifier.name == ReactSettings.dailyDevModifier) {
           override = modifier;
