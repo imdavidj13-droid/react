@@ -61,7 +61,7 @@ void main() {
   });
 
   test('Daily target is sixty commands', () {
-    expect(target, 60);
+    expect(dailyTarget, 60);
   });
 
   test('next reset is local midnight on the following day', () {
