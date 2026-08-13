@@ -95,8 +95,32 @@ class LocalPlayerStats {
         .toList(growable: false);
   }
 
+  static Future<List<DailyHistoryEntry>> dailyHistoryThisWeek() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = _decodeDailyHistory(prefs);
+    final today = _normalizedToday();
+    final monday = today.subtract(Duration(days: today.weekday - 1));
+
+    return [
+      for (var offset = 0; offset < 7; offset++)
+        _dailyHistoryForDate(monday.add(Duration(days: offset)), saved),
+    ];
+  }
+
   static Future<List<DailyHistoryEntry>> dailyHistoryLast7() async {
     final prefs = await SharedPreferences.getInstance();
+    final saved = _decodeDailyHistory(prefs);
+    final today = _normalizedToday();
+
+    return [
+      for (var offset = 6; offset >= 0; offset--)
+        _dailyHistoryForDate(today.subtract(Duration(days: offset)), saved),
+    ];
+  }
+
+  static Map<String, DailyHistoryEntry> _decodeDailyHistory(
+    SharedPreferences prefs,
+  ) {
     final saved = <String, DailyHistoryEntry>{};
     for (final raw in prefs.getStringList(_dailyHistoryKey) ?? const <String>[]) {
       try {
@@ -107,16 +131,7 @@ class LocalPlayerStats {
         // Ignore corrupt local history rows individually.
       }
     }
-
-    final today = DateTime.now();
-    final normalizedToday = DateTime(today.year, today.month, today.day);
-    return [
-      for (var offset = 6; offset >= 0; offset--)
-        _dailyHistoryForDate(
-          normalizedToday.subtract(Duration(days: offset)),
-          saved,
-        ),
-    ];
+    return saved;
   }
 
   static DailyHistoryEntry _dailyHistoryForDate(
@@ -146,11 +161,16 @@ class LocalPlayerStats {
   static Future<void> markDailyAttemptStarted() async {
     final prefs = await SharedPreferences.getInstance();
     await _recordDaily(prefs);
+
+    final today = _normalizedToday();
+    final existing = _decodeDailyHistory(prefs)[_dateKey(today)];
+    if (existing?.score != null || existing?.outcome != null) return;
+
     await _upsertDailyHistory(
       prefs,
       DailyHistoryEntry(
-        date: _normalizedToday(),
-        modifier: DailyChallenge.forDate(DateTime.now()).modifier,
+        date: today,
+        modifier: DailyChallenge.forDate(today).modifier,
         attempted: true,
       ),
     );
@@ -216,11 +236,12 @@ class LocalPlayerStats {
 
     if (result.mode == ReactGameMode.daily) {
       await _recordDaily(prefs);
+      final today = _normalizedToday();
       await _upsertDailyHistory(
         prefs,
         DailyHistoryEntry(
-          date: _normalizedToday(),
-          modifier: DailyChallenge.forDate(DateTime.now()).modifier,
+          date: today,
+          modifier: DailyChallenge.forDate(today).modifier,
           attempted: true,
           score: result.score,
           outcome: result.outcome,
