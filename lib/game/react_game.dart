@@ -16,7 +16,9 @@ class ReactGame extends FlameGame {
   final Random _random = Random();
 
   bool get effectsEnabled => ReactSettings.visualEffectsEnabled;
-  double get effectiveIntensity => effectsEnabled ? intensity : 0;
+  double get effectiveIntensity => effectsEnabled
+      ? (0.35 + intensity * 0.65).clamp(0.0, 1.0).toDouble()
+      : 0;
 
   bool get isBlitz => accent == ReactColors.coral;
   bool get isEndless => accent == ReactColors.lime;
@@ -62,8 +64,8 @@ class ReactGame extends FlameGame {
       _ReactionBurst(
         game: this,
         color: accent,
-        particleCount: 18 + (intensity * 12).round() + particleBoost,
-        speed: 105 + (intensity * 95) + speedBoost,
+        particleCount: 22 + (intensity * 16).round() + particleBoost,
+        speed: 115 + (intensity * 105) + speedBoost,
       ),
     );
 
@@ -71,9 +73,9 @@ class ReactGame extends FlameGame {
       _PulseRing(
         game: this,
         color: accent,
-        lifetime: isBlitz ? .20 : .28,
-        maxRadiusFactor: .30 + intensity * .10,
-        strokeWidth: isBlitz ? 4 : 3,
+        lifetime: isBlitz ? .22 : .32,
+        maxRadiusFactor: .32 + intensity * .11,
+        strokeWidth: isBlitz ? 4.5 : 3.5,
       ),
     );
 
@@ -82,9 +84,9 @@ class ReactGame extends FlameGame {
         _PulseRing(
           game: this,
           color: ReactColors.lime,
-          lifetime: .20,
-          maxRadiusFactor: .48,
-          strokeWidth: 2.2,
+          lifetime: .22,
+          maxRadiusFactor: .50,
+          strokeWidth: 2.6,
         ),
       );
     }
@@ -94,9 +96,9 @@ class ReactGame extends FlameGame {
         _PulseRing(
           game: this,
           color: ReactColors.electricBlueBright,
-          lifetime: .38,
-          maxRadiusFactor: .24,
-          strokeWidth: 2,
+          lifetime: .40,
+          maxRadiusFactor: .26,
+          strokeWidth: 2.4,
         ),
       );
     }
@@ -109,8 +111,8 @@ class ReactGame extends FlameGame {
       _ReactionBurst(
         game: this,
         color: ReactColors.coral,
-        particleCount: isEndless ? 38 : 26,
-        speed: isEndless ? 215 : 165,
+        particleCount: isEndless ? 44 : 32,
+        speed: isEndless ? 230 : 180,
         outwardBias: isEndless ? 1.4 : 1.2,
       ),
     );
@@ -119,9 +121,9 @@ class ReactGame extends FlameGame {
       _PulseRing(
         game: this,
         color: ReactColors.coral,
-        lifetime: isBlitz ? .26 : .42,
-        maxRadiusFactor: isEndless ? .56 : .43,
-        strokeWidth: isEndless ? 6 : 5,
+        lifetime: isBlitz ? .28 : .46,
+        maxRadiusFactor: isEndless ? .58 : .46,
+        strokeWidth: isEndless ? 6.5 : 5.5,
       ),
     );
 
@@ -130,9 +132,9 @@ class ReactGame extends FlameGame {
         _PulseRing(
           game: this,
           color: ReactColors.coral,
-          lifetime: .18,
-          maxRadiusFactor: .60,
-          strokeWidth: 2.4,
+          lifetime: .20,
+          maxRadiusFactor: .62,
+          strokeWidth: 2.8,
         ),
       );
     }
@@ -142,9 +144,9 @@ class ReactGame extends FlameGame {
         _PulseRing(
           game: this,
           color: ReactColors.purple,
-          lifetime: .50,
-          maxRadiusFactor: .34,
-          strokeWidth: 2.4,
+          lifetime: .52,
+          maxRadiusFactor: .36,
+          strokeWidth: 2.8,
         ),
       );
     }
@@ -169,7 +171,7 @@ class _AmbientParticleField extends Component {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    for (var i = 0; i < 38; i++) {
+    for (var i = 0; i < 48; i++) {
       _particles.add(_newParticle(initial: true));
     }
   }
@@ -179,9 +181,9 @@ class _AmbientParticleField extends Component {
     return _AmbientParticle(
       x: position.dx,
       y: initial ? position.dy : game.size.y + 8,
-      radius: 0.7 + _random.nextDouble() * 1.5,
-      speed: 7 + _random.nextDouble() * 18,
-      drift: (_random.nextDouble() - .5) * 8,
+      radius: 0.9 + _random.nextDouble() * 1.9,
+      speed: 8 + _random.nextDouble() * 21,
+      drift: (_random.nextDouble() - .5) * 10,
       phase: _random.nextDouble() * pi * 2,
     );
   }
@@ -191,10 +193,10 @@ class _AmbientParticleField extends Component {
     super.update(dt);
     if (!game.effectsEnabled || game.size.x <= 0 || game.size.y <= 0) return;
 
-    final speedMultiplier = .7 + game.effectiveIntensity * 2.1;
+    final speedMultiplier = .8 + game.effectiveIntensity * 2.4;
     for (var i = 0; i < _particles.length; i++) {
       final particle = _particles[i];
-      particle.phase += dt * (1.2 + game.effectiveIntensity * 3.0);
+      particle.phase += dt * (1.3 + game.effectiveIntensity * 3.3);
       particle.y -= particle.speed * speedMultiplier * dt;
       particle.x += sin(particle.phase) * particle.drift * dt;
 
@@ -210,11 +212,11 @@ class _AmbientParticleField extends Component {
   void render(Canvas canvas) {
     super.render(canvas);
     if (!game.effectsEnabled) return;
-    final baseAlpha = .04 + game.effectiveIntensity * .065;
+    final baseAlpha = .08 + game.effectiveIntensity * .10;
 
     for (final particle in _particles) {
-      final shimmer = .72 + sin(particle.phase) * .28;
-      final alpha = (baseAlpha * shimmer).clamp(0.0, .14).toDouble();
+      final shimmer = .70 + sin(particle.phase) * .30;
+      final alpha = (baseAlpha * shimmer).clamp(0.0, .24).toDouble();
       final paint = Paint()..color = game.accent.withValues(alpha: alpha);
       canvas.drawCircle(
         Offset(particle.x, particle.y),
@@ -243,18 +245,18 @@ class _PressureField extends Component {
     if (!game.effectsEnabled ||
         game.size.x <= 0 ||
         game.size.y <= 0 ||
-        game.effectiveIntensity < .38) {
+        game.effectiveIntensity < .28) {
       return;
     }
 
     final pressure =
-        ((game.effectiveIntensity - .38) / .62).clamp(0.0, 1.0).toDouble();
-    final pulse = .65 + sin(_phase) * .35;
-    final alpha = (.025 + pressure * .09) * pulse;
+        ((game.effectiveIntensity - .28) / .72).clamp(0.0, 1.0).toDouble();
+    final pulse = .68 + sin(_phase) * .32;
+    final alpha = (.05 + pressure * .14) * pulse;
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2 + pressure * 2.8
-      ..color = game.accent.withValues(alpha: alpha.clamp(0.0, .13).toDouble());
+      ..strokeWidth = 1.5 + pressure * 3.2
+      ..color = game.accent.withValues(alpha: alpha.clamp(0.0, .22).toDouble());
 
     final inset = 8 + pressure * 12;
     final rect = Rect.fromLTWH(
@@ -268,14 +270,14 @@ class _PressureField extends Component {
       paint,
     );
 
-    if (pressure < .45) return;
+    if (pressure < .38) return;
 
     final streakPaint = Paint()
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 1.2 + pressure * 1.8
-      ..color = game.accent.withValues(alpha: (.04 + pressure * .07).toDouble());
-    final length = 18 + pressure * 44;
-    final travel = (_phase * 64) % max(1, game.size.y);
+      ..strokeWidth = 1.4 + pressure * 2.0
+      ..color = game.accent.withValues(alpha: (.07 + pressure * .11).toDouble());
+    final length = 20 + pressure * 48;
+    final travel = (_phase * 68) % max(1, game.size.y);
 
     final count = game.isEndless ? 8 : 5;
     for (var i = 0; i < count; i++) {
@@ -327,29 +329,29 @@ class _ModeSignatureField extends Component {
     final center = Offset(game.size.x / 2, game.size.y / 2);
     final radius = min(game.size.x, game.size.y) * .46;
     final alpha =
-        (.025 + game.effectiveIntensity * .035).clamp(0.0, .055).toDouble();
+        (.06 + game.effectiveIntensity * .06).clamp(0.0, .12).toDouble();
     final paint = Paint()
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 1.7
+      ..strokeWidth = 2.0
       ..color = game.accent.withValues(alpha: alpha);
 
     for (var i = 0; i < 4; i++) {
       final angle = _phase + i * pi / 2;
-      final inner = center + Offset(cos(angle), sin(angle)) * (radius * .76);
+      final inner = center + Offset(cos(angle), sin(angle)) * (radius * .74);
       final outer = center + Offset(cos(angle), sin(angle)) * radius;
       canvas.drawLine(inner, outer, paint);
     }
   }
 
   void _renderEndless(Canvas canvas) {
-    if (game.effectiveIntensity < .45) return;
+    if (game.effectiveIntensity < .38) return;
 
     final pressure =
-        ((game.effectiveIntensity - .45) / .55).clamp(0.0, 1.0).toDouble();
+        ((game.effectiveIntensity - .38) / .62).clamp(0.0, 1.0).toDouble();
     final paint = Paint()
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 1 + pressure * 1.5
-      ..color = game.accent.withValues(alpha: (.025 + pressure * .07).toDouble());
+      ..strokeWidth = 1.2 + pressure * 1.8
+      ..color = game.accent.withValues(alpha: (.05 + pressure * .11).toDouble());
 
     final spacing = 64 - pressure * 28;
     final travel = (_phase * 34) % spacing;
@@ -372,12 +374,12 @@ class _ModeSignatureField extends Component {
   void _renderPassIt(Canvas canvas) {
     final center = Offset(game.size.x / 2, game.size.y / 2);
     final radius = min(game.size.x, game.size.y) * .40;
-    final paint = Paint()..color = game.accent.withValues(alpha: .10);
+    final paint = Paint()..color = game.accent.withValues(alpha: .17);
 
     for (var i = 0; i < 3; i++) {
       final angle = _phase + i * (pi * 2 / 3);
       final point = center + Offset(cos(angle), sin(angle)) * radius;
-      canvas.drawCircle(point, 2.2, paint);
+      canvas.drawCircle(point, 2.8, paint);
     }
   }
 }
@@ -418,7 +420,7 @@ class _ReactionBurst extends Component {
   final Random _random = Random();
   final List<_BurstParticle> _particles = [];
   double _age = 0;
-  static const _lifetime = .46;
+  static const _lifetime = .48;
 
   @override
   Future<void> onLoad() async {
@@ -432,7 +434,7 @@ class _ReactionBurst extends Component {
         _BurstParticle(
           position: center,
           velocity: Offset(cos(angle), sin(angle)) * velocity,
-          radius: 1.2 + _random.nextDouble() * 2.1,
+          radius: 1.4 + _random.nextDouble() * 2.4,
         ),
       );
     }
@@ -461,7 +463,7 @@ class _ReactionBurst extends Component {
     final paint = Paint()..style = PaintingStyle.fill;
 
     for (final particle in _particles) {
-      paint.color = color.withValues(alpha: .55 * life);
+      paint.color = color.withValues(alpha: .72 * life);
       canvas.drawCircle(
         particle.position,
         particle.radius * (.65 + life * .55),
@@ -502,7 +504,7 @@ class _PulseRing extends Component {
 
     final t = (_age / lifetime).clamp(0.0, 1.0).toDouble();
     final radius = min(game.size.x, game.size.y) * maxRadiusFactor * t;
-    final alpha = ((1 - t) * .42).clamp(0.0, .42).toDouble();
+    final alpha = ((1 - t) * .58).clamp(0.0, .58).toDouble();
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth * (1 - t * .35)
