@@ -54,14 +54,16 @@ Until the online backend is introduced, SharedPreferences stores:
 - Total and per-mode runs played
 - Successful-command totals
 - Average reaction-time aggregates
+- Per-command attempts, successes, misses and successful reaction-time totals
 - Recent run history
 - Daily attempt state and streak
+- Rolling seven-day Daily history with modifier, score and outcome
 - Pass It player-count preference
 - Sound preference
 - Visual-effects preference
 - Debug-only Daily modifier override preference
 
-No fake global ranks or online statistics are shown in the current offline build.
+The Profile screen exposes a Command Performance view with accuracy and average successful reaction time for every active command. The Daily screen shows a rolling seven-day modifier/result strip. No fake global ranks or online statistics are shown in the current offline build.
 
 ## Settings
 
