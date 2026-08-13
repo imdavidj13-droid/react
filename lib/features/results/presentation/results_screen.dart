@@ -46,9 +46,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   Future<void> _recordResult() async {
     final recent = await LocalPlayerStats.recentRuns();
-    final previous = recent
-        .where((entry) => entry.mode == result.mode)
-        .firstOrNull;
+    final previous = recent.where((entry) => entry.mode == result.mode).firstOrNull;
     final comparison = RunComparison.againstPrevious(result, previous);
     final newBest = await LocalPlayerStats.recordResult(result);
     if (!mounted) return;
@@ -138,11 +136,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
                         icon: Icons.science_rounded,
                         onPressed: _playAgain,
                       )
-                    else if (result.mode == ReactGameMode.daily)
-                      const _DailyLockedButton()
                     else
                       NeonButton(
-                        label: 'PLAY AGAIN',
+                        label: result.mode == ReactGameMode.daily
+                            ? 'TRY AGAIN'
+                            : 'PLAY AGAIN',
                         icon: Icons.replay_rounded,
                         onPressed: _playAgain,
                       ),
@@ -179,39 +177,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
             );
           },
         ),
-      ),
-    );
-  }
-}
-
-class _DailyLockedButton extends StatelessWidget {
-  const _DailyLockedButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 58,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A1422),
-        borderRadius: BorderRadius.circular(29),
-        border: Border.all(color: ReactColors.lime.withValues(alpha: .42)),
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.check_circle_outline_rounded, color: ReactColors.lime, size: 21),
-          SizedBox(width: 10),
-          Text(
-            'DAILY ATTEMPT COMPLETE',
-            style: TextStyle(
-              color: ReactColors.lime,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.1,
-            ),
-          ),
-        ],
       ),
     );
   }
