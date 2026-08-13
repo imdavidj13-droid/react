@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
@@ -14,16 +16,48 @@ class DailyScreen extends StatefulWidget {
   State<DailyScreen> createState() => _DailyScreenState();
 }
 
-class _DailyScreenState extends State<DailyScreen> {
+class _DailyScreenState extends State<DailyScreen>
+    with WidgetsBindingObserver {
   late Future<_DailyState> _state;
+  Timer? _midnightTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _reload();
+    _scheduleMidnightRefresh();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _midnightTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshForCurrentDay();
+    }
   }
 
   void _reload() => _state = _DailyState.load();
+
+  void _scheduleMidnightRefresh() {
+    _midnightTimer?.cancel();
+    final now = DateTime.now();
+    final nextReset = DateTime(now.year, now.month, now.day + 1);
+    final delay = nextReset.difference(now) + const Duration(milliseconds: 100);
+    _midnightTimer = Timer(delay, _refreshForCurrentDay);
+  }
+
+  void _refreshForCurrentDay() {
+    if (!mounted) return;
+    setState(_reload);
+    _scheduleMidnightRefresh();
+  }
 
   Future<void> _start() async {
     await Navigator.of(context).push(
@@ -32,7 +66,7 @@ class _DailyScreenState extends State<DailyScreen> {
       ),
     );
     if (!mounted) return;
-    setState(_reload);
+    _refreshForCurrentDay();
   }
 
   @override
@@ -148,7 +182,7 @@ class _DailyState {
     final playedToday = await LocalPlayerStats.hasPlayedDailyToday();
     final streak = await LocalPlayerStats.dailyStreak();
     final best = await LocalPlayerStats.bestFor(ReactGameMode.daily);
-    final history = await LocalPlayerStats.dailyHistoryLast7();
+    final history = await LocalPlayerStats.dailyHistoryThisWeek();
     return _DailyState(
       challenge: challenge,
       playedToday: playedToday,
@@ -490,7 +524,7 @@ class _WeekHistory extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 2),
             child: Text(
-              'LAST 7 DAYS',
+              'THIS WEEK',
               style: TextStyle(
                 color: ReactColors.textSecondary,
                 fontSize: 8,
@@ -508,6 +542,7 @@ class _WeekHistory extends StatelessWidget {
                   child: _HistoryDay(
                     entry: entries[index],
                     today: entries[index].date == today,
+                    future: entries[index].date.isAfter(today),
                   ),
                 ),
               ],
@@ -520,22 +555,29 @@ class _WeekHistory extends StatelessWidget {
 }
 
 class _HistoryDay extends StatelessWidget {
-  const _HistoryDay({required this.entry, required this.today});
+  const _HistoryDay({
+    required this.entry,
+    required this.today,
+    required this.future,
+  });
   final DailyHistoryEntry entry;
   final bool today;
+  final bool future;
 
   static const _dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   @override
   Widget build(BuildContext context) {
     final color = _modifierColor(entry.modifier);
-    final status = entry.completed
-        ? '✓'
-        : entry.score != null
-            ? '${entry.score}'
-            : entry.attempted
-                ? 'USED'
-                : '—';
+    final status = future
+        ? '—'
+        : entry.completed
+            ? '✓'
+            : entry.score != null
+                ? '${entry.score}'
+                : entry.attempted
+                    ? 'USED'
+                    : '—';
 
     return Container(
       height: 76,
@@ -546,7 +588,9 @@ class _HistoryDay extends StatelessWidget {
         border: Border.all(
           color: today
               ? ReactColors.electricBlueBright
-              : color.withValues(alpha: entry.attempted ? .48 : .20),
+              : future
+                  ? const Color(0xFF1A2A3D)
+                  : color.withValues(alpha: entry.attempted ? .48 : .20),
         ),
       ),
       child: Column(
@@ -561,8 +605,12 @@ class _HistoryDay extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Icon(
-            _modifierIcon(entry.modifier),
-            color: entry.attempted ? color : color.withValues(alpha: .38),
+            future ? Icons.lock_outline_rounded : _modifierIcon(entry.modifier),
+            color: future
+                ? ReactColors.textSecondary.withValues(alpha: .45)
+                : entry.attempted
+                    ? color
+                    : color.withValues(alpha: .38),
             size: 15,
           ),
           const Spacer(),
