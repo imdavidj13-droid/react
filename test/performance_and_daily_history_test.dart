@@ -100,6 +100,17 @@ void main() {
     expect(today.outcome, isNull);
   });
 
+  test('Daily current week is always Monday through Sunday', () async {
+    final history = await LocalPlayerStats.dailyHistoryThisWeek();
+
+    expect(history, hasLength(7));
+    expect(history.first.date.weekday, DateTime.monday);
+    expect(history.last.date.weekday, DateTime.sunday);
+    for (var index = 1; index < history.length; index++) {
+      expect(history[index].date.difference(history[index - 1].date).inDays, 1);
+    }
+  });
+
   test('Daily result upgrades today history instead of adding a duplicate', () async {
     await LocalPlayerStats.markDailyAttemptStarted();
     await LocalPlayerStats.recordResult(
@@ -118,6 +129,27 @@ void main() {
     expect(history, hasLength(7));
     expect(today.attempted, isTrue);
     expect(today.score, 23);
+    expect(today.outcome, ReactRunOutcome.missedCommand);
+  });
+
+  test('duplicate Daily attempt start never erases an existing result', () async {
+    await LocalPlayerStats.recordResult(
+      const ReactRunResult(
+        mode: ReactGameMode.daily,
+        score: 31,
+        successfulCommands: 31,
+        averageTimeSeconds: .76,
+        outcome: ReactRunOutcome.missedCommand,
+        misses: 1,
+      ),
+    );
+
+    await LocalPlayerStats.markDailyAttemptStarted();
+
+    final history = await LocalPlayerStats.dailyHistoryLast7();
+    final today = history.last;
+    expect(today.attempted, isTrue);
+    expect(today.score, 31);
     expect(today.outcome, ReactRunOutcome.missedCommand);
   });
 
