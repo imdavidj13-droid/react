@@ -250,16 +250,22 @@ class LocalPlayerStats {
       if (result.score > currentModifierBest) {
         await prefs.setInt(_dailyModifierBestKey(modifier), result.score);
       }
-      await _upsertDailyHistory(
-        prefs,
-        DailyHistoryEntry(
-          date: today,
-          modifier: modifier,
-          attempted: true,
-          score: result.score,
-          outcome: result.outcome,
-        ),
-      );
+
+      final existing = _decodeDailyHistory(prefs)[_dateKey(today)];
+      final shouldReplaceDailyHistory =
+          existing?.score == null || result.score > existing!.score!;
+      if (shouldReplaceDailyHistory) {
+        await _upsertDailyHistory(
+          prefs,
+          DailyHistoryEntry(
+            date: today,
+            modifier: modifier,
+            attempted: true,
+            score: result.score,
+            outcome: result.outcome,
+          ),
+        );
+      }
     }
 
     return isNewBest;
