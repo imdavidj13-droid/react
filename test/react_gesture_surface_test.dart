@@ -127,6 +127,50 @@ void main() {
     expect(commands, [ReactCommand.tap]);
   });
 
+  testWidgets('Disabling input clears a half-finished Double Tap', (tester) async {
+    final commands = <ReactCommand>[];
+    var enabled = true;
+    late StateSetter setSurfaceState;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            setSurfaceState = setState;
+            return Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 300,
+                  height: 300,
+                  child: ReactGestureSurface(
+                    enabled: enabled,
+                    expectedCommand: ReactCommand.doubleTap,
+                    onCommand: commands.add,
+                    child: const ColoredBox(
+                      key: surfaceKey,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(target());
+    await tester.pump(const Duration(milliseconds: 120));
+    setSurfaceState(() => enabled = false);
+    await tester.pump();
+    setSurfaceState(() => enabled = true);
+    await tester.pump();
+    await tester.tap(target());
+    await tester.pump(const Duration(milliseconds: 450));
+
+    expect(commands, [ReactCommand.tap]);
+  });
+
   testWidgets('Hold does not complete until finger is released', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.hold);
     final center = tester.getCenter(target());
@@ -254,6 +298,80 @@ void main() {
     await tester.pump();
 
     expect(commands, isEmpty);
+  });
+
+  testWidgets('Three-finger input cannot resolve as Pinch or Spread', (tester) async {
+    final commands = await pumpSurface(tester, ReactCommand.pinch);
+    final center = tester.getCenter(target());
+
+    final first = await tester.createGesture(pointer: 1);
+    final second = await tester.createGesture(pointer: 2);
+    final third = await tester.createGesture(pointer: 3);
+    await first.down(center + const Offset(-60, 0));
+    await second.down(center + const Offset(60, 0));
+    await third.down(center + const Offset(0, 40));
+    await first.moveTo(center + const Offset(-30, 0));
+    await second.moveTo(center + const Offset(30, 0));
+    await first.up();
+    await second.up();
+    await third.up();
+    await tester.pump();
+
+    expect(commands, isEmpty);
+  });
+
+  testWidgets('Old pointer release cannot satisfy the next command', (tester) async {
+    final commands = <ReactCommand>[];
+    var enabled = true;
+    var expected = ReactCommand.hold;
+    late StateSetter setSurfaceState;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            setSurfaceState = setState;
+            return Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 300,
+                  height: 300,
+                  child: ReactGestureSurface(
+                    enabled: enabled,
+                    expectedCommand: expected,
+                    onCommand: commands.add,
+                    child: const ColoredBox(
+                      key: surfaceKey,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    final center = tester.getCenter(target());
+    final oldGesture = await tester.startGesture(center, pointer: 1);
+    await tester.pump(const Duration(milliseconds: 380));
+
+    setSurfaceState(() => enabled = false);
+    await tester.pump();
+    setSurfaceState(() {
+      expected = ReactCommand.tap;
+      enabled = true;
+    });
+    await tester.pump();
+
+    await oldGesture.up();
+    await tester.pump();
+    expect(commands, isEmpty);
+
+    await tester.tap(target());
+    await tester.pump();
+    expect(commands, [ReactCommand.tap]);
   });
 
   testWidgets('Wrong swipe is still emitted so gameplay can count a miss',
