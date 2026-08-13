@@ -14,21 +14,14 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  late bool _soundEnabled;
   late bool _visualEffectsEnabled;
   late Future<_ProfileStats> _stats;
 
   @override
   void initState() {
     super.initState();
-    _soundEnabled = ReactSettings.soundEnabled;
     _visualEffectsEnabled = ReactSettings.visualEffectsEnabled;
     _stats = _ProfileStats.load();
-  }
-
-  Future<void> _setSound(bool value) async {
-    setState(() => _soundEnabled = value);
-    await ReactSettings.setSoundEnabled(value);
   }
 
   Future<void> _setVisualEffects(bool value) async {
@@ -53,7 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: const Color(0xFF07111D),
         title: const Text('RESET LOCAL PROGRESS?'),
         content: const Text(
-          'This permanently clears local scores, detailed run stats, command performance, Daily history, Daily streak and today\'s Daily attempt. Sound and visual settings are kept.',
+          'This permanently clears local scores, detailed run stats, command performance, Daily history, Daily streak and today\'s Daily attempt. Visual settings are kept.',
         ),
         actions: [
           TextButton(
@@ -114,15 +107,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 18),
               const _SectionLabel('GAME SETTINGS'),
-              const SizedBox(height: 10),
-              _SettingTile(
-                icon: Icons.volume_up_rounded,
-                title: 'SOUND',
-                subtitle: 'Gameplay and interface audio.',
-                value: _soundEnabled,
-                color: ReactColors.electricBlueBright,
-                onChanged: _setSound,
-              ),
               const SizedBox(height: 10),
               _SettingTile(
                 icon: Icons.auto_awesome_rounded,
@@ -453,51 +437,53 @@ class _ActionTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF07111D),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: color.withValues(alpha: .34)),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: color, size: 25),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: ReactColors.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: ReactColors.textSecondary,
-                        fontSize: 9,
-                        height: 1.3,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: color),
-            ],
-          ),
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF07111D),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withValues(alpha: .34)),
         ),
-      );
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 25),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: ReactColors.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 9,
+                      height: 1.3,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: color),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _SettingTile extends StatelessWidget {
@@ -636,7 +622,11 @@ class _InfoCard extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          Icon(Icons.phone_android_rounded, color: ReactColors.textSecondary, size: 22),
+          Icon(
+            Icons.phone_android_rounded,
+            color: ReactColors.textSecondary,
+            size: 22,
+          ),
           SizedBox(width: 11),
           Expanded(
             child: Text(
