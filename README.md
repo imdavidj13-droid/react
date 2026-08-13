@@ -9,8 +9,20 @@ The project now includes playable implementations for:
 - Classic — three lives with a gradually increasing pace
 - Blitz — 60-second score attack with a time penalty for misses
 - Endless — one miss ends the run, with an aggressive speed and visual-intensity ramp
-- Daily — deterministic 40-command local challenge with one attempt per day, one-miss elimination and an escalating pace
+- Daily — deterministic 60-command challenge with one attempt per day and one of seven gameplay modifiers
 - Pass It — 2–4 player local multiplayer with handoff states and individual lives
+
+Daily uses a deterministic Monday-to-Sunday deck so all seven modifiers appear exactly once per calendar week in a shuffled order:
+
+- Lights Out — commands vanish after 650 ms
+- Surge — recurring three-command rapid-fire bursts
+- No Clock — no numeric countdown or timer ring
+- Echo — every sixth clear repeats the command
+- Reverse — directional swipes must be performed in the opposite direction
+- Chain — almost no transition gap between commands
+- Redline — every tenth command gets a sharply reduced reaction window
+
+Debug builds expose a Daily developer tester so each modifier can be launched repeatedly without consuming the real Daily attempt. The tester is not included in release UI.
 
 The active command pool is:
 
@@ -30,7 +42,7 @@ Freeze, tilt, rotate and accelerometer-driven commands are not part of the activ
 
 Flutter owns navigation, HUDs, gesture input and mode setup screens. Flame owns the live gameplay visual layer, including ambient particles, success/miss bursts, pulse rings and pressure effects that intensify in faster modes.
 
-Gameplay uses one shared run engine and one shared raw-pointer gesture surface so input behaviour stays consistent across modes.
+Classic, Blitz, Endless and Pass It use the shared run engine. Daily has a dedicated controller because its seven rotating modifiers alter command visibility, expected input, timing and transition behaviour while still reusing the shared gesture surface, Flame layer, audio layer and Results model.
 
 ## Local data
 
@@ -45,6 +57,7 @@ Until the online backend is introduced, SharedPreferences stores:
 - Pass It player-count preference
 - Sound preference
 - Visual-effects preference
+- Debug-only Daily modifier override preference
 
 No fake global ranks or online statistics are shown in the current offline build.
 
