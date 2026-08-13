@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/audio/react_audio.dart';
 import '../../../core/theme/react_colors.dart';
+import '../../daily/presentation/daily_run_screen.dart';
 import '../data/local_player_stats.dart';
 import '../domain/react_run_result.dart';
 import 'react_run_screen.dart';
@@ -77,7 +78,9 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen>
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) => ReactRunScreen(mode: widget.mode),
+        builder: (_) => widget.mode == ReactGameMode.daily
+            ? const DailyRunScreen()
+            : ReactRunScreen(mode: widget.mode),
       ),
     );
   }
