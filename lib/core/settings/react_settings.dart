@@ -6,10 +6,14 @@ class ReactSettings {
   static const _soundKey = 'settings_sound_enabled';
   static const _visualEffectsKey = 'settings_visual_effects_enabled';
   static const _passItPlayerCountKey = 'settings_pass_it_player_count';
+  static const _dailyDevOverrideKey = 'settings_daily_dev_override_enabled';
+  static const _dailyDevModifierKey = 'settings_daily_dev_modifier';
 
   static bool soundEnabled = true;
   static bool visualEffectsEnabled = true;
   static int passItPlayerCount = 3;
+  static bool dailyDevOverrideEnabled = false;
+  static String dailyDevModifier = 'lightsOut';
 
   static Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -17,6 +21,8 @@ class ReactSettings {
     visualEffectsEnabled = prefs.getBool(_visualEffectsKey) ?? true;
     passItPlayerCount =
         (prefs.getInt(_passItPlayerCountKey) ?? 3).clamp(2, 4).toInt();
+    dailyDevOverrideEnabled = prefs.getBool(_dailyDevOverrideKey) ?? false;
+    dailyDevModifier = prefs.getString(_dailyDevModifierKey) ?? 'lightsOut';
   }
 
   static Future<void> setSoundEnabled(bool value) async {
@@ -36,5 +42,17 @@ class ReactSettings {
     passItPlayerCount = safeValue;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_passItPlayerCountKey, safeValue);
+  }
+
+  static Future<void> setDailyDevOverrideEnabled(bool value) async {
+    dailyDevOverrideEnabled = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_dailyDevOverrideKey, value);
+  }
+
+  static Future<void> setDailyDevModifier(String value) async {
+    dailyDevModifier = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_dailyDevModifierKey, value);
   }
 }
