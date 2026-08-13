@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import '../settings/react_settings.dart';
 
 enum ReactSoundCue {
+  countdownTick,
+  countdownGo,
   command,
   success,
   miss,
@@ -27,6 +29,14 @@ abstract final class ReactAudio {
     if (!enabled) return;
 
     switch (cue) {
+      case ReactSoundCue.countdownTick:
+        await _click();
+        return;
+      case ReactSoundCue.countdownGo:
+        await _alert();
+        await _delay(45);
+        if (enabled) await _click();
+        return;
       case ReactSoundCue.command:
         await _click();
         return;
