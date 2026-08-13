@@ -27,7 +27,7 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   static const _minimumPinchSpreadDelta = 22.0;
   static const _pinchRatio = 0.84;
   static const _spreadRatio = 1.16;
-  static const _doubleTapWindow = Duration(milliseconds: 285);
+  static const _doubleTapWindow = Duration(milliseconds: 330);
   static const _holdDuration = Duration(milliseconds: 360);
 
   final Map<int, Offset> _pointers = <int, Offset>{};
@@ -41,6 +41,28 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   int? _primaryPointer;
   bool _multiTouchSeen = false;
   bool _resolved = false;
+  bool _waitingForRelease = false;
+
+  @override
+  void didUpdateWidget(covariant ReactGestureSurface oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.expectedCommand != widget.expectedCommand) {
+      _doubleTapTimer?.cancel();
+      _firstTapAt = null;
+
+      // A Hold/Pinch/Spread can resolve while fingers are still touching the
+      // display. Do not arm the next command until those old pointers release.
+      if (_pointers.isNotEmpty) {
+        _waitingForRelease = true;
+        _resolved = true;
+      }
+    }
+
+    if (!widget.enabled) {
+      _holdTimer?.cancel();
+    }
+  }
 
   @override
   void dispose() {
@@ -50,28 +72,37 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   }
 
   void _emit(ReactCommand command) {
-    if (!widget.enabled || _resolved) return;
+    if (!widget.enabled || _resolved || _waitingForRelease) return;
     _resolved = true;
     _doubleTapTimer?.cancel();
     _holdTimer?.cancel();
     widget.onCommand(command);
+
+    if (_pointers.isNotEmpty) {
+      _waitingForRelease = true;
+    }
   }
 
   void _onPointerDown(PointerDownEvent event) {
-    if (!widget.enabled) return;
-
     _pointers[event.pointer] = event.localPosition;
+
+    if (!widget.enabled || _waitingForRelease) return;
 
     if (_pointers.length == 1) {
       _primaryPointer = event.pointer;
       _primaryDelta = Offset.zero;
       _primaryDownAt = DateTime.now();
       _resolved = false;
+      _multiTouchSeen = false;
 
       if (widget.expectedCommand == ReactCommand.hold) {
         _holdTimer?.cancel();
         _holdTimer = Timer(_holdDuration, () {
-          if (!mounted || !widget.enabled || _resolved || _multiTouchSeen) {
+          if (!mounted ||
+              !widget.enabled ||
+              _resolved ||
+              _multiTouchSeen ||
+              _waitingForRelease) {
             return;
           }
           if (_pointers.containsKey(_primaryPointer)) {
@@ -86,17 +117,18 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       _multiTouchSeen = true;
       _holdTimer?.cancel();
       _doubleTapTimer?.cancel();
+      _firstTapAt = null;
       _twoFingerStartDistance = _currentTwoFingerDistance();
     }
   }
 
   void _onPointerMove(PointerMoveEvent event) {
-    if (!widget.enabled || !_pointers.containsKey(event.pointer) || _resolved) {
-      return;
-    }
+    if (!_pointers.containsKey(event.pointer)) return;
 
     final previous = _pointers[event.pointer]!;
     _pointers[event.pointer] = event.localPosition;
+
+    if (!widget.enabled || _resolved || _waitingForRelease) return;
 
     if (_pointers.length >= 2) {
       final startDistance = _twoFingerStartDistance;
@@ -128,16 +160,24 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   }
 
   void _onPointerUp(PointerEvent event) {
-    if (!widget.enabled) {
-      _pointers.remove(event.pointer);
-      return;
-    }
-
     final wasPrimary = event.pointer == _primaryPointer;
     _pointers.remove(event.pointer);
 
     if (_pointers.length < 2) {
       _twoFingerStartDistance = null;
+    }
+
+    if (_waitingForRelease) {
+      if (_pointers.isEmpty) {
+        _waitingForRelease = false;
+        _resetGestureState();
+      }
+      return;
+    }
+
+    if (!widget.enabled) {
+      if (_pointers.isEmpty) _resetGestureState();
+      return;
     }
 
     if (!wasPrimary || _resolved || _multiTouchSeen) {
@@ -157,19 +197,19 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
           ? (dx < 0 ? ReactCommand.swipeLeft : ReactCommand.swipeRight)
           : (dy < 0 ? ReactCommand.swipeUp : ReactCommand.swipeDown);
       _emit(command);
-      _resetGestureState();
+      if (_pointers.isEmpty) _resetGestureState();
       return;
     }
 
     final downAt = _primaryDownAt;
     if (downAt == null) {
-      _resetGestureState();
+      if (_pointers.isEmpty) _resetGestureState();
       return;
     }
 
     if (widget.expectedCommand == ReactCommand.tap) {
       _emit(ReactCommand.tap);
-      _resetGestureState();
+      if (_pointers.isEmpty) _resetGestureState();
       return;
     }
 
@@ -180,14 +220,16 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       if (firstTapAt != null && now.difference(firstTapAt) <= _doubleTapWindow) {
         _firstTapAt = null;
         _emit(ReactCommand.doubleTap);
-        _resetGestureState();
+        if (_pointers.isEmpty) _resetGestureState();
         return;
       }
 
       _firstTapAt = now;
       _doubleTapTimer?.cancel();
       _doubleTapTimer = Timer(_doubleTapWindow, () {
-        if (!mounted || _resolved || !widget.enabled) return;
+        if (!mounted || _resolved || !widget.enabled || _waitingForRelease) {
+          return;
+        }
         _firstTapAt = null;
         _emit(ReactCommand.tap);
       });
@@ -200,12 +242,15 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
     } else {
       _emit(ReactCommand.tap);
     }
-    _resetGestureState();
+    if (_pointers.isEmpty) _resetGestureState();
   }
 
   void _onPointerCancel(PointerCancelEvent event) {
     _pointers.remove(event.pointer);
-    if (_pointers.isEmpty) _resetGestureState();
+    if (_pointers.isEmpty) {
+      _waitingForRelease = false;
+      _resetGestureState();
+    }
   }
 
   double? _currentTwoFingerDistance() {
@@ -224,7 +269,7 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       _firstTapAt = null;
       _doubleTapTimer?.cancel();
     }
-    if (_pointers.isEmpty) {
+    if (_pointers.isEmpty && !_waitingForRelease) {
       _resolved = false;
     }
   }
