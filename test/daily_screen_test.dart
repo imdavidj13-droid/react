@@ -9,7 +9,7 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  testWidgets('Daily presents a 30-command challenge with a gameplay rule',
+  testWidgets('Daily presents a 60-command challenge with a gameplay rule',
       (tester) async {
     await tester.pumpWidget(const MaterialApp(home: DailyScreen()));
     await tester.pumpAndSettle();
@@ -18,7 +18,7 @@ void main() {
     expect(find.text("TODAY'S RULE"), findsOneWidget);
     expect(find.text(today.modifier.label), findsWidgets);
     expect(find.text(today.modifier.shortRule), findsOneWidget);
-    expect(find.text('30'), findsOneWidget);
+    expect(find.text('60'), findsOneWidget);
     expect(find.text('PLAY DAILY'), findsOneWidget);
   });
 }
