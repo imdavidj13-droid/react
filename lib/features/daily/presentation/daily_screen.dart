@@ -65,17 +65,22 @@ class _DailyScreenState extends State<DailyScreen> {
                       ),
                       const SizedBox(height: 5),
                       const Text(
-                        'ONE LOCAL CHALLENGE EVERY DAY',
+                        'ONE CHALLENGE • ONE RULE • ONE ATTEMPT',
                         style: TextStyle(
                           color: ReactColors.electricBlueBright,
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 1.5,
+                          letterSpacing: 1.25,
                         ),
                       ),
                       const SizedBox(height: 16),
                       _ChallengeIdentity(challenge: state.challenge),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
+                      _ModifierCard(
+                        modifier: state.challenge.modifier,
+                        compact: narrow,
+                      ),
+                      const SizedBox(height: 10),
                       _ChallengeCard(
                         state: state,
                         narrow: narrow,
@@ -253,6 +258,90 @@ class _ChallengeIdentity extends StatelessWidget {
   }
 }
 
+class _ModifierCard extends StatelessWidget {
+  const _ModifierCard({required this.modifier, required this.compact});
+
+  final DailyModifier modifier;
+  final bool compact;
+
+  IconData get _icon => switch (modifier) {
+        DailyModifier.lightsOut => Icons.visibility_off_rounded,
+        DailyModifier.surge => Icons.bolt_rounded,
+        DailyModifier.noClock => Icons.timer_off_rounded,
+      };
+
+  Color get _color => switch (modifier) {
+        DailyModifier.lightsOut => ReactColors.purple,
+        DailyModifier.surge => ReactColors.coral,
+        DailyModifier.noClock => ReactColors.lime,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(compact ? 12 : 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF08121F),
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: _color.withValues(alpha: .55)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: compact ? 42 : 48,
+            height: compact ? 42 : 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF050A13),
+              border: Border.all(color: _color, width: 1.5),
+            ),
+            child: Icon(_icon, color: _color, size: compact ? 22 : 25),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "TODAY'S RULE",
+                  style: TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 7.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  modifier.label,
+                  style: TextStyle(
+                    color: _color,
+                    fontSize: compact ? 18 : 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  modifier.description,
+                  style: const TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 8.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ChallengeCard extends StatelessWidget {
   const _ChallengeCard({
     required this.state,
@@ -281,135 +370,69 @@ class _ChallengeCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          if (narrow)
-            Column(
-              children: [
-                Row(
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "TODAY'S RUN",
-                            style: TextStyle(
-                              color: ReactColors.textSecondary,
-                              fontSize: 8.5,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.1,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            status,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.4,
-                            ),
-                          ),
-                        ],
+                    const Text(
+                      "TODAY'S RUN",
+                      style: TextStyle(
+                        color: ReactColors.textSecondary,
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.1,
                       ),
                     ),
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: ReactColors.electricBlueBright,
-                          width: 2,
-                        ),
+                    const SizedBox(height: 5),
+                    Text(
+                      status,
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: narrow ? 24 : 27,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.4,
                       ),
-                      child: Icon(
-                        state.playedToday
-                            ? Icons.check_rounded
-                            : Icons.wb_sunny_outlined,
-                        color: ReactColors.electricBlueBright,
-                        size: 34,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      state.challenge.modifier.shortRule,
+                      style: const TextStyle(
+                        color: ReactColors.lime,
+                        fontSize: 7.4,
+                        height: 1.25,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .55,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '40 COMMANDS • SPEED RISES • SAME ORDER ALL DAY',
-                    style: TextStyle(
-                      color: ReactColors.lime,
-                      fontSize: 7.4,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: .55,
-                    ),
-                  ),
-                ),
-              ],
-            )
-          else
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "TODAY'S RUN",
-                        style: TextStyle(
-                          color: ReactColors.textSecondary,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        status,
-                        style: TextStyle(
-                          color: statusColor,
-                          fontSize: 27,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.6,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        '40 COMMANDS • SPEED RISES • SAME ORDER ALL DAY',
-                        style: TextStyle(
-                          color: ReactColors.lime,
-                          fontSize: 8,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: .8,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: ReactColors.electricBlueBright,
-                      width: 2.2,
-                    ),
-                  ),
-                  child: Icon(
-                    state.playedToday
-                        ? Icons.check_rounded
-                        : Icons.wb_sunny_outlined,
+              ),
+              const SizedBox(width: 10),
+              Container(
+                width: narrow ? 68 : 88,
+                height: narrow ? 68 : 88,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
                     color: ReactColors.electricBlueBright,
-                    size: 42,
+                    width: 2,
                   ),
                 ),
-              ],
-            ),
-          SizedBox(height: narrow ? 12 : 17),
+                child: Icon(
+                  state.playedToday
+                      ? Icons.check_rounded
+                      : Icons.wb_sunny_outlined,
+                  color: ReactColors.electricBlueBright,
+                  size: narrow ? 32 : 40,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: narrow ? 12 : 16),
           const Divider(color: Color(0xFF233850)),
-          SizedBox(height: narrow ? 10 : 14),
+          SizedBox(height: narrow ? 10 : 13),
           Row(
             children: [
               Expanded(
@@ -423,15 +446,15 @@ class _ChallengeCard extends StatelessWidget {
               const Expanded(
                 child: _Metric(
                   label: 'TARGET',
-                  value: '40',
+                  value: '30',
                   color: ReactColors.purple,
                 ),
               ),
               const _Divider(),
               const Expanded(
                 child: _Metric(
-                  label: 'POINTS',
-                  value: '1 / CMD',
+                  label: 'MISSES',
+                  value: '0',
                   color: ReactColors.coral,
                 ),
               ),
@@ -484,10 +507,10 @@ class _LocalDailyInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = playedToday ? 'NEXT CHALLENGE TOMORROW' : 'LOCAL DAILY MODE';
+    final title = playedToday ? 'NEXT CHALLENGE TOMORROW' : 'DAILY RULE LOCKED IN';
     final detail = playedToday
-        ? 'Challenge #${challenge.id} is locked. A new ID and command order unlock at local midnight.'
-        : 'Challenge #${challenge.id} stays fixed for the entire local day. One miss ends the run, and the pace tightens as you progress.';
+        ? 'Challenge #${challenge.id} is locked. A new sequence and gameplay rule unlock at local midnight.'
+        : '${challenge.modifier.label} and challenge #${challenge.id} stay fixed for the entire local day. One miss ends the attempt.';
 
     return Container(
       width: double.infinity,
@@ -500,7 +523,7 @@ class _LocalDailyInfo extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            playedToday ? Icons.schedule_rounded : Icons.today_rounded,
+            playedToday ? Icons.schedule_rounded : Icons.lock_clock_rounded,
             color: playedToday ? ReactColors.lime : ReactColors.textSecondary,
             size: 22,
           ),
