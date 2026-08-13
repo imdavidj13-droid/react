@@ -135,8 +135,8 @@ class _DailyScreenState extends State<DailyScreen>
                           const SizedBox(width: 8),
                           Expanded(
                             child: _StatCard(
-                              label: 'DAILY BEST',
-                              value: '${state.best}',
+                              label: 'RULE BEST',
+                              value: '${state.ruleBest}',
                               icon: Icons.workspace_premium_outlined,
                               color: ReactColors.lime,
                               compact: narrow,
@@ -166,6 +166,7 @@ class _DailyState {
     this.playedToday = false,
     this.streak = 0,
     this.best = 0,
+    this.ruleBest = 0,
     this.history = const <DailyHistoryEntry>[],
   });
 
@@ -173,6 +174,7 @@ class _DailyState {
   final bool playedToday;
   final int streak;
   final int best;
+  final int ruleBest;
   final List<DailyHistoryEntry> history;
 
   factory _DailyState.empty() => _DailyState(challenge: DailyChallenge.today());
@@ -182,12 +184,16 @@ class _DailyState {
     final playedToday = await LocalPlayerStats.hasPlayedDailyToday();
     final streak = await LocalPlayerStats.dailyStreak();
     final best = await LocalPlayerStats.bestFor(ReactGameMode.daily);
+    final ruleBest = await LocalPlayerStats.dailyBestForModifier(
+      challenge.modifier,
+    );
     final history = await LocalPlayerStats.dailyHistoryThisWeek();
     return _DailyState(
       challenge: challenge,
       playedToday: playedToday,
       streak: streak,
       best: best,
+      ruleBest: ruleBest,
       history: history,
     );
   }
