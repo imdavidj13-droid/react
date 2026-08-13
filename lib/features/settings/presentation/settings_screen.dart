@@ -71,11 +71,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final horizontalPad = MediaQuery.sizeOf(context).width < 360 ? 12.0 : 20.0;
+
     return Scaffold(
       backgroundColor: ReactColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+          padding: EdgeInsets.fromLTRB(horizontalPad, 14, horizontalPad, 28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
