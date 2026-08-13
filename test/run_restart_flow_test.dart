@@ -48,7 +48,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.pause_rounded));
     await tester.pump();
     await tester.tap(find.text('RESTART RUN'));
-    await tester.pump();
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
     expect(find.text('PLAYER 1 STARTS'), findsOneWidget);
     expect(find.text('GET READY'), findsNothing);
