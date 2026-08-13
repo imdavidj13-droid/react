@@ -10,7 +10,7 @@ The project now includes playable implementations for:
 - Blitz — 60-second score attack with a time penalty for misses
 - Endless — one miss ends the run, with an aggressive speed and visual-intensity ramp
 - Daily — deterministic 60-command challenge with one attempt per day and one of seven gameplay modifiers
-- Pass It — 2–4 player local multiplayer with handoff states and individual lives
+- Pass It — 2–4 player local multiplayer where the current player keeps clearing commands until a miss costs one life and hands the phone to the next living player; last player standing wins
 
 Daily uses a deterministic Monday-to-Sunday deck so all seven modifiers appear exactly once per calendar week in a shuffled order:
 
@@ -43,6 +43,8 @@ Freeze, tilt, rotate and accelerometer-driven commands are not part of the activ
 Flutter owns navigation, HUDs, gesture input and mode setup screens. Flame owns the live gameplay visual layer, including ambient particles, success/miss bursts, pulse rings and pressure effects that intensify in faster modes.
 
 Classic, Blitz, Endless and Pass It use the shared run engine. Daily has a dedicated controller because its seven rotating modifiers alter command visibility, expected input, timing and transition behaviour while still reusing the shared gesture surface, Flame layer, audio layer and Results model.
+
+Pass It keeps match-wide score/stat totals separate from its per-turn difficulty ramp. Successful commands increase only the current player's turn pace; after a lost life and handoff, the next player starts from the normal Pass It reaction window rather than inheriting the previous player's accelerated pace.
 
 ## Local data
 
