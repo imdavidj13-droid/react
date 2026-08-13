@@ -18,7 +18,7 @@ void main() {
         home: ReactRunScreen(mode: ReactGameMode.passIt),
       ),
     );
-    expect(find.text('PASS TO PLAYER 1'), findsOneWidget);
+    expect(find.text('PLAYER 1 STARTS'), findsOneWidget);
     await tester.tap(find.text('I’M READY'));
     await tester.pump();
   }
