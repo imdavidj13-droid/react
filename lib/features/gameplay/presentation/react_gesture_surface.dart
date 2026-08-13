@@ -147,6 +147,7 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
         }
         if (_pointers.containsKey(_primaryPointer)) {
           _holdSatisfied = true;
+          _emit(ReactCommand.hold);
         }
       });
       return;
