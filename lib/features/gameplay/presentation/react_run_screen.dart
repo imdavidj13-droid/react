@@ -14,6 +14,7 @@ import '../domain/react_command.dart';
 import '../domain/react_run_result.dart';
 import '../domain/run_command_performance_tracker.dart';
 import 'react_gesture_surface.dart';
+import 'react_run_launch_screen.dart';
 
 class ReactRunScreen extends StatefulWidget {
   const ReactRunScreen({required this.mode, super.key});
@@ -556,10 +557,18 @@ class _ReactRunScreenState extends State<ReactRunScreen>
 
   void _restart() {
     if (!mounted) return;
+
+    final screen = switch (widget.mode) {
+      ReactGameMode.classic || ReactGameMode.blitz || ReactGameMode.endless =>
+        ReactRunLaunchScreen(mode: widget.mode),
+      ReactGameMode.passIt =>
+        const ReactRunScreen(mode: ReactGameMode.passIt),
+      ReactGameMode.daily => null,
+    };
+    if (screen == null) return;
+
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => ReactRunScreen(mode: widget.mode),
-      ),
+      MaterialPageRoute<void>(builder: (_) => screen),
     );
   }
 
