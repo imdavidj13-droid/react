@@ -48,6 +48,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   int _totalResponseMs = 0;
   int _lives = 3;
   int _currentPlayer = 0;
+  int _passItTurnClears = 0;
   int _commandElapsedBaseMs = 0;
   int _pausedCommandRemainingMs = 0;
   int _blitzPenaltyMs = 0;
@@ -76,7 +77,10 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         ReactGameMode.passIt => ReactModeTiming.passIt,
       };
 
-  int get _baseCommandMs => _timing.commandDurationMsForScore(_score);
+  int get _timingScore =>
+      widget.mode == ReactGameMode.passIt ? _passItTurnClears : _score;
+
+  int get _baseCommandMs => _timing.commandDurationMsForScore(_timingScore);
 
   int get _commandDurationMs => _command.reactionWindowMs(_baseCommandMs);
 
@@ -255,6 +259,9 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       _score += 1;
       _successfulCommands += 1;
       _totalResponseMs += responseMs;
+      if (widget.mode == ReactGameMode.passIt) {
+        _passItTurnClears += 1;
+      }
       _feedback = responseMs <= 650
           ? '+1  PERFECT'
           : responseMs <= 1150
@@ -267,10 +274,10 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _syncFlameIntensity();
 
     // In Pass It, a successful player keeps the phone and immediately faces
-    // another command. The phone only changes hands after that player misses
-    // and loses a life.
+    // another command. Only that player's current turn streak affects the pace,
+    // so the next player does not inherit an accelerated command window.
     _scheduleTransition(
-      _timing.successDelayMsForScore(_score),
+      _timing.successDelayMsForScore(_timingScore),
       _startCommand,
     );
   }
@@ -424,6 +431,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       _handoffLostPlayer = null;
       _handoffLivesBefore = null;
       _handoffLivesAfter = null;
+      _passItTurnClears = 0;
       _feedback = null;
     });
     _startCommand();
