@@ -25,7 +25,9 @@ void main() {
       expect(find.text('MISS'), findsOneWidget);
       expect(find.text('THEN PASS'), findsOneWidget);
       expect(
-        find.textContaining('MISS A COMMAND • LOSE A LIFE • THEN PASS'),
+        find.text(
+          '$players PLAYERS • KEEP PLAYING UNTIL YOU MISS • THEN PASS',
+        ),
         findsOneWidget,
       );
     });
