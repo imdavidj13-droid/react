@@ -4,6 +4,8 @@ import 'package:react/features/gameplay/domain/react_command.dart';
 import 'package:react/features/gameplay/presentation/react_gesture_surface.dart';
 
 void main() {
+  const surfaceKey = Key('gesture-test-surface');
+
   Future<List<ReactCommand>> pumpSurface(
     WidgetTester tester,
     ReactCommand expected,
@@ -20,7 +22,10 @@ void main() {
                 enabled: true,
                 expectedCommand: expected,
                 onCommand: commands.add,
-                child: const ColoredBox(color: Colors.black),
+                child: const ColoredBox(
+                  key: surfaceKey,
+                  color: Colors.black,
+                ),
               ),
             ),
           ),
@@ -30,10 +35,12 @@ void main() {
     return commands;
   }
 
+  Finder target() => find.byKey(surfaceKey);
+
   testWidgets('Tap resolves immediately when Tap is expected', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.tap);
 
-    await tester.tap(find.byType(ColoredBox));
+    await tester.tap(target());
     await tester.pump();
 
     expect(commands, [ReactCommand.tap]);
@@ -41,7 +48,7 @@ void main() {
 
   testWidgets('Double Tap resolves inside the custom tap window', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.doubleTap);
-    final center = tester.getCenter(find.byType(ColoredBox));
+    final center = tester.getCenter(target());
 
     final first = await tester.startGesture(center, pointer: 1);
     await first.up();
@@ -57,7 +64,7 @@ void main() {
       (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.doubleTap);
 
-    await tester.tap(find.byType(ColoredBox));
+    await tester.tap(target());
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(commands, [ReactCommand.tap]);
@@ -65,7 +72,7 @@ void main() {
 
   testWidgets('Hold resolves after explicit hold threshold', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.hold);
-    final center = tester.getCenter(find.byType(ColoredBox));
+    final center = tester.getCenter(target());
 
     final gesture = await tester.startGesture(center);
     await tester.pump(const Duration(milliseconds: 380));
@@ -83,7 +90,7 @@ void main() {
   ]) {
     testWidgets('${entry.$2.name} resolves from raw pointer movement', (tester) async {
       final commands = await pumpSurface(tester, entry.$2);
-      final center = tester.getCenter(find.byType(ColoredBox));
+      final center = tester.getCenter(target());
 
       final gesture = await tester.startGesture(center);
       await gesture.moveBy(entry.$1);
@@ -96,7 +103,7 @@ void main() {
 
   testWidgets('Pinch resolves from decreasing two-pointer distance', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.pinch);
-    final center = tester.getCenter(find.byType(ColoredBox));
+    final center = tester.getCenter(target());
 
     final left = await tester.createGesture(pointer: 1);
     final right = await tester.createGesture(pointer: 2);
@@ -113,7 +120,7 @@ void main() {
 
   testWidgets('Spread resolves from increasing two-pointer distance', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.spread);
-    final center = tester.getCenter(find.byType(ColoredBox));
+    final center = tester.getCenter(target());
 
     final left = await tester.createGesture(pointer: 1);
     final right = await tester.createGesture(pointer: 2);
@@ -131,7 +138,7 @@ void main() {
   testWidgets('Wrong swipe is still emitted so gameplay can count a miss',
       (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.swipeLeft);
-    final center = tester.getCenter(find.byType(ColoredBox));
+    final center = tester.getCenter(target());
 
     final gesture = await tester.startGesture(center);
     await gesture.moveBy(const Offset(90, 0));
