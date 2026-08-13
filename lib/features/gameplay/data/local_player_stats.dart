@@ -84,8 +84,7 @@ class LocalPlayerStats {
   }
 
   static Future<bool> recordResult(ReactRunResult result) async {
-    if (result.mode == ReactGameMode.daily &&
-        ReactSettings.dailyDevOverrideEnabled) {
+    if (result.mode == ReactGameMode.daily && ReactSettings.dailyDevRunActive) {
       return false;
     }
 
