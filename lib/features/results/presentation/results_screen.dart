@@ -1,7 +1,6 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
+import '../../../core/settings/react_settings.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../../core/widgets/neon_button.dart';
 import '../../gameplay/data/local_player_stats.dart';
@@ -22,8 +21,12 @@ class ResultsScreen extends StatefulWidget {
 
 class _ResultsScreenState extends State<ResultsScreen> {
   bool _newBest = false;
+  late final Future<void> _recordFuture;
 
   ReactRunResult get result => widget.result;
+
+  bool get _isDailyDevRun =>
+      result.mode == ReactGameMode.daily && ReactSettings.dailyDevRunActive;
 
   Color get _modeColor => switch (result.mode) {
         ReactGameMode.classic => ReactColors.electricBlueBright,
@@ -36,7 +39,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   void initState() {
     super.initState();
-    unawaited(_recordResult());
+    _recordFuture = _recordResult();
   }
 
   Future<void> _recordResult() async {
@@ -49,7 +52,36 @@ class _ResultsScreenState extends State<ResultsScreen> {
     if (result.mode == ReactGameMode.passIt) {
       return const ReactRunScreen(mode: ReactGameMode.passIt);
     }
+    if (_isDailyDevRun) {
+      return const ReactRunLaunchScreen(
+        mode: ReactGameMode.daily,
+        consumeDailyAttempt: false,
+      );
+    }
     return ReactRunLaunchScreen(mode: result.mode);
+  }
+
+  Future<void> _playAgain() async {
+    await _recordFuture;
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(builder: (_) => _replayScreen()),
+    );
+  }
+
+  Future<void> _backHome() async {
+    await _recordFuture;
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
+  }
+
+  Future<void> _backToDevTester() async {
+    await _recordFuture;
+    if (!mounted) return;
+    Navigator.of(context).pop();
   }
 
   @override
@@ -83,31 +115,37 @@ class _ResultsScreenState extends State<ResultsScreen> {
                       _PassItSummary(result: result),
                     ],
                     SizedBox(height: compact ? 24 : 32),
-                    if (result.mode == ReactGameMode.daily)
+                    if (_isDailyDevRun)
+                      NeonButton(
+                        label: 'TEST AGAIN',
+                        icon: Icons.science_rounded,
+                        onPressed: _playAgain,
+                      )
+                    else if (result.mode == ReactGameMode.daily)
                       const _DailyLockedButton()
                     else
                       NeonButton(
                         label: 'PLAY AGAIN',
                         icon: Icons.replay_rounded,
-                        onPressed: () {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute<void>(builder: (_) => _replayScreen()),
-                          );
-                        },
+                        onPressed: _playAgain,
                       ),
                     const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
                       height: 50,
                       child: TextButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
-                            (route) => false,
-                          );
-                        },
-                        icon: const Icon(Icons.home_outlined, size: 17),
-                        label: const Text('BACK TO HOME'),
+                        onPressed: _isDailyDevRun ? _backToDevTester : _backHome,
+                        icon: Icon(
+                          _isDailyDevRun
+                              ? Icons.science_outlined
+                              : Icons.home_outlined,
+                          size: 17,
+                        ),
+                        label: Text(
+                          _isDailyDevRun
+                              ? 'BACK TO DEV TESTER'
+                              : 'BACK TO HOME',
+                        ),
                         style: TextButton.styleFrom(
                           foregroundColor: ReactColors.textSecondary,
                           textStyle: const TextStyle(
