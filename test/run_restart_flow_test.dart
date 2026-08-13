@@ -48,7 +48,12 @@ void main() {
     await tester.tap(find.byIcon(Icons.pause_rounded));
     await tester.pump();
     await tester.tap(find.text('RESTART RUN'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+
+    // Pass It deliberately runs continuous Flame/timer animation, so waiting
+    // for the entire tree to settle can never complete. Pump only the route
+    // transition frames we need before asserting the ready handoff state.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.text('PLAYER 1 STARTS'), findsOneWidget);
     expect(find.text('GET READY'), findsNothing);
