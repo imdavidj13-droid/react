@@ -3,6 +3,11 @@ import 'package:react/app/react_app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  String todayKey() {
+    final now = DateTime.now();
+    return '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
   testWidgets('shows the React home shell and local records', (tester) async {
     SharedPreferences.setMockInitialValues({
       'best_classic': 12,
@@ -19,6 +24,7 @@ void main() {
     expect(find.text('MODES'), findsOneWidget);
     expect(find.text('DAILY'), findsOneWidget);
     expect(find.text('SCORES'), findsOneWidget);
+    expect(find.text('READY'), findsOneWidget);
 
     expect(find.text('CLASSIC BEST'), findsOneWidget);
     expect(find.text('BLITZ'), findsOneWidget);
@@ -27,5 +33,18 @@ void main() {
     expect(find.text('18'), findsOneWidget);
     expect(find.text('9'), findsOneWidget);
     expect(find.text('27'), findsOneWidget);
+  });
+
+  testWidgets('Home marks Daily as done after today attempt is consumed',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'daily_last_played': todayKey(),
+    });
+
+    await tester.pumpWidget(const ReactApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('DONE'), findsOneWidget);
+    expect(find.text('READY'), findsNothing);
   });
 }
