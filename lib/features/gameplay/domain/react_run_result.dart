@@ -1,4 +1,5 @@
 import 'react_command.dart';
+import 'react_command_performance.dart';
 
 enum ReactGameMode {
   classic,
@@ -37,6 +38,7 @@ class ReactRunResult {
     this.failedCommand,
     this.winnerPlayer,
     this.playerLives,
+    this.commandPerformance = const <ReactCommand, ReactCommandPerformance>{},
   });
 
   final ReactGameMode mode;
@@ -48,6 +50,7 @@ class ReactRunResult {
   final ReactCommand? failedCommand;
   final int? winnerPlayer;
   final List<int>? playerLives;
+  final Map<ReactCommand, ReactCommandPerformance> commandPerformance;
 
   String get outcomeLabel => switch (outcome) {
         ReactRunOutcome.missedCommand => 'RUN OVER',
