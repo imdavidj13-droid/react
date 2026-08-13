@@ -29,30 +29,37 @@ abstract final class ReactAudio {
     switch (cue) {
       case ReactSoundCue.command:
         await _click();
+        return;
       case ReactSoundCue.success:
         await _click();
         await _delay(45);
         if (enabled) await _click();
+        return;
       case ReactSoundCue.miss:
         await _alert();
+        return;
       case ReactSoundCue.lifeLost:
         await _alert();
         await _delay(85);
         if (enabled) await _click();
+        return;
       case ReactSoundCue.blitzWarning:
         await _alert();
         await _delay(110);
         if (enabled) await _alert();
+        return;
       case ReactSoundCue.handoff:
         await _click();
         await _delay(75);
         if (enabled) await _click();
+        return;
       case ReactSoundCue.completed:
         await _alert();
         await _delay(90);
         if (enabled) await _click();
         await _delay(70);
         if (enabled) await _click();
+        return;
     }
   }
 
