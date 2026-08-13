@@ -171,16 +171,17 @@ void main() {
     expect(commands, [ReactCommand.tap]);
   });
 
-  testWidgets('Hold does not complete until finger is released', (tester) async {
+  testWidgets('Hold completes when the threshold is reached', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.hold);
     final center = tester.getCenter(target());
 
     final gesture = await tester.startGesture(center);
     await tester.pump(const Duration(milliseconds: 380));
-    expect(commands, isEmpty);
+
+    expect(commands, [ReactCommand.hold]);
+
     await gesture.up();
     await tester.pump();
-
     expect(commands, [ReactCommand.hold]);
   });
 
@@ -191,6 +192,7 @@ void main() {
     final gesture = await tester.startGesture(center);
     await gesture.moveBy(const Offset(10, 8));
     await tester.pump(const Duration(milliseconds: 380));
+    expect(commands, [ReactCommand.hold]);
     await gesture.up();
     await tester.pump();
 
@@ -356,6 +358,7 @@ void main() {
     final center = tester.getCenter(target());
     final oldGesture = await tester.startGesture(center, pointer: 1);
     await tester.pump(const Duration(milliseconds: 380));
+    expect(commands, [ReactCommand.hold]);
 
     setSurfaceState(() => enabled = false);
     await tester.pump();
@@ -367,11 +370,11 @@ void main() {
 
     await oldGesture.up();
     await tester.pump();
-    expect(commands, isEmpty);
+    expect(commands, [ReactCommand.hold]);
 
     await tester.tap(target());
     await tester.pump();
-    expect(commands, [ReactCommand.tap]);
+    expect(commands, [ReactCommand.hold, ReactCommand.tap]);
   });
 
   testWidgets('Wrong swipe is still emitted so gameplay can count a miss',
