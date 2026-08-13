@@ -9,6 +9,7 @@ import '../../gameplay/domain/react_run_result.dart';
 import '../../gameplay/presentation/react_run_launch_screen.dart';
 import '../../gameplay/presentation/react_run_screen.dart';
 import '../../home/presentation/home_screen.dart';
+import '../domain/run_comparison.dart';
 
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({required this.result, super.key});
@@ -21,6 +22,7 @@ class ResultsScreen extends StatefulWidget {
 
 class _ResultsScreenState extends State<ResultsScreen> {
   bool _newBest = false;
+  RunComparison? _comparison;
   late final Future<void> _recordFuture;
 
   ReactRunResult get result => widget.result;
@@ -43,9 +45,17 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 
   Future<void> _recordResult() async {
+    final recent = await LocalPlayerStats.recentRuns();
+    final previous = recent
+        .where((entry) => entry.mode == result.mode)
+        .firstOrNull;
+    final comparison = RunComparison.againstPrevious(result, previous);
     final newBest = await LocalPlayerStats.recordResult(result);
-    if (!mounted || !newBest) return;
-    setState(() => _newBest = true);
+    if (!mounted) return;
+    setState(() {
+      _comparison = comparison;
+      _newBest = newBest;
+    });
   }
 
   Widget _replayScreen() {
@@ -107,6 +117,13 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     ),
                     SizedBox(height: compact ? 22 : 30),
                     _StatsStrip(result: result),
+                    if (_comparison != null) ...[
+                      const SizedBox(height: 14),
+                      _ComparisonCard(
+                        comparison: _comparison!,
+                        color: _modeColor,
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     _OutcomeCard(result: result, color: _modeColor),
                     if (result.mode == ReactGameMode.passIt &&
@@ -357,6 +374,70 @@ class _StatsStrip extends StatelessWidget {
                   ? '--'
                   : '${result.averageTimeSeconds.toStringAsFixed(2)}s',
               color: ReactColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ComparisonCard extends StatelessWidget {
+  const _ComparisonCard({required this.comparison, required this.color});
+
+  final RunComparison comparison;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final positive = comparison.scoreDelta > 0;
+    final neutral = comparison.scoreDelta == 0;
+    final scoreColor = positive
+        ? ReactColors.lime
+        : neutral
+            ? ReactColors.textPrimary
+            : ReactColors.coral;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(15, 13, 15, 13),
+      decoration: BoxDecoration(
+        color: const Color(0xFF08101D),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: .28)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.compare_arrows_rounded, color: color, size: 23),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  comparison.scoreLabel,
+                  style: TextStyle(
+                    color: scoreColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .7,
+                  ),
+                ),
+                if (comparison.reactionLabel != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    comparison.reactionLabel!,
+                    style: TextStyle(
+                      color: comparison.fasterReaction
+                          ? ReactColors.electricBlueBright
+                          : ReactColors.textSecondary,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: .5,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],
