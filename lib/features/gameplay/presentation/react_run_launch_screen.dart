@@ -17,10 +17,13 @@ class ReactRunLaunchScreen extends StatefulWidget {
   State<ReactRunLaunchScreen> createState() => _ReactRunLaunchScreenState();
 }
 
-class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen> {
+class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen>
+    with WidgetsBindingObserver {
   Timer? _timer;
   int _count = 3;
   bool _go = false;
+  bool _suspended = false;
+  bool _launching = false;
 
   Color get _accent => switch (widget.mode) {
         ReactGameMode.classic => ReactColors.electricBlueBright,
@@ -33,9 +36,10 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     unawaited(ReactAudio.play(ReactSoundCue.command));
     _timer = Timer.periodic(const Duration(milliseconds: 650), (_) {
-      if (!mounted) return;
+      if (!mounted || _suspended || _launching) return;
 
       if (_count > 1) {
         setState(() => _count -= 1);
@@ -50,8 +54,14 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen> {
       }
 
       _timer?.cancel();
+      _launching = true;
       unawaited(_beginRun());
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _suspended = state != AppLifecycleState.resumed;
   }
 
   Future<void> _beginRun() async {
@@ -69,6 +79,7 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
   }
@@ -127,9 +138,9 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
-                'GET READY',
-                style: TextStyle(
+              Text(
+                _suspended ? 'PAUSED' : 'GET READY',
+                style: const TextStyle(
                   color: ReactColors.textSecondary,
                   fontSize: 9,
                   fontWeight: FontWeight.w900,
