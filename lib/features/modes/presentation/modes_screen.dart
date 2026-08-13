@@ -38,7 +38,7 @@ class ModesScreen extends StatelessWidget {
                   _ModePanel(
                     title: 'CLASSIC',
                     subtitle: 'Survive as long as you can.',
-                    detail: '9 COMMANDS  •  RANDOM ORDER',
+                    detail: '3 LIVES  •  SPEED RAMPS',
                     icon: Icons.bolt_rounded,
                     color: ReactColors.electricBlueBright,
                     badge: 'CORE MODE',
