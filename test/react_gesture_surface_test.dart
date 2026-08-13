@@ -37,10 +37,13 @@ void main() {
 
   Finder target() => find.byKey(surfaceKey);
 
-  testWidgets('Tap resolves immediately when Tap is expected', (tester) async {
+  testWidgets('Tap resolves on release when Tap is expected', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.tap);
+    final center = tester.getCenter(target());
 
-    await tester.tap(target());
+    final gesture = await tester.startGesture(center);
+    expect(commands, isEmpty);
+    await gesture.up();
     await tester.pump();
 
     expect(commands, [ReactCommand.tap]);
@@ -52,7 +55,21 @@ void main() {
 
     final first = await tester.startGesture(center, pointer: 1);
     await first.up();
-    await tester.pump(const Duration(milliseconds: 80));
+    await tester.pump(const Duration(milliseconds: 240));
+    final second = await tester.startGesture(center, pointer: 2);
+    await second.up();
+    await tester.pump();
+
+    expect(commands, [ReactCommand.doubleTap]);
+  });
+
+  testWidgets('Double Tap does not require an ultra-fast second tap', (tester) async {
+    final commands = await pumpSurface(tester, ReactCommand.doubleTap);
+    final center = tester.getCenter(target());
+
+    final first = await tester.startGesture(center, pointer: 1);
+    await first.up();
+    await tester.pump(const Duration(milliseconds: 380));
     final second = await tester.startGesture(center, pointer: 2);
     await second.up();
     await tester.pump();
@@ -65,21 +82,48 @@ void main() {
     final commands = await pumpSurface(tester, ReactCommand.doubleTap);
 
     await tester.tap(target());
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 450));
 
     expect(commands, [ReactCommand.tap]);
   });
 
-  testWidgets('Hold resolves after explicit hold threshold', (tester) async {
+  testWidgets('Hold does not complete until finger is released', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.hold);
     final center = tester.getCenter(target());
 
     final gesture = await tester.startGesture(center);
     await tester.pump(const Duration(milliseconds: 380));
+    expect(commands, isEmpty);
     await gesture.up();
     await tester.pump();
 
     expect(commands, [ReactCommand.hold]);
+  });
+
+  testWidgets('Hold tolerates small natural finger drift', (tester) async {
+    final commands = await pumpSurface(tester, ReactCommand.hold);
+    final center = tester.getCenter(target());
+
+    final gesture = await tester.startGesture(center);
+    await gesture.moveBy(const Offset(10, 8));
+    await tester.pump(const Duration(milliseconds: 380));
+    await gesture.up();
+    await tester.pump();
+
+    expect(commands, [ReactCommand.hold]);
+  });
+
+  testWidgets('Hold cancels when movement becomes a real gesture', (tester) async {
+    final commands = await pumpSurface(tester, ReactCommand.hold);
+    final center = tester.getCenter(target());
+
+    final gesture = await tester.startGesture(center);
+    await gesture.moveBy(const Offset(60, 0));
+    await tester.pump(const Duration(milliseconds: 380));
+    await gesture.up();
+    await tester.pump();
+
+    expect(commands, [ReactCommand.swipeRight]);
   });
 
   for (final entry in <(Offset, ReactCommand)>[
@@ -101,7 +145,7 @@ void main() {
     });
   }
 
-  testWidgets('Pinch resolves from decreasing two-pointer distance', (tester) async {
+  testWidgets('Pinch resolves only after both pointers release', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.pinch);
     final center = tester.getCenter(target());
 
@@ -112,13 +156,16 @@ void main() {
     await left.moveTo(center + const Offset(-35, 0));
     await right.moveTo(center + const Offset(35, 0));
     await tester.pump();
+    expect(commands, isEmpty);
     await left.up();
+    expect(commands, isEmpty);
     await right.up();
+    await tester.pump();
 
     expect(commands, [ReactCommand.pinch]);
   });
 
-  testWidgets('Spread resolves from increasing two-pointer distance', (tester) async {
+  testWidgets('Spread resolves only after both pointers release', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.spread);
     final center = tester.getCenter(target());
 
@@ -129,8 +176,11 @@ void main() {
     await left.moveTo(center + const Offset(-75, 0));
     await right.moveTo(center + const Offset(75, 0));
     await tester.pump();
+    expect(commands, isEmpty);
     await left.up();
+    expect(commands, isEmpty);
     await right.up();
+    await tester.pump();
 
     expect(commands, [ReactCommand.spread]);
   });
