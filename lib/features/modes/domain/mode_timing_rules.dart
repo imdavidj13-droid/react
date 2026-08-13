@@ -85,15 +85,18 @@ abstract final class ReactModeTiming {
     missDelayMs: 0,
   );
 
+  // Daily is a once-per-day, one-miss challenge. It deliberately starts
+  // readable, then ramps hard enough that the closing commands require a
+  // genuine reaction rather than simply completing a fixed easy sequence.
   static const daily = ModeTimingRules(
-    startCommandMs: 1900,
-    minimumCommandMs: 1900,
-    commandSpeedStepMs: 0,
-    commandSpeedStepEveryPoints: 0,
-    startSuccessDelayMs: 420,
-    minimumSuccessDelayMs: 420,
-    successDelayStepMs: 0,
-    successDelayStepEveryPoints: 0,
+    startCommandMs: 1750,
+    minimumCommandMs: 900,
+    commandSpeedStepMs: 100,
+    commandSpeedStepEveryPoints: 2,
+    startSuccessDelayMs: 340,
+    minimumSuccessDelayMs: 120,
+    successDelayStepMs: 30,
+    successDelayStepEveryPoints: 2,
     missDelayMs: 0,
   );
 
