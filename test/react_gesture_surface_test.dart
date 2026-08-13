@@ -49,6 +49,18 @@ void main() {
     expect(commands, [ReactCommand.tap]);
   });
 
+  testWidgets('Long press is not accepted as Tap', (tester) async {
+    final commands = await pumpSurface(tester, ReactCommand.tap);
+    final center = tester.getCenter(target());
+
+    final gesture = await tester.startGesture(center);
+    await tester.pump(const Duration(milliseconds: 400));
+    await gesture.up();
+    await tester.pump();
+
+    expect(commands, [ReactCommand.hold]);
+  });
+
   testWidgets('Double Tap resolves inside the custom tap window', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.doubleTap);
     final center = tester.getCenter(target());
@@ -71,6 +83,22 @@ void main() {
     await first.up();
     await tester.pump(const Duration(milliseconds: 380));
     final second = await tester.startGesture(center, pointer: 2);
+    await second.up();
+    await tester.pump();
+
+    expect(commands, [ReactCommand.doubleTap]);
+  });
+
+  testWidgets('Second Double Tap press can finish after fallback deadline',
+      (tester) async {
+    final commands = await pumpSurface(tester, ReactCommand.doubleTap);
+    final center = tester.getCenter(target());
+
+    final first = await tester.startGesture(center, pointer: 1);
+    await first.up();
+    await tester.pump(const Duration(milliseconds: 360));
+    final second = await tester.startGesture(center, pointer: 2);
+    await tester.pump(const Duration(milliseconds: 90));
     await second.up();
     await tester.pump();
 
@@ -113,6 +141,20 @@ void main() {
     expect(commands, [ReactCommand.hold]);
   });
 
+  testWidgets('Hold with too much drift does not become Hold on release',
+      (tester) async {
+    final commands = await pumpSurface(tester, ReactCommand.hold);
+    final center = tester.getCenter(target());
+
+    final gesture = await tester.startGesture(center);
+    await gesture.moveBy(const Offset(30, 0));
+    await tester.pump(const Duration(milliseconds: 400));
+    await gesture.up();
+    await tester.pump();
+
+    expect(commands, [ReactCommand.tap]);
+  });
+
   testWidgets('Hold cancels when movement becomes a real gesture', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.hold);
     final center = tester.getCenter(target());
@@ -151,10 +193,10 @@ void main() {
 
     final left = await tester.createGesture(pointer: 1);
     final right = await tester.createGesture(pointer: 2);
-    await left.down(center + const Offset(-70, 0));
-    await right.down(center + const Offset(70, 0));
-    await left.moveTo(center + const Offset(-35, 0));
-    await right.moveTo(center + const Offset(35, 0));
+    await left.down(center + const Offset(-60, 0));
+    await right.down(center + const Offset(60, 0));
+    await left.moveTo(center + const Offset(-48, 0));
+    await right.moveTo(center + const Offset(48, 0));
     await tester.pump();
     expect(commands, isEmpty);
     await left.up();
@@ -171,10 +213,10 @@ void main() {
 
     final left = await tester.createGesture(pointer: 1);
     final right = await tester.createGesture(pointer: 2);
-    await left.down(center + const Offset(-35, 0));
-    await right.down(center + const Offset(35, 0));
-    await left.moveTo(center + const Offset(-75, 0));
-    await right.moveTo(center + const Offset(75, 0));
+    await left.down(center + const Offset(-48, 0));
+    await right.down(center + const Offset(48, 0));
+    await left.moveTo(center + const Offset(-60, 0));
+    await right.moveTo(center + const Offset(60, 0));
     await tester.pump();
     expect(commands, isEmpty);
     await left.up();
@@ -183,6 +225,23 @@ void main() {
     await tester.pump();
 
     expect(commands, [ReactCommand.spread]);
+  });
+
+  testWidgets('Cancelled two-finger gesture emits no command', (tester) async {
+    final commands = await pumpSurface(tester, ReactCommand.pinch);
+    final center = tester.getCenter(target());
+
+    final left = await tester.createGesture(pointer: 1);
+    final right = await tester.createGesture(pointer: 2);
+    await left.down(center + const Offset(-60, 0));
+    await right.down(center + const Offset(60, 0));
+    await left.moveTo(center + const Offset(-45, 0));
+    await right.moveTo(center + const Offset(45, 0));
+    await left.cancel();
+    await right.up();
+    await tester.pump();
+
+    expect(commands, isEmpty);
   });
 
   testWidgets('Wrong swipe is still emitted so gameplay can count a miss',
