@@ -4,6 +4,7 @@ import '../../../core/settings/react_settings.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
+import 'command_performance_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -35,6 +36,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await ReactSettings.setVisualEffectsEnabled(value);
   }
 
+  Future<void> _openCommandPerformance() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const CommandPerformanceScreen(),
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _stats = _ProfileStats.load());
+  }
+
   Future<void> _resetProgress() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -42,7 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: const Color(0xFF07111D),
         title: const Text('RESET LOCAL PROGRESS?'),
         content: const Text(
-          'This permanently clears local scores, detailed run stats, Daily streak and today\'s Daily attempt. Sound and visual settings are kept.',
+          'This permanently clears local scores, detailed run stats, command performance, Daily history, Daily streak and today\'s Daily attempt. Sound and visual settings are kept.',
         ),
         actions: [
           TextButton(
@@ -90,6 +101,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 builder: (context, snapshot) {
                   return _StatsPanel(stats: snapshot.data ?? const _ProfileStats());
                 },
+              ),
+              const SizedBox(height: 18),
+              const _SectionLabel('PERFORMANCE'),
+              const SizedBox(height: 10),
+              _ActionTile(
+                icon: Icons.insights_rounded,
+                title: 'COMMAND PERFORMANCE',
+                subtitle: 'Accuracy, misses and reaction time for every gesture.',
+                color: ReactColors.lime,
+                onTap: _openCommandPerformance,
               ),
               const SizedBox(height: 18),
               const _SectionLabel('GAME SETTINGS'),
@@ -416,6 +437,69 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF07111D),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: color.withValues(alpha: .34)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 25),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: ReactColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: ReactColors.textSecondary,
+                        fontSize: 9,
+                        height: 1.3,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: color),
+            ],
+          ),
+        ),
+      );
+}
+
 class _SettingTile extends StatelessWidget {
   const _SettingTile({
     required this.icon,
@@ -518,7 +602,7 @@ class _ResetProgressTile extends StatelessWidget {
                   ),
                   SizedBox(height: 3),
                   Text(
-                    'Clear scores, detailed run stats and Daily progress from this device.',
+                    'Clear scores, detailed run stats, command performance and Daily progress from this device.',
                     style: TextStyle(
                       color: ReactColors.textSecondary,
                       fontSize: 9,
