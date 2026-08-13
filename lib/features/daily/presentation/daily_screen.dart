@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
@@ -8,6 +9,7 @@ import '../../gameplay/domain/react_run_result.dart';
 import '../../gameplay/presentation/react_run_launch_screen.dart';
 import '../domain/daily_challenge.dart';
 import '../domain/daily_history_entry.dart';
+import 'daily_dev_screen.dart';
 
 class DailyScreen extends StatefulWidget {
   const DailyScreen({super.key});
@@ -69,6 +71,14 @@ class _DailyScreenState extends State<DailyScreen>
     _refreshForCurrentDay();
   }
 
+  Future<void> _openDevTester() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const DailyDevScreen()),
+    );
+    if (!mounted) return;
+    _refreshForCurrentDay();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,12 +109,13 @@ class _DailyScreenState extends State<DailyScreen>
                       ),
                       const SizedBox(height: 5),
                       const Text(
-                        'ONE CHALLENGE • ONE RULE • ONE ATTEMPT',
+                        'ONE CHALLENGE • ONE RULE • UNLIMITED ATTEMPTS',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: ReactColors.electricBlueBright,
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
+                          letterSpacing: 1.05,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -114,11 +125,15 @@ class _DailyScreenState extends State<DailyScreen>
                         modifier: state.challenge.modifier,
                         compact: narrow,
                       ),
+                      if (kDebugMode) ...[
+                        const SizedBox(height: 10),
+                        _DevTesterCard(onTap: _openDevTester),
+                      ],
                       const SizedBox(height: 10),
                       _RunCard(
                         state: state,
                         narrow: narrow,
-                        onTap: state.playedToday ? null : _start,
+                        onTap: _start,
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -367,15 +382,72 @@ class _ModifierCard extends StatelessWidget {
   }
 }
 
+class _DevTesterCard extends StatelessWidget {
+  const _DevTesterCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0A1322),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: ReactColors.purple.withValues(alpha: .70),
+            ),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.science_rounded, color: ReactColors.purple, size: 22),
+              SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'DEV MODIFIER TESTER',
+                      style: TextStyle(
+                        color: ReactColors.textPrimary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .8,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'CHOOSE AND TEST ANY OF THE 7 DAILY RULES',
+                      style: TextStyle(
+                        color: ReactColors.textSecondary,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: ReactColors.textSecondary,
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
 class _RunCard extends StatelessWidget {
   const _RunCard({required this.state, required this.narrow, required this.onTap});
   final _DailyState state;
   final bool narrow;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final status = state.playedToday ? 'COMPLETED' : 'READY';
+    final status = state.playedToday ? 'PLAY AGAIN' : 'READY';
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(narrow ? 14 : 18),
@@ -437,7 +509,7 @@ class _RunCard extends StatelessWidget {
                   ),
                 ),
                 child: Icon(
-                  state.playedToday ? Icons.check_rounded : Icons.wb_sunny_outlined,
+                  state.playedToday ? Icons.replay_rounded : Icons.wb_sunny_outlined,
                   color: ReactColors.electricBlueBright,
                   size: narrow ? 32 : 40,
                 ),
@@ -482,16 +554,15 @@ class _RunCard extends StatelessWidget {
               onPressed: onTap,
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF168CFF),
-                disabledBackgroundColor: const Color(0xFF18314B),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(29),
                 ),
               ),
               icon: Icon(
-                state.playedToday ? Icons.check_rounded : Icons.play_arrow_rounded,
+                state.playedToday ? Icons.replay_rounded : Icons.play_arrow_rounded,
               ),
               label: Text(
-                state.playedToday ? 'PLAYED TODAY' : 'PLAY DAILY',
+                state.playedToday ? 'PLAY AGAIN' : 'PLAY DAILY',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -582,7 +653,7 @@ class _HistoryDay extends StatelessWidget {
             : entry.score != null
                 ? '${entry.score}'
                 : entry.attempted
-                    ? 'USED'
+                    ? 'PLAYED'
                     : '—';
 
     return Container(
@@ -629,7 +700,7 @@ class _HistoryDay extends StatelessWidget {
                     : entry.failed
                         ? ReactColors.coral
                         : ReactColors.textSecondary,
-                fontSize: status == 'USED' ? 6.5 : 9,
+                fontSize: status == 'PLAYED' ? 5.8 : 9,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -646,9 +717,8 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = state.playedToday
-        ? 'Challenge #${state.challenge.id} is locked. A new sequence and rule unlock at local midnight.'
-        : '${state.challenge.modifier.label} and challenge #${state.challenge.id} stay fixed for today. One miss ends the attempt.';
+    final text =
+        '${state.challenge.modifier.label} and challenge #${state.challenge.id} stay fixed until local midnight. Play as many times as you want; your best score is what counts. One miss ends each attempt.';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -659,9 +729,9 @@ class _InfoCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            state.playedToday ? Icons.schedule_rounded : Icons.lock_clock_rounded,
-            color: state.playedToday ? ReactColors.lime : ReactColors.textSecondary,
+          const Icon(
+            Icons.replay_circle_filled_rounded,
+            color: ReactColors.electricBlueBright,
           ),
           const SizedBox(width: 10),
           Expanded(
