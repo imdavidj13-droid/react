@@ -23,6 +23,8 @@ class LocalPlayerStats {
       'command_successes_${command.name}';
   static String _commandResponseMsKey(ReactCommand command) =>
       'command_response_ms_${command.name}';
+  static String _dailyModifierBestKey(DailyModifier modifier) =>
+      'daily_best_${modifier.name}';
 
   static const _runsKey = 'runs_played';
   static const _dailyLastPlayedKey = 'daily_last_played';
@@ -36,6 +38,11 @@ class LocalPlayerStats {
     if (mode == ReactGameMode.passIt) return 0;
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_bestKey(mode)) ?? 0;
+  }
+
+  static Future<int> dailyBestForModifier(DailyModifier modifier) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_dailyModifierBestKey(modifier)) ?? 0;
   }
 
   static Future<int> runsPlayed() async {
@@ -237,11 +244,17 @@ class LocalPlayerStats {
     if (result.mode == ReactGameMode.daily) {
       await _recordDaily(prefs);
       final today = _normalizedToday();
+      final modifier = DailyChallenge.forDate(today).modifier;
+      final currentModifierBest =
+          prefs.getInt(_dailyModifierBestKey(modifier)) ?? 0;
+      if (result.score > currentModifierBest) {
+        await prefs.setInt(_dailyModifierBestKey(modifier), result.score);
+      }
       await _upsertDailyHistory(
         prefs,
         DailyHistoryEntry(
           date: today,
-          modifier: DailyChallenge.forDate(today).modifier,
+          modifier: modifier,
           attempted: true,
           score: result.score,
           outcome: result.outcome,
@@ -265,6 +278,9 @@ class LocalPlayerStats {
       await prefs.remove(_commandAttemptsKey(command));
       await prefs.remove(_commandSuccessesKey(command));
       await prefs.remove(_commandResponseMsKey(command));
+    }
+    for (final modifier in DailyModifier.values) {
+      await prefs.remove(_dailyModifierBestKey(modifier));
     }
 
     await prefs.remove(_runsKey);
