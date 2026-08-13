@@ -26,12 +26,14 @@ class _BlitzScreenState extends State<BlitzScreen> {
     if (mounted) setState(() => _best = best);
   }
 
-  void _start(BuildContext context) {
-    Navigator.of(context).push(
+  Future<void> _start(BuildContext context) async {
+    await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => const ReactRunLaunchScreen(mode: ReactGameMode.blitz),
       ),
     );
+    if (!mounted) return;
+    await _loadBest();
   }
 
   @override
