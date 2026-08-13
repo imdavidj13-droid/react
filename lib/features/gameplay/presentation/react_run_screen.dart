@@ -26,7 +26,7 @@ class ReactRunScreen extends StatefulWidget {
 class _ReactRunScreenState extends State<ReactRunScreen>
     with WidgetsBindingObserver {
   static const _tick = Duration(milliseconds: 32);
-  static const _dailyTarget = 20;
+  static const _dailyTarget = 40;
 
   late final ReactGame _game;
   late final Random _random;
@@ -335,7 +335,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       ReactGameMode.classic => (.18 + _score * .008).clamp(.18, .48),
       ReactGameMode.blitz => (.45 + _score * .006).clamp(.45, .72),
       ReactGameMode.endless => (.24 + _score * .035).clamp(.24, 1.0),
-      ReactGameMode.daily => .28,
+      ReactGameMode.daily => (.28 + _score * .012).clamp(.28, .76),
       ReactGameMode.passIt => .30,
     };
     _game.setIntensity(intensity.toDouble());
@@ -501,8 +501,8 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop || _finished) return;
-        _setPaused(!_paused);
+        if (didPop || _finished || _paused) return;
+        _setPaused(true);
       },
       child: Scaffold(
         backgroundColor: ReactColors.background,
