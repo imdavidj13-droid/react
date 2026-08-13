@@ -5,6 +5,7 @@ import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import '../../gameplay/presentation/react_run_launch_screen.dart';
 import '../domain/daily_challenge.dart';
+import '../domain/daily_history_entry.dart';
 
 class DailyScreen extends StatefulWidget {
   const DailyScreen({super.key});
@@ -110,6 +111,8 @@ class _DailyScreenState extends State<DailyScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
+                      _WeekHistory(entries: state.history),
+                      const SizedBox(height: 12),
                       _InfoCard(state: state),
                     ],
                   ),
@@ -129,27 +132,29 @@ class _DailyState {
     this.playedToday = false,
     this.streak = 0,
     this.best = 0,
+    this.history = const <DailyHistoryEntry>[],
   });
 
   final DailyChallenge challenge;
   final bool playedToday;
   final int streak;
   final int best;
+  final List<DailyHistoryEntry> history;
 
   factory _DailyState.empty() => _DailyState(challenge: DailyChallenge.today());
 
   static Future<_DailyState> load() async {
     final challenge = DailyChallenge.today();
-    final values = await Future.wait<Object>([
-      LocalPlayerStats.hasPlayedDailyToday(),
-      LocalPlayerStats.dailyStreak(),
-      LocalPlayerStats.bestFor(ReactGameMode.daily),
-    ]);
+    final playedToday = await LocalPlayerStats.hasPlayedDailyToday();
+    final streak = await LocalPlayerStats.dailyStreak();
+    final best = await LocalPlayerStats.bestFor(ReactGameMode.daily);
+    final history = await LocalPlayerStats.dailyHistoryLast7();
     return _DailyState(
       challenge: challenge,
-      playedToday: values[0] as bool,
-      streak: values[1] as int,
-      best: values[2] as int,
+      playedToday: playedToday,
+      streak: streak,
+      best: best,
+      history: history,
     );
   }
 }
@@ -201,8 +206,11 @@ class _Identity extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.fingerprint_rounded,
-                color: ReactColors.electricBlueBright, size: 22),
+            const Icon(
+              Icons.fingerprint_rounded,
+              color: ReactColors.electricBlueBright,
+              size: 22,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -248,88 +256,75 @@ class _ModifierCard extends StatelessWidget {
   final DailyModifier modifier;
   final bool compact;
 
-  IconData get icon => switch (modifier) {
-        DailyModifier.lightsOut => Icons.visibility_off_rounded,
-        DailyModifier.surge => Icons.bolt_rounded,
-        DailyModifier.noClock => Icons.timer_off_rounded,
-        DailyModifier.echo => Icons.repeat_rounded,
-        DailyModifier.reverse => Icons.swap_horiz_rounded,
-        DailyModifier.chain => Icons.link_rounded,
-        DailyModifier.redline => Icons.speed_rounded,
-      };
-
-  Color get color => switch (modifier) {
-        DailyModifier.lightsOut => ReactColors.purple,
-        DailyModifier.surge => ReactColors.coral,
-        DailyModifier.noClock => ReactColors.lime,
-        DailyModifier.echo => ReactColors.electricBlueBright,
-        DailyModifier.reverse => ReactColors.purple,
-        DailyModifier.chain => ReactColors.lime,
-        DailyModifier.redline => ReactColors.coral,
-      };
-
   @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(compact ? 12 : 14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF08121F),
-          borderRadius: BorderRadius.circular(19),
-          border: Border.all(color: color.withValues(alpha: .55)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: compact ? 42 : 48,
-              height: compact ? 42 : 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF050A13),
-                border: Border.all(color: color, width: 1.5),
-              ),
-              child: Icon(icon, color: color, size: compact ? 22 : 25),
+  Widget build(BuildContext context) {
+    final color = _modifierColor(modifier);
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(compact ? 12 : 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF08121F),
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: color.withValues(alpha: .55)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: compact ? 42 : 48,
+            height: compact ? 42 : 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF050A13),
+              border: Border.all(color: color, width: 1.5),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "TODAY'S RULE",
-                    style: TextStyle(
-                      color: ReactColors.textSecondary,
-                      fontSize: 7.5,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    modifier.label,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: compact ? 18 : 20,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    modifier.description,
-                    style: const TextStyle(
-                      color: ReactColors.textSecondary,
-                      fontSize: 8.5,
-                      height: 1.35,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
+            child: Icon(
+              _modifierIcon(modifier),
+              color: color,
+              size: compact ? 22 : 25,
             ),
-          ],
-        ),
-      );
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "TODAY'S RULE",
+                  style: TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 7.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  modifier.label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: compact ? 18 : 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  modifier.description,
+                  style: const TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 8.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _RunCard extends StatelessWidget {
@@ -357,12 +352,14 @@ class _RunCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("TODAY'S RUN",
-                        style: TextStyle(
-                          color: ReactColors.textSecondary,
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w900,
-                        )),
+                    const Text(
+                      "TODAY'S RUN",
+                      style: TextStyle(
+                        color: ReactColors.textSecondary,
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                     const SizedBox(height: 5),
                     Text(
                       status,
@@ -394,7 +391,10 @@ class _RunCard extends StatelessWidget {
                 height: narrow ? 68 : 88,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: ReactColors.electricBlueBright, width: 2),
+                  border: Border.all(
+                    color: ReactColors.electricBlueBright,
+                    width: 2,
+                  ),
                 ),
                 child: Icon(
                   state.playedToday ? Icons.check_rounded : Icons.wb_sunny_outlined,
@@ -409,11 +409,29 @@ class _RunCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: _Metric(label: 'YOUR BEST', value: '${state.best}', color: ReactColors.lime)),
+              Expanded(
+                child: _Metric(
+                  label: 'YOUR BEST',
+                  value: '${state.best}',
+                  color: ReactColors.lime,
+                ),
+              ),
               const _Divider(),
-              const Expanded(child: _Metric(label: 'TARGET', value: '60', color: ReactColors.purple)),
+              const Expanded(
+                child: _Metric(
+                  label: 'TARGET',
+                  value: '$dailyTarget',
+                  color: ReactColors.purple,
+                ),
+              ),
               const _Divider(),
-              const Expanded(child: _Metric(label: 'MISSES', value: '0', color: ReactColors.coral)),
+              const Expanded(
+                child: _Metric(
+                  label: 'MISSES',
+                  value: '0',
+                  color: ReactColors.coral,
+                ),
+              ),
             ],
           ),
           SizedBox(height: narrow ? 14 : 18),
@@ -425,12 +443,140 @@ class _RunCard extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF168CFF),
                 disabledBackgroundColor: const Color(0xFF18314B),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(29)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(29),
+                ),
               ),
-              icon: Icon(state.playedToday ? Icons.check_rounded : Icons.play_arrow_rounded),
+              icon: Icon(
+                state.playedToday ? Icons.check_rounded : Icons.play_arrow_rounded,
+              ),
               label: Text(
                 state.playedToday ? 'PLAYED TODAY' : 'PLAY DAILY',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.3),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.3,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeekHistory extends StatelessWidget {
+  const _WeekHistory({required this.entries});
+  final List<DailyHistoryEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    if (entries.isEmpty) return const SizedBox.shrink();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: const Color(0xFF293B54)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 2),
+            child: Text(
+              'LAST 7 DAYS',
+              style: TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+          const SizedBox(height: 9),
+          Row(
+            children: [
+              for (var index = 0; index < entries.length; index++) ...[
+                if (index > 0) const SizedBox(width: 4),
+                Expanded(
+                  child: _HistoryDay(
+                    entry: entries[index],
+                    today: entries[index].date == today,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoryDay extends StatelessWidget {
+  const _HistoryDay({required this.entry, required this.today});
+  final DailyHistoryEntry entry;
+  final bool today;
+
+  static const _dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _modifierColor(entry.modifier);
+    final status = entry.completed
+        ? '✓'
+        : entry.score != null
+            ? '${entry.score}'
+            : entry.attempted
+                ? 'USED'
+                : '—';
+
+    return Container(
+      height: 76,
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 7),
+      decoration: BoxDecoration(
+        color: today ? const Color(0xFF0B1929) : const Color(0xFF08101B),
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(
+          color: today
+              ? ReactColors.electricBlueBright
+              : color.withValues(alpha: entry.attempted ? .48 : .20),
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            _dayLabels[entry.date.weekday - 1],
+            style: TextStyle(
+              color: today ? ReactColors.textPrimary : ReactColors.textSecondary,
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Icon(
+            _modifierIcon(entry.modifier),
+            color: entry.attempted ? color : color.withValues(alpha: .38),
+            size: 15,
+          ),
+          const Spacer(),
+          FittedBox(
+            child: Text(
+              status,
+              style: TextStyle(
+                color: entry.completed
+                    ? ReactColors.lime
+                    : entry.failed
+                        ? ReactColors.coral
+                        : ReactColors.textSecondary,
+                fontSize: status == 'USED' ? 6.5 : 9,
+                fontWeight: FontWeight.w900,
               ),
             ),
           ),
@@ -459,8 +605,10 @@ class _InfoCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(state.playedToday ? Icons.schedule_rounded : Icons.lock_clock_rounded,
-              color: state.playedToday ? ReactColors.lime : ReactColors.textSecondary),
+          Icon(
+            state.playedToday ? Icons.schedule_rounded : Icons.lock_clock_rounded,
+            color: state.playedToday ? ReactColors.lime : ReactColors.textSecondary,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -488,13 +636,24 @@ class _Metric extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(
         children: [
-          Text(label,
-              style: const TextStyle(
-                  color: ReactColors.textSecondary, fontSize: 7.5, fontWeight: FontWeight.w900)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 7.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           const SizedBox(height: 4),
           FittedBox(
-            child: Text(value,
-                style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w900)),
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ),
         ],
       );
@@ -503,7 +662,8 @@ class _Metric extends StatelessWidget {
 class _Divider extends StatelessWidget {
   const _Divider();
   @override
-  Widget build(BuildContext context) => Container(width: 1, height: 34, color: const Color(0xFF233850));
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 34, color: const Color(0xFF233850));
 }
 
 class _StatCard extends StatelessWidget {
@@ -535,12 +695,48 @@ class _StatCard extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: compact ? 20 : 22),
             const Spacer(),
-            FittedBox(child: Text(label,
-                style: const TextStyle(color: ReactColors.textSecondary, fontSize: 7.5, fontWeight: FontWeight.w900))),
+            FittedBox(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: ReactColors.textSecondary,
+                  fontSize: 7.5,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
             const SizedBox(height: 3),
-            FittedBox(child: Text(value,
-                style: TextStyle(color: color, fontSize: compact ? 16 : 18, fontWeight: FontWeight.w900))),
+            FittedBox(
+              child: Text(
+                value,
+                style: TextStyle(
+                  color: color,
+                  fontSize: compact ? 16 : 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
           ],
         ),
       );
 }
+
+IconData _modifierIcon(DailyModifier modifier) => switch (modifier) {
+      DailyModifier.lightsOut => Icons.visibility_off_rounded,
+      DailyModifier.surge => Icons.bolt_rounded,
+      DailyModifier.noClock => Icons.timer_off_rounded,
+      DailyModifier.echo => Icons.repeat_rounded,
+      DailyModifier.reverse => Icons.swap_horiz_rounded,
+      DailyModifier.chain => Icons.link_rounded,
+      DailyModifier.redline => Icons.speed_rounded,
+    };
+
+Color _modifierColor(DailyModifier modifier) => switch (modifier) {
+      DailyModifier.lightsOut => ReactColors.purple,
+      DailyModifier.surge => ReactColors.coral,
+      DailyModifier.noClock => ReactColors.lime,
+      DailyModifier.echo => ReactColors.electricBlueBright,
+      DailyModifier.reverse => ReactColors.purple,
+      DailyModifier.chain => ReactColors.lime,
+      DailyModifier.redline => ReactColors.coral,
+    };
