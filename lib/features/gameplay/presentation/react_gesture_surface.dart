@@ -47,17 +47,28 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   bool _secondTapStartedInWindow = false;
   bool _resolved = false;
   bool _cancelled = false;
+  bool _blockedUntilPointersClear = false;
 
   @override
   void didUpdateWidget(covariant ReactGestureSurface oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.expectedCommand != widget.expectedCommand) {
+
+    final commandChanged = oldWidget.expectedCommand != widget.expectedCommand;
+    final inputDisabled = oldWidget.enabled && !widget.enabled;
+
+    if (commandChanged || inputDisabled) {
       _doubleTapTimer?.cancel();
+      _holdTimer?.cancel();
       _firstTapAt = null;
       _secondTapStartedInWindow = false;
-    }
-    if (!widget.enabled) {
-      _holdTimer?.cancel();
+      _holdSatisfied = false;
+      _pendingMultiTouchCommand = null;
+
+      if (_pointers.isNotEmpty) {
+        _blockedUntilPointersClear = true;
+      } else {
+        _resetGestureState();
+      }
     }
   }
 
@@ -69,7 +80,12 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   }
 
   void _emit(ReactCommand command) {
-    if (!widget.enabled || _resolved || _cancelled) return;
+    if (!widget.enabled ||
+        _resolved ||
+        _cancelled ||
+        _blockedUntilPointersClear) {
+      return;
+    }
     _resolved = true;
     _doubleTapTimer?.cancel();
     _holdTimer?.cancel();
@@ -78,14 +94,27 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
 
   void _onPointerDown(PointerDownEvent event) {
     _pointers[event.pointer] = event.localPosition;
-    if (!widget.enabled) return;
+
+    if (_blockedUntilPointersClear || !widget.enabled) return;
+
+    if (_pointers.length > 2) {
+      _cancelled = true;
+      _pendingMultiTouchCommand = null;
+      _holdSatisfied = false;
+      _holdTimer?.cancel();
+      _doubleTapTimer?.cancel();
+      _firstTapAt = null;
+      _secondTapStartedInWindow = false;
+      return;
+    }
 
     if (_pointers.length == 1) {
       final now = event.timeStamp;
       final firstTapAt = _firstTapAt;
-      _secondTapStartedInWindow = widget.expectedCommand == ReactCommand.doubleTap &&
-          firstTapAt != null &&
-          now - firstTapAt <= _doubleTapWindow;
+      _secondTapStartedInWindow =
+          widget.expectedCommand == ReactCommand.doubleTap &&
+              firstTapAt != null &&
+              now - firstTapAt <= _doubleTapWindow;
       if (_secondTapStartedInWindow) {
         _doubleTapTimer?.cancel();
       }
@@ -105,7 +134,8 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
             !widget.enabled ||
             _resolved ||
             _multiTouchSeen ||
-            _cancelled) {
+            _cancelled ||
+            _blockedUntilPointersClear) {
           return;
         }
         if (_pointers.containsKey(_primaryPointer) &&
@@ -116,15 +146,13 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       return;
     }
 
-    if (_pointers.length >= 2) {
-      _multiTouchSeen = true;
-      _holdTimer?.cancel();
-      _holdSatisfied = false;
-      _doubleTapTimer?.cancel();
-      _firstTapAt = null;
-      _secondTapStartedInWindow = false;
-      _twoFingerStartDistance = _currentTwoFingerDistance();
-    }
+    _multiTouchSeen = true;
+    _holdTimer?.cancel();
+    _holdSatisfied = false;
+    _doubleTapTimer?.cancel();
+    _firstTapAt = null;
+    _secondTapStartedInWindow = false;
+    _twoFingerStartDistance = _currentTwoFingerDistance();
   }
 
   void _onPointerMove(PointerMoveEvent event) {
@@ -133,7 +161,12 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
     final previous = _pointers[event.pointer]!;
     _pointers[event.pointer] = event.localPosition;
 
-    if (!widget.enabled || _resolved || _cancelled) return;
+    if (_blockedUntilPointersClear ||
+        !widget.enabled ||
+        _resolved ||
+        _cancelled) {
+      return;
+    }
 
     if (_pointers.length >= 2) {
       if (_pendingMultiTouchCommand != null) return;
@@ -170,6 +203,14 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   void _onPointerUp(PointerEvent event) {
     final wasPrimary = event.pointer == _primaryPointer;
     _pointers.remove(event.pointer);
+
+    if (_blockedUntilPointersClear) {
+      if (_pointers.isEmpty) {
+        _blockedUntilPointersClear = false;
+        _resetGestureState();
+      }
+      return;
+    }
 
     if (_cancelled) {
       if (_pointers.isEmpty) _resetGestureState();
@@ -269,7 +310,13 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       _firstTapAt = event.timeStamp;
       _doubleTapTimer?.cancel();
       _doubleTapTimer = Timer(_doubleTapWindow, () {
-        if (!mounted || _resolved || !widget.enabled || _cancelled) return;
+        if (!mounted ||
+            _resolved ||
+            !widget.enabled ||
+            _cancelled ||
+            _blockedUntilPointersClear) {
+          return;
+        }
         _firstTapAt = null;
         _emit(ReactCommand.tap);
       });
@@ -290,7 +337,12 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
     _doubleTapTimer?.cancel();
     _firstTapAt = null;
     _secondTapStartedInWindow = false;
-    if (_pointers.isEmpty) _resetGestureState();
+    if (_pointers.isEmpty) {
+      if (_blockedUntilPointersClear) {
+        _blockedUntilPointersClear = false;
+      }
+      _resetGestureState();
+    }
   }
 
   double? _currentTwoFingerDistance() {
