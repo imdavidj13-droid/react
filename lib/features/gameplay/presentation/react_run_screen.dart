@@ -53,6 +53,10 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   int _blitzPenaltyMs = 0;
   int _pendingTransitionDurationMs = 0;
   int _pendingTransitionRemainingMs = 0;
+  int? _handoffLostPlayer;
+  int? _handoffLivesBefore;
+  int? _handoffLivesAfter;
+  int? _handoffWinnerPlayer;
 
   bool _acceptingInput = false;
   bool _finished = false;
@@ -262,11 +266,9 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _game.triggerSuccess();
     _syncFlameIntensity();
 
-    if (widget.mode == ReactGameMode.passIt) {
-      _advancePlayerAndHandoff();
-      return;
-    }
-
+    // In Pass It, a successful player keeps the phone and immediately faces
+    // another command. The phone only changes hands after that player misses
+    // and loses a life.
     _scheduleTransition(
       _timing.successDelayMsForScore(_score),
       _startCommand,
@@ -336,14 +338,22 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         return;
 
       case ReactGameMode.passIt:
+        final lostPlayer = _currentPlayer;
+        final livesBefore = _playerLives[lostPlayer];
+        final livesAfter = max(0, livesBefore - 1);
         unawaited(ReactAudio.play(ReactSoundCue.lifeLost));
         setState(() {
           _acceptingInput = false;
           _misses += 1;
-          _playerLives[_currentPlayer] = max(0, _playerLives[_currentPlayer] - 1);
-          _feedback = 'MISS  •  LIFE LOST';
+          _playerLives[lostPlayer] = livesAfter;
+          _feedback =
+              'PLAYER ${lostPlayer + 1} LOST A LIFE  •  $livesAfter LEFT';
         });
-        _advancePlayerAndHandoff();
+        _showPassItLifeLoss(
+          lostPlayer: lostPlayer,
+          livesBefore: livesBefore,
+          livesAfter: livesAfter,
+        );
         return;
     }
   }
@@ -359,29 +369,42 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _game.setIntensity(intensity.toDouble());
   }
 
-  void _advancePlayerAndHandoff() {
+  void _showPassItLifeLoss({
+    required int lostPlayer,
+    required int livesBefore,
+    required int livesAfter,
+  }) {
     setState(() => _acceptingInput = false);
 
     if (_alivePlayers <= 1) {
       final winner = _playerLives.indexWhere((lives) => lives > 0) + 1;
-      _scheduleTransition(
-        450,
-        () => _finish(ReactRunOutcome.winner, winnerPlayer: winner),
-      );
+      _scheduleTransition(300, () {
+        if (!mounted || _finished) return;
+        setState(() {
+          _handoff = true;
+          _handoffLostPlayer = lostPlayer;
+          _handoffLivesBefore = livesBefore;
+          _handoffLivesAfter = livesAfter;
+          _handoffWinnerPlayer = winner;
+        });
+      });
       return;
     }
 
-    var candidate = _currentPlayer;
+    var candidate = lostPlayer;
     do {
       candidate = (candidate + 1) % _playerLives.length;
     } while (_playerLives[candidate] <= 0);
 
-    _scheduleTransition(320, () {
+    _scheduleTransition(300, () {
       if (!mounted || _finished) return;
       setState(() {
         _currentPlayer = candidate;
         _handoff = true;
-        _feedback = null;
+        _handoffLostPlayer = lostPlayer;
+        _handoffLivesBefore = livesBefore;
+        _handoffLivesAfter = livesAfter;
+        _handoffWinnerPlayer = null;
       });
       unawaited(ReactAudio.play(ReactSoundCue.handoff));
     });
@@ -389,8 +412,18 @@ class _ReactRunScreenState extends State<ReactRunScreen>
 
   void _beginPassItTurn() {
     if (_finished || _paused || !_handoff) return;
+
+    final winner = _handoffWinnerPlayer;
+    if (winner != null) {
+      _finish(ReactRunOutcome.winner, winnerPlayer: winner);
+      return;
+    }
+
     setState(() {
       _handoff = false;
+      _handoffLostPlayer = null;
+      _handoffLivesBefore = null;
+      _handoffLivesAfter = null;
       _feedback = null;
     });
     _startCommand();
@@ -575,7 +608,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         ReactGameMode.blitz => 'TIME',
         ReactGameMode.endless => 'PACE',
         ReactGameMode.daily => 'STEP',
-        ReactGameMode.passIt => 'TURN',
+        ReactGameMode.passIt => 'PLAYER',
       };
 
   String get _statusValue => switch (widget.mode) {
@@ -584,7 +617,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         ReactGameMode.endless => '${(_baseCommandMs / 1000).toStringAsFixed(2)}s',
         ReactGameMode.daily => 'DAILY',
         ReactGameMode.passIt =>
-          'P${_currentPlayer + 1} ${List.filled(_playerLives[_currentPlayer], '♥').join()}',
+          'P${_currentPlayer + 1}  ${_playerLives[_currentPlayer]}♥',
       };
 
   @override
@@ -642,13 +675,15 @@ class _ReactRunScreenState extends State<ReactRunScreen>
                               opacity: _feedback == null ? 0 : 1,
                               child: Text(
                                 _feedback ?? '',
+                                textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: _feedback?.startsWith('MISS') == true
+                                  color: _feedback?.contains('LOST A LIFE') == true ||
+                                          _feedback?.startsWith('MISS') == true
                                       ? ReactColors.coral
                                       : ReactColors.electricBlueBright,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w900,
-                                  letterSpacing: 2,
+                                  letterSpacing: 1.4,
                                 ),
                               ),
                             ),
@@ -676,6 +711,12 @@ class _ReactRunScreenState extends State<ReactRunScreen>
               _HandoffOverlay(
                 player: _currentPlayer + 1,
                 lives: _playerLives[_currentPlayer],
+                lostPlayer: _handoffLostPlayer == null
+                    ? null
+                    : _handoffLostPlayer! + 1,
+                livesBefore: _handoffLivesBefore,
+                livesAfter: _handoffLivesAfter,
+                winnerPlayer: _handoffWinnerPlayer,
                 onReady: _beginPassItTurn,
               ),
           ],
@@ -1182,59 +1223,162 @@ class _HandoffOverlay extends StatelessWidget {
   const _HandoffOverlay({
     required this.player,
     required this.lives,
+    required this.lostPlayer,
+    required this.livesBefore,
+    required this.livesAfter,
+    required this.winnerPlayer,
     required this.onReady,
   });
 
   final int player;
   final int lives;
+  final int? lostPlayer;
+  final int? livesBefore;
+  final int? livesAfter;
+  final int? winnerPlayer;
   final VoidCallback onReady;
 
   @override
-  Widget build(BuildContext context) => ColoredBox(
-        color: const Color(0xF2050911),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
+  Widget build(BuildContext context) {
+    final hasLifeLoss =
+        lostPlayer != null && livesBefore != null && livesAfter != null;
+    final matchOver = winnerPlayer != null;
+
+    return ColoredBox(
+      color: const Color(0xF2050911),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Container(
+            width: 330,
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: const Color(0xFF07111D),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: hasLifeLoss ? ReactColors.coral : ReactColors.purple,
+              ),
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.phone_android_rounded,
-                  color: ReactColors.purple,
-                  size: 66,
+                Icon(
+                  hasLifeLoss
+                      ? Icons.heart_broken_rounded
+                      : Icons.phone_android_rounded,
+                  color: hasLifeLoss ? ReactColors.coral : ReactColors.purple,
+                  size: 58,
                 ),
+                if (hasLifeLoss) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    'PLAYER $lostPlayer LOST A LIFE',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: ReactColors.coral,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .5,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _LifeCount(value: livesBefore!),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Icon(
+                          Icons.arrow_forward_rounded,
+                          color: ReactColors.textSecondary,
+                          size: 20,
+                        ),
+                      ),
+                      _LifeCount(value: livesAfter!, lost: true),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Container(height: 1, color: const Color(0xFF283A52)),
+                ],
                 const SizedBox(height: 18),
                 Text(
-                  'PASS TO PLAYER $player',
+                  matchOver
+                      ? 'PLAYER $winnerPlayer WINS'
+                      : 'PASS TO PLAYER $player',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 28,
+                  style: TextStyle(
+                    color: matchOver ? ReactColors.lime : ReactColors.textPrimary,
+                    fontSize: 27,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  '${List.filled(lives, '♥').join(' ')}  •  TAP WHEN READY',
-                  style: const TextStyle(
-                    color: ReactColors.purple,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
+                if (!matchOver)
+                  Text(
+                    'PLAYER $player  •  $lives LIVES  •  TAP WHEN READY',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: ReactColors.purple,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .8,
+                    ),
+                  )
+                else
+                  const Text(
+                    'LAST PLAYER STANDING',
+                    style: TextStyle(
+                      color: ReactColors.lime,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.1,
+                    ),
                   ),
-                ),
                 const SizedBox(height: 22),
                 SizedBox(
                   width: 230,
                   height: 58,
                   child: FilledButton(
                     onPressed: onReady,
-                    child: const Text('I’M READY'),
+                    child: Text(matchOver ? 'SHOW RESULTS' : 'I’M READY'),
                   ),
                 ),
               ],
             ),
           ),
         ),
-      );
+      ),
+    );
+  }
+}
+
+class _LifeCount extends StatelessWidget {
+  const _LifeCount({required this.value, this.lost = false});
+
+  final int value;
+  final bool lost;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF090F1B),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(
+          color: lost
+              ? ReactColors.coral.withValues(alpha: .62)
+              : const Color(0xFF30445F),
+        ),
+      ),
+      child: Text(
+        value == 0 ? '0  OUT' : '$value  ${List.filled(value, '♥').join(' ')}',
+        style: TextStyle(
+          color: lost ? ReactColors.coral : ReactColors.textPrimary,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
 }
