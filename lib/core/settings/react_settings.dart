@@ -15,6 +15,11 @@ class ReactSettings {
   static bool dailyDevOverrideEnabled = false;
   static String dailyDevModifier = 'lightsOut';
 
+  // Runtime-only guard used to isolate developer Daily runs from the real
+  // calendar challenge. This is deliberately never persisted: a debug choice
+  // must not leak into normal Daily play or a later release build.
+  static bool dailyDevRunActive = false;
+
   static Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     soundEnabled = prefs.getBool(_soundKey) ?? true;
@@ -23,6 +28,7 @@ class ReactSettings {
         (prefs.getInt(_passItPlayerCountKey) ?? 3).clamp(2, 4).toInt();
     dailyDevOverrideEnabled = prefs.getBool(_dailyDevOverrideKey) ?? false;
     dailyDevModifier = prefs.getString(_dailyDevModifierKey) ?? 'lightsOut';
+    dailyDevRunActive = false;
   }
 
   static Future<void> setSoundEnabled(bool value) async {
