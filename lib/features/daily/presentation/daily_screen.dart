@@ -22,9 +22,7 @@ class _DailyScreenState extends State<DailyScreen> {
     _reload();
   }
 
-  void _reload() {
-    _state = _DailyState.load();
-  }
+  void _reload() => _state = _DailyState.load();
 
   Future<void> _start() async {
     await Navigator.of(context).push(
@@ -47,18 +45,20 @@ class _DailyScreenState extends State<DailyScreen> {
             final state = snapshot.data ?? _DailyState.empty();
             return LayoutBuilder(
               builder: (context, constraints) {
-                final pad = constraints.maxWidth < 380 ? 16.0 : 20.0;
+                final narrow = constraints.maxWidth < 360;
+                final pad = narrow ? 12.0 : 20.0;
+
                 return SingleChildScrollView(
                   padding: EdgeInsets.fromLTRB(pad, 14, pad, 28),
                   child: Column(
                     children: [
                       _Header(onBack: () => Navigator.of(context).pop()),
-                      const SizedBox(height: 20),
-                      const Text(
+                      SizedBox(height: narrow ? 16 : 20),
+                      Text(
                         'DAILY RUN',
                         style: TextStyle(
                           color: ReactColors.textPrimary,
-                          fontSize: 34,
+                          fontSize: narrow ? 30 : 34,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 2,
                         ),
@@ -73,14 +73,15 @@ class _DailyScreenState extends State<DailyScreen> {
                           letterSpacing: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 16),
                       _ChallengeIdentity(challenge: state.challenge),
                       const SizedBox(height: 12),
                       _ChallengeCard(
                         state: state,
+                        narrow: narrow,
                         onTap: state.playedToday ? null : _start,
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
@@ -89,15 +90,17 @@ class _DailyScreenState extends State<DailyScreen> {
                               label: 'CURRENT STREAK',
                               value: '${state.streak} DAYS',
                               color: ReactColors.coral,
+                              compact: narrow,
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: _StatCard(
                               icon: Icons.workspace_premium_outlined,
                               label: 'DAILY BEST',
                               value: '${state.best}',
                               color: ReactColors.lime,
+                              compact: narrow,
                             ),
                           ),
                         ],
@@ -141,6 +144,7 @@ class _DailyState {
       LocalPlayerStats.dailyStreak(),
       LocalPlayerStats.bestFor(ReactGameMode.daily),
     ]);
+
     return _DailyState(
       challenge: challenge,
       playedToday: values[0] as bool,
@@ -152,6 +156,7 @@ class _DailyState {
 
 class _Header extends StatelessWidget {
   const _Header({required this.onBack});
+
   final VoidCallback onBack;
 
   @override
@@ -193,7 +198,7 @@ class _ChallengeIdentity extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
         borderRadius: BorderRadius.circular(17),
@@ -204,9 +209,9 @@ class _ChallengeIdentity extends StatelessWidget {
           const Icon(
             Icons.fingerprint_rounded,
             color: ReactColors.electricBlueBright,
-            size: 23,
+            size: 22,
           ),
-          const SizedBox(width: 11),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,9 +220,9 @@ class _ChallengeIdentity extends StatelessWidget {
                   'CHALLENGE #${challenge.id}',
                   style: const TextStyle(
                     color: ReactColors.textPrimary,
-                    fontSize: 11,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: .8,
+                    letterSpacing: .7,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -227,7 +232,7 @@ class _ChallengeIdentity extends StatelessWidget {
                     color: ReactColors.textSecondary,
                     fontSize: 8,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: .8,
+                    letterSpacing: .7,
                   ),
                 ),
               ],
@@ -237,9 +242,9 @@ class _ChallengeIdentity extends StatelessWidget {
             'FIXED SEED',
             style: TextStyle(
               color: ReactColors.lime,
-              fontSize: 7.5,
+              fontSize: 7,
               fontWeight: FontWeight.w900,
-              letterSpacing: .8,
+              letterSpacing: .7,
             ),
           ),
         ],
@@ -249,16 +254,26 @@ class _ChallengeIdentity extends StatelessWidget {
 }
 
 class _ChallengeCard extends StatelessWidget {
-  const _ChallengeCard({required this.state, required this.onTap});
+  const _ChallengeCard({
+    required this.state,
+    required this.narrow,
+    required this.onTap,
+  });
 
   final _DailyState state;
+  final bool narrow;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final status = state.playedToday ? 'COMPLETED' : 'READY';
+    final statusColor = state.playedToday
+        ? ReactColors.lime
+        : ReactColors.electricBlueBright;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(narrow ? 14 : 18),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
         borderRadius: BorderRadius.circular(24),
@@ -266,70 +281,135 @@ class _ChallengeCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          if (narrow)
+            Column(
+              children: [
+                Row(
                   children: [
-                    const Text(
-                      "TODAY'S RUN",
-                      style: TextStyle(
-                        color: ReactColors.textSecondary,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "TODAY'S RUN",
+                            style: TextStyle(
+                              color: ReactColors.textSecondary,
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            status,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.4,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      state.playedToday ? 'COMPLETED' : 'READY',
-                      style: TextStyle(
-                        color: state.playedToday
-                            ? ReactColors.lime
-                            : ReactColors.electricBlueBright,
-                        fontSize: 27,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.6,
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: ReactColors.electricBlueBright,
+                          width: 2,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      '40 COMMANDS • SPEED RISES • SAME ORDER ALL DAY',
-                      style: TextStyle(
-                        color: ReactColors.lime,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: .8,
+                      child: Icon(
+                        state.playedToday
+                            ? Icons.check_rounded
+                            : Icons.wb_sunny_outlined,
+                        color: ReactColors.electricBlueBright,
+                        size: 34,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                width: 96,
-                height: 96,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: ReactColors.electricBlueBright,
-                    width: 2.2,
+                const SizedBox(height: 10),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '40 COMMANDS • SPEED RISES • SAME ORDER ALL DAY',
+                    style: TextStyle(
+                      color: ReactColors.lime,
+                      fontSize: 7.4,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .55,
+                    ),
                   ),
                 ),
-                child: Icon(
-                  state.playedToday
-                      ? Icons.check_rounded
-                      : Icons.wb_sunny_outlined,
-                  color: ReactColors.electricBlueBright,
-                  size: 42,
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "TODAY'S RUN",
+                        style: TextStyle(
+                          color: ReactColors.textSecondary,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        status,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 27,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.6,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        '40 COMMANDS • SPEED RISES • SAME ORDER ALL DAY',
+                        style: TextStyle(
+                          color: ReactColors.lime,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .8,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 17),
+                const SizedBox(width: 12),
+                Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: ReactColors.electricBlueBright,
+                      width: 2.2,
+                    ),
+                  ),
+                  child: Icon(
+                    state.playedToday
+                        ? Icons.check_rounded
+                        : Icons.wb_sunny_outlined,
+                    color: ReactColors.electricBlueBright,
+                    size: 42,
+                  ),
+                ),
+              ],
+            ),
+          SizedBox(height: narrow ? 12 : 17),
           const Divider(color: Color(0xFF233850)),
-          const SizedBox(height: 14),
+          SizedBox(height: narrow ? 10 : 14),
           Row(
             children: [
               Expanded(
@@ -357,10 +437,10 @@ class _ChallengeCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: narrow ? 14 : 18),
           SizedBox(
             width: double.infinity,
-            height: 58,
+            height: 56,
             child: FilledButton.icon(
               onPressed: onTap,
               style: FilledButton.styleFrom(
@@ -380,9 +460,9 @@ class _ChallengeCard extends StatelessWidget {
               label: Text(
                 state.playedToday ? 'PLAYED TODAY' : 'PLAY DAILY',
                 style: const TextStyle(
-                  fontSize: 17,
+                  fontSize: 16,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
+                  letterSpacing: 1.4,
                 ),
               ),
             ),
@@ -411,7 +491,7 @@ class _LocalDailyInfo extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
         borderRadius: BorderRadius.circular(19),
@@ -422,9 +502,9 @@ class _LocalDailyInfo extends StatelessWidget {
           Icon(
             playedToday ? Icons.schedule_rounded : Icons.today_rounded,
             color: playedToday ? ReactColors.lime : ReactColors.textSecondary,
-            size: 23,
+            size: 22,
           ),
-          const SizedBox(width: 11),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -459,6 +539,7 @@ class _LocalDailyInfo extends StatelessWidget {
 
 class _Metric extends StatelessWidget {
   const _Metric({required this.label, required this.value, required this.color});
+
   final String label;
   final String value;
   final Color color;
@@ -475,13 +556,15 @@ class _Metric extends StatelessWidget {
             fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 5),
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
+        const SizedBox(height: 4),
+        FittedBox(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
       ],
@@ -491,10 +574,11 @@ class _Metric extends StatelessWidget {
 
 class _Divider extends StatelessWidget {
   const _Divider();
+
   @override
   Widget build(BuildContext context) => Container(
         width: 1,
-        height: 36,
+        height: 34,
         color: const Color(0xFF233850),
       );
 }
@@ -505,17 +589,20 @@ class _StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    required this.compact,
   });
+
   final IconData icon;
   final String label;
   final String value;
   final Color color;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 104,
-      padding: const EdgeInsets.all(14),
+      height: compact ? 96 : 104,
+      padding: EdgeInsets.all(compact ? 11 : 14),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
         borderRadius: BorderRadius.circular(19),
@@ -524,24 +611,32 @@ class _StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 22),
+          Icon(icon, color: color, size: compact ? 20 : 22),
           const Spacer(),
-          Text(
-            label,
-            style: const TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 7.5,
-              fontWeight: FontWeight.w900,
-              letterSpacing: .8,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 7.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .8,
+              ),
             ),
           ),
           const SizedBox(height: 3),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: compact ? 16 : 18,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ],
