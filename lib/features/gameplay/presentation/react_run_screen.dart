@@ -68,9 +68,6 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         ReactGameMode.classic => ReactModeTiming.classic,
         ReactGameMode.blitz => ReactModeTiming.blitz,
         ReactGameMode.endless => ReactModeTiming.endless,
-        // Daily uses DailyRunScreen in all normal navigation. Keeping this
-        // mapping makes accidental construction safe without duplicating its
-        // modifier/state-machine implementation here.
         ReactGameMode.daily => ReactModeTiming.daily,
         ReactGameMode.passIt => ReactModeTiming.passIt,
       };
@@ -169,6 +166,11 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _commandTimer?.cancel();
     if (!mounted || _finished || _paused || _handoff) return;
 
+    if (widget.mode == ReactGameMode.blitz && _blitzMsRemaining <= 0) {
+      _finish(ReactRunOutcome.timeUp);
+      return;
+    }
+
     if (widget.mode == ReactGameMode.passIt && _alivePlayers <= 1) {
       final winner = _playerLives.indexWhere((lives) => lives > 0) + 1;
       _finish(ReactRunOutcome.winner, winnerPlayer: winner);
@@ -218,6 +220,17 @@ class _ReactRunScreenState extends State<ReactRunScreen>
 
   void _handleCommand(ReactCommand performed) {
     if (!_acceptingInput || _finished || _paused || _handoff) return;
+
+    if (widget.mode == ReactGameMode.blitz && _blitzMsRemaining <= 0) {
+      _finish(ReactRunOutcome.timeUp);
+      return;
+    }
+
+    if (_commandRemainingMs <= 0) {
+      _miss();
+      return;
+    }
+
     if (performed != _command) {
       _miss();
       return;
@@ -230,7 +243,8 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _commandTimer?.cancel();
     _commandClock.stop();
 
-    final responseMs = _commandElapsedMs.clamp(0, _commandDurationMs);
+    final responseMs =
+        _commandElapsedMs.clamp(0, _commandDurationMs).toInt();
 
     setState(() {
       _acceptingInput = false;
@@ -312,9 +326,6 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         return;
 
       case ReactGameMode.daily:
-        // Daily gameplay is owned by DailyRunScreen. If this screen is ever
-        // constructed directly for Daily, fail closed rather than running a
-        // second modifier implementation.
         unawaited(ReactAudio.play(ReactSoundCue.miss));
         setState(() {
           _acceptingInput = false;
@@ -401,9 +412,15 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   }
 
   void _runPendingTransition() {
+    if (!mounted || _finished) {
+      _clearPendingTransition();
+      return;
+    }
+    if (_paused) return;
+
     final action = _pendingTransitionAction;
     _clearPendingTransition();
-    if (!mounted || _finished || _paused || action == null) return;
+    if (action == null) return;
     action();
   }
 
