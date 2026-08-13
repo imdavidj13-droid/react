@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:react/features/daily/presentation/daily_screen.dart';
+import 'package:react/features/gameplay/domain/react_run_result.dart';
 import 'package:react/features/home/presentation/home_screen.dart';
+import 'package:react/features/leaderboard/presentation/leaderboard_screen.dart';
 import 'package:react/features/modes/presentation/modes_screen.dart';
 import 'package:react/features/pass_it/presentation/pass_it_screen.dart';
+import 'package:react/features/results/presentation/results_screen.dart';
 import 'package:react/features/settings/presentation/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -68,5 +72,48 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('RESET LOCAL PROGRESS'), findsOneWidget);
+  });
+
+  testWidgets('Daily fits and scrolls on a 320x640 screen', (tester) async {
+    await pumpAtSize(tester, const DailyScreen(), const Size(320, 640));
+
+    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -450));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('40'), findsOneWidget);
+  });
+
+  testWidgets('Scores fits and scrolls on a 320x640 screen', (tester) async {
+    await pumpAtSize(tester, const LeaderboardScreen(), const Size(320, 640));
+
+    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -600));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('YOUR MODE STATS'), findsOneWidget);
+  });
+
+  testWidgets('Results fits and scrolls on a 320x640 screen', (tester) async {
+    const result = ReactRunResult(
+      mode: ReactGameMode.classic,
+      score: 12,
+      successfulCommands: 12,
+      averageTimeSeconds: .74,
+      outcome: ReactRunOutcome.missedCommand,
+      misses: 3,
+    );
+
+    await pumpAtSize(
+      tester,
+      const ResultsScreen(result: result),
+      const Size(320, 640),
+    );
+
+    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('PLAY AGAIN'), findsOneWidget);
   });
 }
