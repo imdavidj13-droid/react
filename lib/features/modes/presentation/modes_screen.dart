@@ -77,8 +77,8 @@ class ModesScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   _ModePanel(
                     title: 'DAILY',
-                    subtitle: 'One deterministic challenge each day.',
-                    detail: '1 LOCAL ATTEMPT  •  20 COMMANDS',
+                    subtitle: 'A different rule every day.',
+                    detail: '60 COMMANDS  •  7 ROTATING MODIFIERS',
                     icon: Icons.calendar_month_rounded,
                     color: ReactColors.lime,
                     badge: 'DAILY RUN',
