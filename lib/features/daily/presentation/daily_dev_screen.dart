@@ -81,40 +81,66 @@ class _DailyDevScreenState extends State<DailyDevScreen> {
             ),
             const SizedBox(height: 12),
             ...DailyModifier.values.map(
-              (modifier) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: RadioListTile<DailyModifier>(
-                  value: modifier,
-                  groupValue: _modifier,
-                  onChanged: (value) {
-                    if (value != null) _select(value);
-                  },
-                  activeColor: ReactColors.electricBlueBright,
-                  tileColor: const Color(0xFF07111D),
-                  shape: RoundedRectangleBorder(
+              (modifier) {
+                final selected = modifier == _modifier;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: InkWell(
                     borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(
-                      color: modifier == _modifier
-                          ? ReactColors.electricBlueBright
-                          : const Color(0xFF263851),
+                    onTap: () => _select(modifier),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF07111D),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: selected
+                              ? ReactColors.electricBlueBright
+                              : const Color(0xFF263851),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            selected
+                                ? Icons.radio_button_checked_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                            color: selected
+                                ? ReactColors.electricBlueBright
+                                : ReactColors.textSecondary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  modifier.label,
+                                  style: const TextStyle(
+                                    color: ReactColors.textPrimary,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  modifier.shortRule,
+                                  style: const TextStyle(
+                                    color: ReactColors.textSecondary,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  title: Text(
-                    modifier.label,
-                    style: const TextStyle(
-                      color: ReactColors.textPrimary,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  subtitle: Text(
-                    modifier.shortRule,
-                    style: const TextStyle(
-                      color: ReactColors.textSecondary,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-              ),
+                );
+              },
             ),
             const SizedBox(height: 12),
             SizedBox(
