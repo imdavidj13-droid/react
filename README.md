@@ -4,13 +4,13 @@ React is a fast, phone-native reaction game built with Flutter and Flame.
 
 ## Current state
 
-The project now includes playable first-pass implementations for:
+The project now includes playable implementations for:
 
 - Classic — three lives with a gradually increasing pace
 - Blitz — 60-second score attack with a time penalty for misses
 - Endless — one miss ends the run, with an aggressive speed and visual-intensity ramp
-- Daily — deterministic 20-command local challenge with one attempt per day
-- Pass It — three-player local multiplayer with handoff states and individual lives
+- Daily — deterministic 40-command local challenge with one attempt per day, one-miss elimination and an escalating pace
+- Pass It — 2–4 player local multiplayer with handoff states and individual lives
 
 The active command pool is:
 
@@ -36,10 +36,13 @@ Gameplay uses one shared run engine and one shared raw-pointer gesture surface s
 
 Until the online backend is introduced, SharedPreferences stores:
 
-- Personal best scores
-- Runs played
-- Daily attempt state
-- Daily streak
+- Personal best scores for scored modes
+- Total and per-mode runs played
+- Successful-command totals
+- Average reaction-time aggregates
+- Recent run history
+- Daily attempt state and streak
+- Pass It player-count preference
 - Sound preference
 - Visual-effects preference
 
