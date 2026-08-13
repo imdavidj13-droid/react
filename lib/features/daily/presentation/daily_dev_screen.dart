@@ -40,14 +40,20 @@ class _DailyDevScreenState extends State<DailyDevScreen> {
   Future<void> _launch() async {
     if (!_enabled) await _setEnabled(true);
     if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const ReactRunLaunchScreen(
-          mode: ReactGameMode.daily,
-          consumeDailyAttempt: false,
+
+    ReactSettings.dailyDevRunActive = true;
+    try {
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const ReactRunLaunchScreen(
+            mode: ReactGameMode.daily,
+            consumeDailyAttempt: false,
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      ReactSettings.dailyDevRunActive = false;
+    }
   }
 
   @override
@@ -68,14 +74,14 @@ class _DailyDevScreenState extends State<DailyDevScreen> {
               onChanged: _setEnabled,
               activeThumbColor: ReactColors.electricBlueBright,
               title: const Text(
-                'OVERRIDE TODAY\'S MODIFIER',
+                'OVERRIDE DEV RUN MODIFIER',
                 style: TextStyle(
                   color: ReactColors.textPrimary,
                   fontWeight: FontWeight.w900,
                 ),
               ),
               subtitle: const Text(
-                'Developer only. Normal Daily rotation returns when disabled.',
+                'Developer runs only. Normal Daily always keeps its calendar modifier.',
                 style: TextStyle(color: ReactColors.textSecondary),
               ),
             ),
@@ -165,7 +171,7 @@ class _DailyDevScreenState extends State<DailyDevScreen> {
             ),
             const SizedBox(height: 10),
             const Text(
-              'DEV TEST RUNS DO NOT CONSUME THE NORMAL DAILY ATTEMPT.',
+              'DEV TEST RUNS DO NOT CONSUME THE NORMAL DAILY ATTEMPT OR ALTER REAL RECORDS.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: ReactColors.textSecondary,
