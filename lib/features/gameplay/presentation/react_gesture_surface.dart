@@ -99,22 +99,20 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       _resolved = false;
       _cancelled = false;
 
-      if (widget.expectedCommand == ReactCommand.hold) {
-        _holdTimer?.cancel();
-        _holdTimer = Timer(_holdDuration, () {
-          if (!mounted ||
-              !widget.enabled ||
-              _resolved ||
-              _multiTouchSeen ||
-              _cancelled) {
-            return;
-          }
-          if (_pointers.containsKey(_primaryPointer) &&
-              _primaryDelta.distance <= _holdMovementTolerance) {
-            _holdSatisfied = true;
-          }
-        });
-      }
+      _holdTimer?.cancel();
+      _holdTimer = Timer(_holdDuration, () {
+        if (!mounted ||
+            !widget.enabled ||
+            _resolved ||
+            _multiTouchSeen ||
+            _cancelled) {
+          return;
+        }
+        if (_pointers.containsKey(_primaryPointer) &&
+            _primaryDelta.distance <= _holdMovementTolerance) {
+          _holdSatisfied = true;
+        }
+      });
       return;
     }
 
