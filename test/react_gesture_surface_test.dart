@@ -49,6 +49,18 @@ void main() {
     expect(commands, [ReactCommand.tap]);
   });
 
+  testWidgets('Dragged movement is not accepted as Tap', (tester) async {
+    final commands = await pumpSurface(tester, ReactCommand.tap);
+    final center = tester.getCenter(target());
+
+    final gesture = await tester.startGesture(center);
+    await gesture.moveBy(const Offset(28, 0));
+    await gesture.up();
+    await tester.pump();
+
+    expect(commands, [ReactCommand.swipeRight]);
+  });
+
   testWidgets('Long press is not accepted as Tap', (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.tap);
     final center = tester.getCenter(target());
