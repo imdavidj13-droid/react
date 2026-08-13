@@ -24,6 +24,7 @@ class ReactGestureSurface extends StatefulWidget {
 
 class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   static const _minimumSwipeDistance = 48.0;
+  static const _tapMovementTolerance = 18.0;
   static const _minimumPinchSpreadDelta = 18.0;
   static const _pinchRatio = 0.88;
   static const _spreadRatio = 1.12;
@@ -217,12 +218,12 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
     final dy = _primaryDelta.dy;
     final horizontal = dx.abs() >= dy.abs();
     final distance = horizontal ? dx.abs() : dy.abs();
+    final directionalCommand = horizontal
+        ? (dx < 0 ? ReactCommand.swipeLeft : ReactCommand.swipeRight)
+        : (dy < 0 ? ReactCommand.swipeUp : ReactCommand.swipeDown);
 
     if (distance >= _minimumSwipeDistance) {
-      final command = horizontal
-          ? (dx < 0 ? ReactCommand.swipeLeft : ReactCommand.swipeRight)
-          : (dy < 0 ? ReactCommand.swipeUp : ReactCommand.swipeDown);
-      _emit(command);
+      _emit(directionalCommand);
       _resetGestureState();
       return;
     }
@@ -240,6 +241,14 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
 
     if (pressDuration >= _holdDuration) {
       _emit(ReactCommand.hold);
+      _resetGestureState();
+      return;
+    }
+
+    if ((widget.expectedCommand == ReactCommand.tap ||
+            widget.expectedCommand == ReactCommand.doubleTap) &&
+        _primaryDelta.distance > _tapMovementTolerance) {
+      _emit(directionalCommand);
       _resetGestureState();
       return;
     }
