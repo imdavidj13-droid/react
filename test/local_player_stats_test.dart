@@ -159,7 +159,7 @@ void main() {
     expect(await LocalPlayerStats.recentRuns(), isEmpty);
   });
 
-  test('Daily attempt can be consumed before a result exists', () async {
+  test('Daily attempt can be marked before a result exists', () async {
     expect(await LocalPlayerStats.hasPlayedDailyToday(), isFalse);
 
     await LocalPlayerStats.markDailyAttemptStarted();
@@ -195,6 +195,39 @@ void main() {
 
     expect(await LocalPlayerStats.dailyStreak(), 1);
     expect(await LocalPlayerStats.bestFor(ReactGameMode.daily), 10);
+  });
+
+  test('Daily result keeps the launch date when a run crosses midnight', () async {
+    final now = DateTime.now();
+    final challengeDate = DateTime(now.year, now.month, now.day)
+        .subtract(const Duration(days: 1));
+    final challengeKey =
+        '${challengeDate.year.toString().padLeft(4, '0')}-'
+        '${challengeDate.month.toString().padLeft(2, '0')}-'
+        '${challengeDate.day.toString().padLeft(2, '0')}';
+    final modifier = DailyChallenge.forDate(challengeDate).modifier;
+
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'daily_active_challenge': challengeKey,
+      'daily_last_played': challengeKey,
+      'daily_streak': 1,
+    });
+
+    final newBest = await LocalPlayerStats.recordResult(
+      result(mode: ReactGameMode.daily, score: 17),
+    );
+    final history = await LocalPlayerStats.dailyHistoryLast7();
+    final entry = history.singleWhere((item) => item.dateKey == challengeKey);
+    final prefs = await SharedPreferences.getInstance();
+
+    expect(newBest, isTrue);
+    expect(entry.attempted, isTrue);
+    expect(entry.score, 17);
+    expect(entry.modifier, modifier);
+    expect(await LocalPlayerStats.dailyBestForModifier(modifier), 17);
+    expect(await LocalPlayerStats.dailyStreak(), 1);
+    expect(await LocalPlayerStats.hasPlayedDailyToday(), isFalse);
+    expect(prefs.getString('daily_active_challenge'), isNull);
   });
 
   test('Daily new-best state follows todays modifier record', () async {
@@ -266,6 +299,7 @@ void main() {
     await LocalPlayerStats.markDailyAttemptStarted();
 
     await LocalPlayerStats.resetProgress();
+    final prefs = await SharedPreferences.getInstance();
 
     expect(await LocalPlayerStats.bestFor(ReactGameMode.classic), 0);
     expect(await LocalPlayerStats.bestFor(ReactGameMode.blitz), 0);
@@ -276,5 +310,6 @@ void main() {
     expect(await LocalPlayerStats.recentRuns(), isEmpty);
     expect(await LocalPlayerStats.dailyStreak(), 0);
     expect(await LocalPlayerStats.hasPlayedDailyToday(), isFalse);
+    expect(prefs.getString('daily_active_challenge'), isNull);
   });
 }
