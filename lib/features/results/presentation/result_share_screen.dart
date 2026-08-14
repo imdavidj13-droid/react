@@ -5,7 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/react_colors.dart';
-import '../../gameplay/domain/react_command.dart';
+import '../../daily/domain/daily_challenge.dart';
 import '../../gameplay/domain/react_run_result.dart';
 
 class ResultShareScreen extends StatefulWidget {
@@ -58,6 +58,7 @@ class _ResultShareScreenState extends State<ResultShareScreen> {
             'react-${widget.result.mode.name.toLowerCase()}-result.png',
           ],
           title: 'Share RE△CT result',
+          text: _shareText(widget.result),
           sharePositionOrigin: origin,
         ),
       );
@@ -114,7 +115,7 @@ class _ResultShareScreenState extends State<ResultShareScreen> {
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                'PREVIEW • THE CARD BELOW IS THE IMAGE THAT WILL BE SHARED',
+                'PREVIEW • THIS CARD WILL BE SHARED AS AN IMAGE',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: ReactColors.textSecondary,
@@ -128,11 +129,9 @@ class _ResultShareScreenState extends State<ResultShareScreen> {
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  return SingleChildScrollView(
+                  return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: SizedBox(
-                      width: constraints.maxWidth,
-                      height: constraints.maxHeight,
+                    child: Center(
                       child: FittedBox(
                         fit: BoxFit.contain,
                         child: RepaintBoundary(
@@ -204,14 +203,8 @@ class _ShareCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _modeColor(result.mode);
     final isPassIt = result.mode == ReactGameMode.passIt;
-    final scoreLabel = isPassIt ? 'COMMANDS CLEARED' : 'FINAL SCORE';
-    final outcomeDetail = switch (result.outcome) {
-      ReactRunOutcome.missedCommand => result.failedCommand?.title ?? 'MISSED COMMAND',
-      ReactRunOutcome.timeUp => '60 SECOND RUN COMPLETE',
-      ReactRunOutcome.completed => 'ALL ${result.successfulCommands} COMMANDS CLEARED',
-      ReactRunOutcome.winner => 'PLAYER ${result.winnerPlayer ?? '-'} WINS',
-      ReactRunOutcome.quit => 'RUN ENDED',
-    };
+    final isDaily = result.mode == ReactGameMode.daily;
+    final daily = isDaily ? DailyChallenge.today() : null;
 
     return SizedBox(
       width: 360,
@@ -222,9 +215,9 @@ class _ShareCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF03070D),
-              Color(0xFF081525),
-              Color(0xFF040810),
+              Color(0xFF02060C),
+              Color(0xFF071628),
+              Color(0xFF030811),
             ],
           ),
           borderRadius: BorderRadius.circular(30),
@@ -234,38 +227,23 @@ class _ShareCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(29),
           child: Stack(
             children: [
-              Positioned(
-                top: -72,
-                right: -58,
-                child: Container(
-                  width: 190,
-                  height: 190,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        color.withValues(alpha: .18),
-                        color.withValues(alpha: 0),
-                      ],
-                    ),
-                  ),
-                ),
+              _GlowOrb(
+                top: -70,
+                right: -60,
+                size: 200,
+                color: color,
+                opacity: .18,
               ),
-              Positioned(
-                bottom: -95,
-                left: -70,
-                child: Container(
-                  width: 220,
-                  height: 220,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        ReactColors.purple.withValues(alpha: .12),
-                        ReactColors.purple.withValues(alpha: 0),
-                      ],
-                    ),
-                  ),
+              const _GlowOrb(
+                bottom: -100,
+                left: -75,
+                size: 230,
+                color: ReactColors.purple,
+                opacity: .12,
+              ),
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(painter: _ShareGridPainter(color: color)),
                 ),
               ),
               Padding(
@@ -273,60 +251,20 @@ class _ShareCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Text(
-                          'RE△CT',
-                          style: TextStyle(
-                            color: ReactColors.textPrimary,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 3,
-                          ),
-                        ),
-                        const Spacer(),
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 11,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: .09),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: color.withValues(alpha: .55),
-                              ),
-                            ),
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                result.mode.label,
-                                style: TextStyle(
-                                  color: color,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
+                    _CardHeader(mode: result.mode, color: color),
+                    const SizedBox(height: 19),
                     Text(
-                      result.outcomeLabel,
+                      _heroEyebrow(result),
                       style: TextStyle(
                         color: color,
-                        fontSize: 10,
+                        fontSize: 9,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 2,
+                        letterSpacing: 1.9,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 4),
                     Text(
-                      scoreLabel,
+                      isPassIt ? 'COMMANDS CLEARED' : 'FINAL SCORE',
                       style: const TextStyle(
                         color: ReactColors.textSecondary,
                         fontSize: 8,
@@ -339,149 +277,32 @@ class _ShareCard extends StatelessWidget {
                       style: const TextStyle(
                         color: ReactColors.lime,
                         fontSize: 78,
-                        height: .95,
+                        height: .93,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -3,
                       ),
                     ),
                     if (newBest && !isPassIt) ...[
                       const SizedBox(height: 7),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: ReactColors.lime.withValues(alpha: .08),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: ReactColors.lime.withValues(alpha: .48),
-                          ),
-                        ),
-                        child: const Text(
-                          'NEW PERSONAL BEST',
-                          style: TextStyle(
-                            color: ReactColors.lime,
-                            fontSize: 7.5,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1,
-                          ),
-                        ),
+                      _Badge(
+                        label: isDaily ? 'NEW MODIFIER BEST' : 'NEW PERSONAL BEST',
+                        color: ReactColors.lime,
+                        icon: Icons.workspace_premium_rounded,
                       ),
                     ],
                     const Spacer(),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _ShareMetric(
-                            label: 'CLEARS',
-                            value: '${result.successfulCommands}',
-                            color: ReactColors.electricBlueBright,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _ShareMetric(
-                            label: 'MISSES',
-                            value: '${result.misses}',
-                            color: ReactColors.coral,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _ShareMetric(
-                            label: 'AVG',
-                            value: result.averageTimeSeconds == 0
-                                ? '--'
-                                : '${result.averageTimeSeconds.toStringAsFixed(2)}s',
-                            color: ReactColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 13,
-                        vertical: 11,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xAA07111D),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: color.withValues(alpha: .32)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            result.outcome == ReactRunOutcome.winner
-                                ? Icons.emoji_events_rounded
-                                : Icons.bolt_rounded,
-                            color: color,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 9),
-                          Expanded(
-                            child: Text(
-                              outcomeDetail,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: ReactColors.textPrimary,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: .6,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    if (daily != null) ...[
+                      _DailySummary(challenge: daily, color: color),
+                      const SizedBox(height: 10),
+                    ] else if (isPassIt) ...[
+                      _PassItSummary(result: result, color: color),
+                      const SizedBox(height: 10),
+                    ],
+                    _MetricsRow(result: result),
+                    const SizedBox(height: 11),
+                    _OutcomeStrip(result: result, color: color),
                     const SizedBox(height: 13),
-                    Row(
-                      children: [
-                        Container(
-                          width: 5,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 7),
-                        const Expanded(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              'REACTION • REFLEX • SPEED',
-                              style: TextStyle(
-                                color: ReactColors.textSecondary,
-                                fontSize: 7,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              'CAN YOU BEAT IT?',
-                              style: TextStyle(
-                                color: ReactColors.textPrimary,
-                                fontSize: 7,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: .8,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    _CardFooter(color: color),
                   ],
                 ),
               ),
@@ -493,8 +314,203 @@ class _ShareCard extends StatelessWidget {
   }
 }
 
-class _ShareMetric extends StatelessWidget {
-  const _ShareMetric({
+class _CardHeader extends StatelessWidget {
+  const _CardHeader({required this.mode, required this.color});
+
+  final ReactGameMode mode;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Text(
+          'RE△CT',
+          style: TextStyle(
+            color: ReactColors.textPrimary,
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 3,
+          ),
+        ),
+        const Spacer(),
+        _Badge(label: mode.label, color: color),
+      ],
+    );
+  }
+}
+
+class _DailySummary extends StatelessWidget {
+  const _DailySummary({required this.challenge, required this.color});
+
+  final DailyChallenge challenge;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return _InfoStrip(
+      icon: Icons.calendar_today_rounded,
+      color: color,
+      title: challenge.modifier.label,
+      subtitle: '${challenge.dateLabel}  •  ${challenge.modifier.shortRule}',
+    );
+  }
+}
+
+class _PassItSummary extends StatelessWidget {
+  const _PassItSummary({required this.result, required this.color});
+
+  final ReactRunResult result;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final lives = result.playerLives ?? const <int>[];
+    final lifeSummary = lives.isEmpty
+        ? 'LOCAL MULTIPLAYER'
+        : [
+            for (var index = 0; index < lives.length; index++)
+              'P${index + 1} ${lives[index]}♥',
+          ].join('  •  ');
+
+    return _InfoStrip(
+      icon: Icons.emoji_events_rounded,
+      color: color,
+      title: result.winnerPlayer == null
+          ? 'PASS IT COMPLETE'
+          : 'PLAYER ${result.winnerPlayer} WINS',
+      subtitle: lifeSummary,
+    );
+  }
+}
+
+class _MetricsRow extends StatelessWidget {
+  const _MetricsRow({required this.result});
+
+  final ReactRunResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _Metric(
+            label: 'CLEARS',
+            value: '${result.successfulCommands}',
+            color: ReactColors.electricBlueBright,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _Metric(
+            label: 'MISSES',
+            value: '${result.misses}',
+            color: ReactColors.coral,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _Metric(
+            label: 'AVG',
+            value: result.averageTimeSeconds == 0
+                ? '--'
+                : '${result.averageTimeSeconds.toStringAsFixed(2)}s',
+            color: ReactColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OutcomeStrip extends StatelessWidget {
+  const _OutcomeStrip({required this.result, required this.color});
+
+  final ReactRunResult result;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return _InfoStrip(
+      icon: switch (result.outcome) {
+        ReactRunOutcome.winner || ReactRunOutcome.completed =>
+          Icons.emoji_events_rounded,
+        ReactRunOutcome.timeUp => Icons.timer_rounded,
+        ReactRunOutcome.missedCommand => Icons.bolt_rounded,
+        ReactRunOutcome.quit => Icons.stop_circle_outlined,
+      },
+      color: color,
+      title: result.outcomeLabel,
+      subtitle: _outcomeDetail(result),
+    );
+  }
+}
+
+class _InfoStrip extends StatelessWidget {
+  const _InfoStrip({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xC007111D),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: color.withValues(alpha: .30)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 17),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .7,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 6.3,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: .35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Metric extends StatelessWidget {
+  const _Metric({
     required this.label,
     required this.value,
     required this.color,
@@ -507,32 +523,33 @@ class _ShareMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 62,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+      height: 58,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xAA07111D),
+        color: const Color(0xC007111D),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: color.withValues(alpha: .22)),
+        border: Border.all(color: color.withValues(alpha: .20)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           FittedBox(
+            fit: BoxFit.scaleDown,
             child: Text(
               value,
               style: TextStyle(
                 color: color,
-                fontSize: 17,
+                fontSize: 16,
                 fontWeight: FontWeight.w900,
               ),
             ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 2),
           Text(
             label,
             style: const TextStyle(
               color: ReactColors.textSecondary,
-              fontSize: 6.5,
+              fontSize: 6.3,
               fontWeight: FontWeight.w900,
               letterSpacing: .8,
             ),
@@ -541,6 +558,182 @@ class _ShareMetric extends StatelessWidget {
       ),
     );
   }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.label, required this.color, this.icon});
+
+  final String label;
+  final Color color;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .09),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: .50)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, color: color, size: 12),
+            const SizedBox(width: 5),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 7.2,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CardFooter extends StatelessWidget {
+  const _CardFooter({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 5,
+          height: 5,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 7),
+        const Expanded(
+          child: Text(
+            'REACTION • REFLEX • SPEED',
+            style: TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 6.8,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .9,
+            ),
+          ),
+        ),
+        const Text(
+          'CAN YOU BEAT IT?',
+          style: TextStyle(
+            color: ReactColors.textPrimary,
+            fontSize: 6.8,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .7,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GlowOrb extends StatelessWidget {
+  const _GlowOrb({
+    this.top,
+    this.right,
+    this.bottom,
+    this.left,
+    required this.size,
+    required this.color,
+    required this.opacity,
+  });
+
+  final double? top;
+  final double? right;
+  final double? bottom;
+  final double? left;
+  final double size;
+  final Color color;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: top,
+      right: right,
+      bottom: bottom,
+      left: left,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              color.withValues(alpha: opacity),
+              color.withValues(alpha: 0),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShareGridPainter extends CustomPainter {
+  const _ShareGridPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: .035)
+      ..strokeWidth = .6;
+
+    const gap = 28.0;
+    for (var x = 0.0; x <= size.width; x += gap) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (var y = 0.0; y <= size.height; y += gap) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ShareGridPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+String _heroEyebrow(ReactRunResult result) {
+  if (result.mode == ReactGameMode.passIt && result.winnerPlayer != null) {
+    return 'PLAYER ${result.winnerPlayer} WINS';
+  }
+  return result.outcomeLabel;
+}
+
+String _outcomeDetail(ReactRunResult result) => switch (result.outcome) {
+      ReactRunOutcome.missedCommand =>
+        result.failedCommand?.title ?? 'MISSED COMMAND',
+      ReactRunOutcome.timeUp => '60 SECOND RUN COMPLETE',
+      ReactRunOutcome.completed =>
+        'ALL ${result.successfulCommands} COMMANDS CLEARED',
+      ReactRunOutcome.winner => 'LAST PLAYER STANDING',
+      ReactRunOutcome.quit => 'RUN ENDED',
+    };
+
+String _shareText(ReactRunResult result) {
+  if (result.mode == ReactGameMode.passIt && result.winnerPlayer != null) {
+    return 'RE△CT PASS IT — Player ${result.winnerPlayer} wins with '
+        '${result.successfulCommands} commands cleared.';
+  }
+  if (result.mode == ReactGameMode.daily) {
+    final daily = DailyChallenge.today();
+    return 'RE△CT DAILY ${daily.modifier.label} — ${result.score}/$dailyTarget. '
+        'Can you beat it?';
+  }
+  return 'RE△CT ${result.mode.label} — ${result.score} points. Can you beat it?';
 }
 
 Color _modeColor(ReactGameMode mode) => switch (mode) {
