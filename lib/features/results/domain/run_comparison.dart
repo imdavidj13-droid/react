@@ -17,9 +17,19 @@ class RunComparison {
 
   static RunComparison? againstPrevious(
     ReactRunResult current,
-    ReactRunHistoryEntry? previous,
-  ) {
+    ReactRunHistoryEntry? previous, {
+    DateTime? now,
+  }) {
     if (previous == null || previous.mode != current.mode) return null;
+
+    if (current.mode == ReactGameMode.daily) {
+      final currentDay = now ?? DateTime.now();
+      final previousDay = previous.playedAt;
+      final sameDay = currentDay.year == previousDay.year &&
+          currentDay.month == previousDay.month &&
+          currentDay.day == previousDay.day;
+      if (!sameDay) return null;
+    }
 
     final canCompareReaction = current.averageTimeSeconds > 0 &&
         previous.averageTimeSeconds > 0;
