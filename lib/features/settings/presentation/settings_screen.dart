@@ -5,6 +5,7 @@ import '../../../core/theme/react_colors.dart';
 import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import 'command_performance_screen.dart';
+import 'milestones_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -41,6 +42,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       MaterialPageRoute<void>(
         builder: (_) => const CommandPerformanceScreen(),
       ),
+    );
+    if (!mounted) return;
+    setState(() => _stats = _ProfileStats.load());
+  }
+
+  Future<void> _openMilestones() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const MilestonesScreen()),
     );
     if (!mounted) return;
     setState(() => _stats = _ProfileStats.load());
@@ -111,6 +120,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: 'Accuracy, misses and reaction time for every gesture.',
                 color: ReactColors.lime,
                 onTap: _openCommandPerformance,
+              ),
+              const SizedBox(height: 10),
+              _ActionTile(
+                icon: Icons.workspace_premium_outlined,
+                title: 'MILESTONES',
+                subtitle: 'Track meaningful local records across every mode.',
+                color: ReactColors.purple,
+                onTap: _openMilestones,
               ),
               const SizedBox(height: 18),
               const _SectionLabel('GAME SETTINGS'),
