@@ -36,6 +36,30 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Share card shows multiple earned performance medals',
+      (tester) async {
+    const result = ReactRunResult(
+      mode: ReactGameMode.endless,
+      score: 28,
+      successfulCommands: 28,
+      averageTimeSeconds: .61,
+      outcome: ReactRunOutcome.missedCommand,
+      misses: 0,
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ResultShareScreen(result: result, newBest: false),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('PERFECT RUN'), findsOneWidget);
+    expect(find.text('LIGHTNING'), findsOneWidget);
+    expect(find.text('SURVIVOR'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Daily share card identifies today modifier', (tester) async {
     final challenge = DailyChallenge.today();
     const result = ReactRunResult(
@@ -60,7 +84,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Pass It share card shows winner and remaining lives',
+  testWidgets('Pass It share card shows winner, lives, and clutch medal',
       (tester) async {
     const result = ReactRunResult(
       mode: ReactGameMode.passIt,
@@ -82,6 +106,7 @@ void main() {
 
     expect(find.text('PLAYER 2 WINS'), findsWidgets);
     expect(find.text('P1 0♥  •  P2 1♥  •  P3 0♥'), findsOneWidget);
+    expect(find.text('CLUTCH'), findsOneWidget);
     expect(find.text('NEW PERSONAL BEST'), findsNothing);
     expect(tester.takeException(), isNull);
   });
