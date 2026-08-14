@@ -45,6 +45,12 @@ class LocalPlayerStats {
     return prefs.getInt(_dailyModifierBestKey(modifier)) ?? 0;
   }
 
+  static Future<int> dailyBestToday() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = _normalizedToday();
+    return _decodeDailyHistory(prefs)[_dateKey(today)]?.score ?? 0;
+  }
+
   static Future<int> runsPlayed() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_runsKey) ?? 0;
