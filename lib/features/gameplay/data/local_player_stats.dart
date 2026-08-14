@@ -28,6 +28,7 @@ class LocalPlayerStats {
 
   static const _runsKey = 'runs_played';
   static const _dailyLastPlayedKey = 'daily_last_played';
+  static const _dailyActiveChallengeKey = 'daily_active_challenge';
   static const _dailyStreakKey = 'daily_streak';
   static const _historyKey = 'recent_run_history';
   static const _dailyHistoryKey = 'daily_history';
@@ -173,9 +174,10 @@ class LocalPlayerStats {
 
   static Future<void> markDailyAttemptStarted() async {
     final prefs = await SharedPreferences.getInstance();
-    await _recordDaily(prefs);
-
     final today = _normalizedToday();
+    await prefs.setString(_dailyActiveChallengeKey, _dateKey(today));
+    await _recordDaily(prefs, date: today);
+
     final existing = _decodeDailyHistory(prefs)[_dateKey(today)];
     if (existing?.score != null || existing?.outcome != null) return;
 
@@ -248,9 +250,10 @@ class LocalPlayerStats {
     await _recordHistory(prefs, result);
 
     if (result.mode == ReactGameMode.daily) {
-      await _recordDaily(prefs);
-      final today = _normalizedToday();
-      final modifier = DailyChallenge.forDate(today).modifier;
+      final challengeDate =
+          _activeDailyChallengeDate(prefs) ?? _normalizedToday();
+      await _recordDaily(prefs, date: challengeDate);
+      final modifier = DailyChallenge.forDate(challengeDate).modifier;
       final currentModifierBest =
           prefs.getInt(_dailyModifierBestKey(modifier)) ?? 0;
       final isNewModifierBest = result.score > currentModifierBest;
@@ -258,18 +261,18 @@ class LocalPlayerStats {
         await prefs.setInt(_dailyModifierBestKey(modifier), result.score);
       }
       // Daily rules have intentionally different difficulty. For Results,
-      // "NEW BEST" therefore means a new record for today's modifier rather
-      // than a cross-modifier score that may not be directly comparable.
+      // "NEW BEST" therefore means a new record for the challenge modifier
+      // rather than a cross-modifier score that may not be directly comparable.
       isNewBest = isNewModifierBest;
 
-      final existing = _decodeDailyHistory(prefs)[_dateKey(today)];
+      final existing = _decodeDailyHistory(prefs)[_dateKey(challengeDate)];
       final shouldReplaceDailyHistory =
           existing?.score == null || result.score > existing!.score!;
       if (shouldReplaceDailyHistory) {
         await _upsertDailyHistory(
           prefs,
           DailyHistoryEntry(
-            date: today,
+            date: challengeDate,
             modifier: modifier,
             attempted: true,
             score: result.score,
@@ -277,6 +280,7 @@ class LocalPlayerStats {
           ),
         );
       }
+      await prefs.remove(_dailyActiveChallengeKey);
     }
 
     return isNewBest;
@@ -302,6 +306,7 @@ class LocalPlayerStats {
 
     await prefs.remove(_runsKey);
     await prefs.remove(_dailyLastPlayedKey);
+    await prefs.remove(_dailyActiveChallengeKey);
     await prefs.remove(_dailyStreakKey);
     await prefs.remove(_historyKey);
     await prefs.remove(_dailyHistoryKey);
@@ -347,19 +352,31 @@ class LocalPlayerStats {
     );
   }
 
-  static Future<void> _recordDaily(SharedPreferences prefs) async {
-    final today = DateTime.now();
-    final todayKey = _dateKey(today);
+  static Future<void> _recordDaily(
+    SharedPreferences prefs, {
+    DateTime? date,
+  }) async {
+    final source = date ?? DateTime.now();
+    final day = DateTime(source.year, source.month, source.day);
+    final dayKey = _dateKey(day);
     final previous = prefs.getString(_dailyLastPlayedKey);
 
-    if (previous == todayKey) return;
+    if (previous == dayKey) return;
 
-    final yesterdayKey = _dateKey(today.subtract(const Duration(days: 1)));
+    final yesterdayKey = _dateKey(day.subtract(const Duration(days: 1)));
     final currentStreak = prefs.getInt(_dailyStreakKey) ?? 0;
     final nextStreak = previous == yesterdayKey ? currentStreak + 1 : 1;
 
-    await prefs.setString(_dailyLastPlayedKey, todayKey);
+    await prefs.setString(_dailyLastPlayedKey, dayKey);
     await prefs.setInt(_dailyStreakKey, nextStreak);
+  }
+
+  static DateTime? _activeDailyChallengeDate(SharedPreferences prefs) {
+    final raw = prefs.getString(_dailyActiveChallengeKey);
+    if (raw == null) return null;
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return null;
+    return DateTime(parsed.year, parsed.month, parsed.day);
   }
 
   static DateTime _normalizedToday() {
