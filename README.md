@@ -9,7 +9,7 @@ The project now includes playable implementations for:
 - Classic — three lives with a gradually increasing pace
 - Blitz — 60-second score attack with a time penalty for misses
 - Endless — one miss ends the run, with an aggressive speed and visual-intensity ramp
-- Daily — deterministic 60-command challenge with one attempt per day and one of seven gameplay modifiers
+- Daily — deterministic 60-command challenge with unlimited retries each day and one of seven gameplay modifiers
 - Pass It — 2–4 player local multiplayer where the current player keeps clearing commands until a miss costs one life and hands the phone to the next living player; last player standing wins
 
 Daily uses a deterministic Monday-to-Sunday deck so all seven modifiers appear exactly once per calendar week in a shuffled order:
@@ -22,7 +22,9 @@ Daily uses a deterministic Monday-to-Sunday deck so all seven modifiers appear e
 - Chain — almost no transition gap between commands
 - Redline — every tenth command gets a sharply reduced reaction window
 
-Debug builds expose a Daily developer tester so each modifier can be launched repeatedly without consuming the real Daily attempt. The tester is not included in release UI.
+Every retry on the same calendar day keeps the same fixed challenge seed and modifier. Daily history keeps the strongest score for that day, streak progress advances at most once per calendar day, Results comparisons only compare against another run from the same day, and Daily new-best feedback is based on the active modifier rather than an unrelated Daily rule.
+
+Debug builds expose a Daily developer tester so each modifier can be launched repeatedly without changing normal Daily history, streaks or records. The tester is not exposed in release UI.
 
 The active command pool is:
 
@@ -56,18 +58,21 @@ Until the online backend is introduced, SharedPreferences stores:
 - Average reaction-time aggregates
 - Per-command attempts, successes, misses and successful reaction-time totals
 - Recent run history
-- Daily attempt state and streak
-- Rolling seven-day Daily history with modifier, score and outcome
+- Daily played-today state and streak
+- Rolling Daily history with modifier, strongest score and outcome for each day
+- Per-modifier Daily best scores
 - Pass It player-count preference
 - Sound preference
 - Visual-effects preference
 - Debug-only Daily modifier override preference
 
-The Profile screen exposes a Command Performance view with accuracy and average successful reaction time for every active command. The Daily screen shows a rolling seven-day modifier/result strip. No fake global ranks or online statistics are shown in the current offline build.
+The Profile screen exposes Command Performance and Milestones views. Command Performance shows accuracy and average successful reaction time for every active command. Milestones are calculated entirely from real local records such as commands cleared, mode bests, Daily streaks and completed Pass It matches; there is no XP, level or currency system. The Daily screen shows a rolling seven-day modifier/result strip. No fake global ranks or online statistics are shown in the current offline build.
 
 ## Settings
 
-The Profile / Settings screen exposes local records plus persisted Sound and Visual Effects toggles. Visual Effects directly control Flame rendering. The sound controller is centralized and ready for final audio assets, but placeholder sound effects are intentionally not bundled.
+The Profile / Settings screen exposes local records plus persisted Sound and Visual Effects toggles. Visual Effects directly control Flame rendering. The sound controller is centralized and currently uses temporary platform system sounds so gameplay cues can be tested before the final sound pack is chosen.
+
+Reset Local Progress clears scores, run aggregates, command performance, recent history, Daily history/streaks and modifier records while preserving game settings.
 
 ## Visual direction
 
