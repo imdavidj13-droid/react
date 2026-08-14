@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Correct patch targets
+        run: python3 tool/fix_polish_patcher.py
+
       - name: Apply exact polish patch
         run: python3 tool/apply_polish_batch.py
 
@@ -39,7 +42,7 @@ jobs:
 
       - name: Commit verified batch
         run: |
-          rm -f .github/react-polish-trigger tool/apply_polish_batch.py
+          rm -f .github/react-polish-trigger tool/apply_polish_batch.py tool/fix_polish_patcher.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
