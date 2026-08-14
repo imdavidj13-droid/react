@@ -34,8 +34,21 @@ jobs:
       - name: Apply Daily share post-patch
         run: python3 tool/post_polish_patch.py
 
-      - name: Format
-        run: dart format lib test
+      - name: Format touched files
+        run: |
+          dart format \
+            lib/features/gameplay/data/local_player_stats.dart \
+            lib/features/gameplay/domain/react_run_history_entry.dart \
+            lib/features/gameplay/domain/react_run_result.dart \
+            lib/features/gameplay/presentation/react_run_screen.dart \
+            lib/features/daily/presentation/daily_run_screen.dart \
+            lib/features/daily/presentation/daily_screen.dart \
+            lib/features/results/presentation/results_screen.dart \
+            lib/features/results/presentation/result_share_screen.dart \
+            lib/features/leaderboard/presentation/leaderboard_screen.dart \
+            lib/features/leaderboard/presentation/personal_records_screen.dart \
+            lib/features/settings/presentation/milestones_screen.dart \
+            test/polish_batch_test.dart
 
       - name: Analyze
         run: flutter analyze
