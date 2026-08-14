@@ -8,6 +8,8 @@ void main() {
     ReactSettings.soundEnabled = true;
     ReactSettings.visualEffectsEnabled = true;
     ReactSettings.passItPlayerCount = 3;
+    ReactSettings.dailyDevOverrideEnabled = false;
+    ReactSettings.dailyDevModifier = 'lightsOut';
   });
 
   test('settings default to enabled with three Pass It players', () async {
@@ -16,6 +18,8 @@ void main() {
     expect(ReactSettings.soundEnabled, isTrue);
     expect(ReactSettings.visualEffectsEnabled, isTrue);
     expect(ReactSettings.passItPlayerCount, 3);
+    expect(ReactSettings.dailyDevOverrideEnabled, isFalse);
+    expect(ReactSettings.dailyDevModifier, 'lightsOut');
   });
 
   test('sound preference persists', () async {
@@ -51,5 +55,34 @@ void main() {
 
     await ReactSettings.setPassItPlayerCount(0);
     expect(ReactSettings.passItPlayerCount, 2);
+  });
+
+  test('Daily developer override persists', () async {
+    await ReactSettings.setDailyDevOverrideEnabled(true);
+    await ReactSettings.setDailyDevModifier('redline');
+
+    ReactSettings.dailyDevOverrideEnabled = false;
+    ReactSettings.dailyDevModifier = 'lightsOut';
+    await ReactSettings.load();
+
+    expect(ReactSettings.dailyDevOverrideEnabled, isTrue);
+    expect(ReactSettings.dailyDevModifier, 'redline');
+  });
+
+  test('Daily developer modifier accepts every modifier name', () async {
+    const names = [
+      'lightsOut',
+      'surge',
+      'noClock',
+      'echo',
+      'reverse',
+      'chain',
+      'redline',
+    ];
+
+    for (final name in names) {
+      await ReactSettings.setDailyDevModifier(name);
+      expect(ReactSettings.dailyDevModifier, name);
+    }
   });
 }

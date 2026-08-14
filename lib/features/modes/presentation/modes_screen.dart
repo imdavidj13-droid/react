@@ -38,7 +38,7 @@ class ModesScreen extends StatelessWidget {
                   _ModePanel(
                     title: 'CLASSIC',
                     subtitle: 'Survive as long as you can.',
-                    detail: '9 COMMANDS  •  RANDOM ORDER',
+                    detail: '3 LIVES  •  SPEED RAMPS',
                     icon: Icons.bolt_rounded,
                     color: ReactColors.electricBlueBright,
                     badge: 'CORE MODE',
@@ -77,8 +77,8 @@ class ModesScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   _ModePanel(
                     title: 'DAILY',
-                    subtitle: 'One deterministic challenge each day.',
-                    detail: '1 LOCAL ATTEMPT  •  20 COMMANDS',
+                    subtitle: 'A different rule every day.',
+                    detail: '60 COMMANDS  •  7 ROTATING MODIFIERS',
                     icon: Icons.calendar_month_rounded,
                     color: ReactColors.lime,
                     badge: 'DAILY RUN',
@@ -98,7 +98,7 @@ class ModesScreen extends StatelessWidget {
                   _ModePanel(
                     title: 'PROFILE',
                     subtitle: 'Local stats and game preferences.',
-                    detail: 'SOUND  •  VISUAL EFFECTS  •  RECORDS',
+                    detail: 'PERFORMANCE  •  VISUAL EFFECTS  •  RECORDS',
                     icon: Icons.person_outline_rounded,
                     color: ReactColors.electricBlueBright,
                     badge: 'SETTINGS',

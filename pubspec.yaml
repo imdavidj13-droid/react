@@ -4,7 +4,7 @@ publish_to: "none"
 version: 0.1.0+1
 
 environment:
-  sdk: ">=3.9.0 <4.0.0"
+  sdk: ">=3.10.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -12,6 +12,7 @@ dependencies:
   flame: ^1.32.0
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.3
+  share_plus: ^13.3.0
 
 dev_dependencies:
   flutter_test:

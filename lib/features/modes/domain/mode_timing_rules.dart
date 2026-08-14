@@ -75,7 +75,7 @@ abstract final class ReactModeTiming {
 
   static const endless = ModeTimingRules(
     startCommandMs: 2000,
-    minimumCommandMs: 800,
+    minimumCommandMs: 900,
     commandSpeedStepMs: 100,
     commandSpeedStepEveryPoints: 2,
     startSuccessDelayMs: 300,
@@ -85,15 +85,17 @@ abstract final class ReactModeTiming {
     missDelayMs: 0,
   );
 
+  // Daily spans sixty commands. The base pace tightens steadily for the whole
+  // challenge while the selected Daily modifier provides the main rule twist.
   static const daily = ModeTimingRules(
-    startCommandMs: 1900,
-    minimumCommandMs: 1900,
-    commandSpeedStepMs: 0,
-    commandSpeedStepEveryPoints: 0,
-    startSuccessDelayMs: 420,
-    minimumSuccessDelayMs: 420,
-    successDelayStepMs: 0,
-    successDelayStepEveryPoints: 0,
+    startCommandMs: 1850,
+    minimumCommandMs: 950,
+    commandSpeedStepMs: 75,
+    commandSpeedStepEveryPoints: 5,
+    startSuccessDelayMs: 360,
+    minimumSuccessDelayMs: 120,
+    successDelayStepMs: 20,
+    successDelayStepEveryPoints: 5,
     missDelayMs: 0,
   );
 

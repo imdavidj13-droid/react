@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
-import '../../modes/presentation/mode_run_screen.dart';
+import '../../gameplay/presentation/react_run_launch_screen.dart';
 
 class EndlessScreen extends StatefulWidget {
   const EndlessScreen({super.key});
@@ -26,12 +26,14 @@ class _EndlessScreenState extends State<EndlessScreen> {
     if (mounted) setState(() => _best = best);
   }
 
-  void _start(BuildContext context) {
-    Navigator.of(context).push(
+  Future<void> _start(BuildContext context) async {
+    await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => const ModeRunScreen(mode: ReactRunMode.endless),
+        builder: (_) => const ReactRunLaunchScreen(mode: ReactGameMode.endless),
       ),
     );
+    if (!mounted) return;
+    await _loadBest();
   }
 
   @override

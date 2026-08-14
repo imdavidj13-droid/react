@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 enum ReactCommand {
@@ -27,7 +29,7 @@ extension ReactCommandUi on ReactCommand {
 
   String get hint => switch (this) {
         ReactCommand.tap => 'TAP ONCE',
-        ReactCommand.doubleTap => 'TAP TWICE QUICKLY',
+        ReactCommand.doubleTap => 'TAP TWICE',
         ReactCommand.hold => 'PRESS AND HOLD',
         ReactCommand.swipeLeft => 'SWIPE TO THE LEFT',
         ReactCommand.swipeRight => 'SWIPE TO THE RIGHT',
@@ -48,4 +50,29 @@ extension ReactCommandUi on ReactCommand {
         ReactCommand.pinch => Icons.close_fullscreen_rounded,
         ReactCommand.spread => Icons.open_in_full_rounded,
       };
+
+  double get timingMultiplier => switch (this) {
+        ReactCommand.tap => 1.0,
+        ReactCommand.doubleTap => 1.10,
+        ReactCommand.hold => 1.22,
+        ReactCommand.swipeLeft ||
+        ReactCommand.swipeRight ||
+        ReactCommand.swipeUp ||
+        ReactCommand.swipeDown => 1.0,
+        ReactCommand.pinch || ReactCommand.spread => 1.18,
+      };
+
+  int get minimumReactionWindowMs => switch (this) {
+        ReactCommand.tap => 650,
+        ReactCommand.doubleTap => 900,
+        ReactCommand.hold => 1000,
+        ReactCommand.swipeLeft ||
+        ReactCommand.swipeRight ||
+        ReactCommand.swipeUp ||
+        ReactCommand.swipeDown => 750,
+        ReactCommand.pinch || ReactCommand.spread => 1050,
+      };
+
+  int reactionWindowMs(int baseMs) =>
+      max(minimumReactionWindowMs, (baseMs * timingMultiplier).round());
 }
