@@ -14,6 +14,22 @@ class PersonalRecordsScreen extends StatelessWidget {
       modifierRecords[modifier.label] =
           await LocalPlayerStats.dailyBestForModifier(modifier);
     }
+
+    final soloAverages = <double>[
+      await LocalPlayerStats.averageReactionSecondsFor(ReactGameMode.classic),
+      await LocalPlayerStats.averageReactionSecondsFor(ReactGameMode.blitz),
+      await LocalPlayerStats.averageReactionSecondsFor(ReactGameMode.endless),
+      await LocalPlayerStats.averageReactionSecondsFor(ReactGameMode.daily),
+    ].where((value) => value > 0).toList(growable: false);
+
+    var fastestAverageReaction = 0.0;
+    if (soloAverages.isNotEmpty) {
+      fastestAverageReaction = soloAverages.first;
+      for (final value in soloAverages.skip(1)) {
+        if (value < fastestAverageReaction) fastestAverageReaction = value;
+      }
+    }
+
     return _RecordData(
       classic: await LocalPlayerStats.bestFor(ReactGameMode.classic),
       blitz: await LocalPlayerStats.bestFor(ReactGameMode.blitz),
@@ -21,6 +37,7 @@ class PersonalRecordsScreen extends StatelessWidget {
       todayDaily: await LocalPlayerStats.dailyBestToday(),
       dailyStreak: await LocalPlayerStats.dailyStreak(),
       bestCommandStreak: await LocalPlayerStats.bestCommandStreak(),
+      fastestAverageReaction: fastestAverageReaction,
       modifierRecords: modifierRecords,
     );
   }
@@ -93,14 +110,17 @@ class _RecordData {
     this.todayDaily = 0,
     this.dailyStreak = 0,
     this.bestCommandStreak = 0,
+    this.fastestAverageReaction = 0,
     this.modifierRecords = const <String, int>{},
   });
+
   final int classic;
   final int blitz;
   final int endless;
   final int todayDaily;
   final int dailyStreak;
   final int bestCommandStreak;
+  final double fastestAverageReaction;
   final Map<String, int> modifierRecords;
 }
 
@@ -122,6 +142,13 @@ class _RecordGrid extends StatelessWidget {
       _RecordCard('ENDLESS', '${data.endless}', ReactColors.lime),
       _RecordCard('TODAY DAILY', '${data.todayDaily}', ReactColors.purple),
       _RecordCard('BEST STREAK', '${data.bestCommandStreak}', ReactColors.lime),
+      _RecordCard(
+        'FASTEST AVG',
+        data.fastestAverageReaction == 0
+            ? '--'
+            : '${data.fastestAverageReaction.toStringAsFixed(2)}s',
+        ReactColors.electricBlueBright,
+      ),
       _RecordCard(
         'DAILY STREAK',
         '${data.dailyStreak} DAYS',
