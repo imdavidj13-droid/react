@@ -1,11 +1,11 @@
 import 'dart:ui' as ui;
 
-import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/react_colors.dart';
+import '../../gameplay/domain/react_command.dart';
 import '../../gameplay/domain/react_run_result.dart';
 
 class ResultShareScreen extends StatefulWidget {
@@ -29,6 +29,11 @@ class _ResultShareScreenState extends State<ResultShareScreen> {
   Future<void> _share(BuildContext originContext) async {
     if (_sharing) return;
 
+    final box = originContext.findRenderObject() as RenderBox?;
+    final origin = box == null
+        ? null
+        : box.localToGlobal(Offset.zero) & box.size;
+
     setState(() => _sharing = true);
     try {
       await WidgetsBinding.instance.endOfFrame;
@@ -46,11 +51,6 @@ class _ResultShareScreenState extends State<ResultShareScreen> {
       }
 
       final bytes = byteData.buffer.asUint8List();
-      final box = originContext.findRenderObject() as RenderBox?;
-      final origin = box == null
-          ? null
-          : box.localToGlobal(Offset.zero) & box.size;
-
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile.fromData(bytes, mimeType: 'image/png')],
