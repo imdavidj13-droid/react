@@ -302,18 +302,24 @@ class _Header extends StatelessWidget {
             ),
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
           ),
-          const Spacer(),
-          const Text(
-            'MILESTONES',
-            style: TextStyle(
-              color: ReactColors.textPrimary,
-              fontSize: 23,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.7,
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'MILESTONES',
+                  style: TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.7,
+                  ),
+                ),
+              ),
             ),
           ),
-          const Spacer(),
-          const SizedBox(width: 40),
+          const SizedBox(width: 48),
         ],
       );
 }
@@ -354,18 +360,22 @@ class _Hero extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '$unlocked / $total UNLOCKED',
-                    style: const TextStyle(
-                      color: ReactColors.textPrimary,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: .5,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '$unlocked / $total UNLOCKED',
+                      style: const TextStyle(
+                        color: ReactColors.textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .5,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 5),
                   const Text(
-                    'Permanent local records. No XP, levels or currency.',
+                    'Milestones are calculated from your local records. No XP, levels or currency.',
                     style: TextStyle(
                       color: ReactColors.textSecondary,
                       fontSize: 9,
@@ -454,33 +464,28 @@ class _MilestoneCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.title,
-                        style: TextStyle(
-                          color: unlocked
-                              ? ReactColors.textPrimary
-                              : ReactColors.textSecondary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: .6,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      unlocked ? 'UNLOCKED' : '${item.displayCurrent}/${item.target}',
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: .6,
-                      ),
-                    ),
-                  ],
+                Text(
+                  item.title,
+                  style: TextStyle(
+                    color: unlocked
+                        ? ReactColors.textPrimary
+                        : ReactColors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .6,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
+                Text(
+                  unlocked ? 'UNLOCKED' : '${item.displayCurrent}/${item.target}',
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .6,
+                  ),
+                ),
+                const SizedBox(height: 5),
                 Text(
                   item.description,
                   style: const TextStyle(
