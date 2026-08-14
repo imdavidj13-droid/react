@@ -25,14 +25,22 @@ old = '''            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.workspace_premium_rounded, color: ReactColors.lime, size: 17),
+                SizedBox(width: 7),
+                Text(
+                  result.mode == ReactGameMode.daily ? 'NEW RULE BEST' : 'NEW BEST',
+                  style: TextStyle(
 '''
 new = '''            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.workspace_premium_rounded, color: ReactColors.lime, size: 17),
+                const SizedBox(width: 7),
+                Text(
+                  result.mode == ReactGameMode.daily ? 'NEW RULE BEST' : 'NEW BEST',
+                  style: const TextStyle(
 '''
 if old not in results:
-    raise RuntimeError('Expected NEW BEST const Row was not found.')
+    raise RuntimeError('Expected generated NEW BEST badge block was not found.')
 results_path.write_text(results.replace(old, new, 1))
 
-print('Daily share metadata and Results badge runtime handling updated.')
+print('Daily share metadata and Results badge const handling updated.')
