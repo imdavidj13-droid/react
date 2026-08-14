@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/react_colors.dart';
 import '../../daily/domain/daily_challenge.dart';
+import '../../gameplay/domain/react_command.dart';
 import '../../gameplay/domain/react_run_result.dart';
 
 class ResultShareScreen extends StatefulWidget {
