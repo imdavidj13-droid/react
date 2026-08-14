@@ -247,9 +247,14 @@ class LocalPlayerStats {
       final modifier = DailyChallenge.forDate(today).modifier;
       final currentModifierBest =
           prefs.getInt(_dailyModifierBestKey(modifier)) ?? 0;
-      if (result.score > currentModifierBest) {
+      final isNewModifierBest = result.score > currentModifierBest;
+      if (isNewModifierBest) {
         await prefs.setInt(_dailyModifierBestKey(modifier), result.score);
       }
+      // Daily rules have intentionally different difficulty. For Results,
+      // "NEW BEST" therefore means a new record for today's modifier rather
+      // than a cross-modifier score that may not be directly comparable.
+      isNewBest = isNewModifierBest;
 
       final existing = _decodeDailyHistory(prefs)[_dateKey(today)];
       final shouldReplaceDailyHistory =
