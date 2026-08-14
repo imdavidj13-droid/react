@@ -31,6 +31,9 @@ jobs:
       - name: Apply exact polish patch
         run: python3 tool/apply_polish_batch.py
 
+      - name: Apply Daily share post-patch
+        run: python3 tool/post_polish_patch.py
+
       - name: Format
         run: dart format lib test
 
@@ -42,7 +45,7 @@ jobs:
 
       - name: Commit verified batch
         run: |
-          rm -f .github/react-polish-trigger tool/apply_polish_batch.py tool/fix_polish_patcher.py
+          rm -f .github/react-polish-trigger tool/apply_polish_batch.py tool/fix_polish_patcher.py tool/post_polish_patch.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
