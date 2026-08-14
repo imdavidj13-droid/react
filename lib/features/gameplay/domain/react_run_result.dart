@@ -35,9 +35,14 @@ class ReactRunResult {
     required this.averageTimeSeconds,
     required this.outcome,
     this.misses = 0,
+    this.maxStreak = 0,
     this.failedCommand,
     this.winnerPlayer,
     this.playerLives,
+    this.playerClears,
+    this.dailyDate,
+    this.dailyModifierLabel,
+    this.dailyModifierRule,
     this.commandPerformance = const <ReactCommand, ReactCommandPerformance>{},
   });
 
@@ -47,9 +52,25 @@ class ReactRunResult {
   final double averageTimeSeconds;
   final ReactRunOutcome outcome;
   final int misses;
+
+  /// Longest uninterrupted sequence of successful commands in this run.
+  /// Older/tests results can safely omit it and receive 0.
+  final int maxStreak;
+
   final ReactCommand? failedCommand;
   final int? winnerPlayer;
   final List<int>? playerLives;
+
+  /// Per-player clears for Pass It, in player order.
+  final List<int>? playerClears;
+
+  /// Snapshot of the Daily challenge identity used for this run. Keeping this
+  /// on the result prevents Results/Share changing if midnight passes while
+  /// the result screen is still open.
+  final DateTime? dailyDate;
+  final String? dailyModifierLabel;
+  final String? dailyModifierRule;
+
   final Map<ReactCommand, ReactCommandPerformance> commandPerformance;
 
   String get outcomeLabel => switch (outcome) {
