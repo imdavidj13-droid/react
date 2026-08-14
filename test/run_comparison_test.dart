@@ -77,4 +77,63 @@ void main() {
     expect(comparison.scoreLabel, '-18 VS LAST RUN');
     expect(comparison.reactionLabel, isNull);
   });
+
+  test('compares Daily retries from the same calendar day', () {
+    const current = ReactRunResult(
+      mode: ReactGameMode.daily,
+      score: 31,
+      successfulCommands: 31,
+      averageTimeSeconds: .81,
+      outcome: ReactRunOutcome.missedCommand,
+      misses: 1,
+    );
+    final previousDaily = ReactRunHistoryEntry(
+      mode: ReactGameMode.daily,
+      score: 24,
+      successfulCommands: 24,
+      misses: 1,
+      averageTimeSeconds: .88,
+      outcome: ReactRunOutcome.missedCommand,
+      playedAt: DateTime(2026, 8, 14, 8, 15),
+    );
+
+    final comparison = RunComparison.againstPrevious(
+      current,
+      previousDaily,
+      now: DateTime(2026, 8, 14, 18, 30),
+    );
+
+    expect(comparison, isNotNull);
+    expect(comparison!.scoreDelta, 7);
+    expect(comparison.reactionLabel, '0.07s FASTER');
+  });
+
+  test('does not compare Daily against a previous calendar day', () {
+    const current = ReactRunResult(
+      mode: ReactGameMode.daily,
+      score: 31,
+      successfulCommands: 31,
+      averageTimeSeconds: .81,
+      outcome: ReactRunOutcome.missedCommand,
+      misses: 1,
+    );
+    final previousDaily = ReactRunHistoryEntry(
+      mode: ReactGameMode.daily,
+      score: 42,
+      successfulCommands: 42,
+      misses: 1,
+      averageTimeSeconds: .72,
+      outcome: ReactRunOutcome.missedCommand,
+      playedAt: DateTime(2026, 8, 13, 23, 58),
+    );
+
+    expect(
+      RunComparison.againstPrevious(
+        current,
+        previousDaily,
+        now: DateTime(2026, 8, 14, 0, 2),
+      ),
+      isNull,
+    );
+  });
 }
