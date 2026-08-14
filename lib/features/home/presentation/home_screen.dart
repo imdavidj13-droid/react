@@ -100,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 icon: Icons.calendar_month_rounded,
                                 label: 'DAILY',
                                 color: ReactColors.lime,
-                                status: stats.dailyPlayedToday ? 'DONE' : 'READY',
+                                status: stats.dailyPlayedToday ? 'PLAY AGAIN' : 'READY',
                                 statusColor: stats.dailyPlayedToday
                                     ? ReactColors.lime
                                     : ReactColors.electricBlueBright,
