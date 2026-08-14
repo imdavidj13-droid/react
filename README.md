@@ -48,6 +48,8 @@ Classic, Blitz, Endless and Pass It use the shared run engine. Daily has a dedic
 
 Pass It keeps match-wide score/stat totals separate from its per-turn difficulty ramp. Successful commands increase only the current player's turn pace; after a lost life and handoff, the next player starts from the normal Pass It reaction window rather than inheriting the previous player's accelerated pace.
 
+Results provide mode-aware run summaries, previous-run comparisons where the data is meaningfully comparable, replay navigation, and a share flow for normal runs. Share Result opens a dedicated branded preview and exports the card as a 1080×1350 PNG through the platform share sheet. Developer Daily test runs are intentionally excluded from sharing.
+
 ## Local data
 
 Until the online backend is introduced, SharedPreferences stores:
