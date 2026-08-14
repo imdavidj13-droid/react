@@ -18,8 +18,7 @@ class DailyScreen extends StatefulWidget {
   State<DailyScreen> createState() => _DailyScreenState();
 }
 
-class _DailyScreenState extends State<DailyScreen>
-    with WidgetsBindingObserver {
+class _DailyScreenState extends State<DailyScreen> with WidgetsBindingObserver {
   late Future<_DailyState> _state;
   Timer? _midnightTimer;
 
@@ -72,9 +71,9 @@ class _DailyScreenState extends State<DailyScreen>
   }
 
   Future<void> _openDevTester() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const DailyDevScreen()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const DailyDevScreen()));
     if (!mounted) return;
     _refreshForCurrentDay();
   }
@@ -130,11 +129,7 @@ class _DailyScreenState extends State<DailyScreen>
                         _DevTesterCard(onTap: _openDevTester),
                       ],
                       const SizedBox(height: 10),
-                      _RunCard(
-                        state: state,
-                        narrow: narrow,
-                        onTap: _start,
-                      ),
+                      _RunCard(state: state, narrow: narrow, onTap: _start),
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -198,7 +193,7 @@ class _DailyState {
     final challenge = DailyChallenge.today();
     final playedToday = await LocalPlayerStats.hasPlayedDailyToday();
     final streak = await LocalPlayerStats.dailyStreak();
-    final best = await LocalPlayerStats.bestFor(ReactGameMode.daily);
+    final best = await LocalPlayerStats.dailyBestToday();
     final ruleBest = await LocalPlayerStats.dailyBestForModifier(
       challenge.modifier,
     );
@@ -220,30 +215,30 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        children: [
-          IconButton(
-            onPressed: onBack,
-            style: IconButton.styleFrom(
-              backgroundColor: const Color(0xFF07101E),
-              foregroundColor: ReactColors.textPrimary,
-              side: const BorderSide(color: Color(0xFF1E3552)),
-            ),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-          ),
-          const Spacer(),
-          const Text(
-            'RE△CT',
-            style: TextStyle(
-              color: ReactColors.textPrimary,
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 3,
-            ),
-          ),
-          const Spacer(),
-          const SizedBox(width: 40),
-        ],
-      );
+    children: [
+      IconButton(
+        onPressed: onBack,
+        style: IconButton.styleFrom(
+          backgroundColor: const Color(0xFF07101E),
+          foregroundColor: ReactColors.textPrimary,
+          side: const BorderSide(color: Color(0xFF1E3552)),
+        ),
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+      ),
+      const Spacer(),
+      const Text(
+        'RE△CT',
+        style: TextStyle(
+          color: ReactColors.textPrimary,
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 3,
+        ),
+      ),
+      const Spacer(),
+      const SizedBox(width: 40),
+    ],
+  );
 }
 
 class _Identity extends StatelessWidget {
@@ -252,58 +247,58 @@ class _Identity extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-        decoration: BoxDecoration(
-          color: const Color(0xFF07111D),
-          borderRadius: BorderRadius.circular(17),
-          border: Border.all(color: const Color(0xFF24405E)),
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+    decoration: BoxDecoration(
+      color: const Color(0xFF07111D),
+      borderRadius: BorderRadius.circular(17),
+      border: Border.all(color: const Color(0xFF24405E)),
+    ),
+    child: Row(
+      children: [
+        const Icon(
+          Icons.fingerprint_rounded,
+          color: ReactColors.electricBlueBright,
+          size: 22,
         ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.fingerprint_rounded,
-              color: ReactColors.electricBlueBright,
-              size: 22,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'CHALLENGE #${challenge.id}',
-                    style: const TextStyle(
-                      color: ReactColors.textPrimary,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: .7,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    challenge.dateLabel,
-                    style: const TextStyle(
-                      color: ReactColors.textSecondary,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'CHALLENGE #${challenge.id}',
+                style: const TextStyle(
+                  color: ReactColors.textPrimary,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .7,
+                ),
               ),
-            ),
-            const Text(
-              'FIXED SEED',
-              style: TextStyle(
-                color: ReactColors.lime,
-                fontSize: 7,
-                fontWeight: FontWeight.w900,
-                letterSpacing: .7,
+              const SizedBox(height: 3),
+              Text(
+                challenge.dateLabel,
+                style: const TextStyle(
+                  color: ReactColors.textSecondary,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      );
+        const Text(
+          'FIXED SEED',
+          style: TextStyle(
+            color: ReactColors.lime,
+            fontSize: 7,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .7,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _ModifierCard extends StatelessWidget {
@@ -388,59 +383,58 @@ class _DevTesterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => InkWell(
-        onTap: onTap,
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(16),
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A1322),
         borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0A1322),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: ReactColors.purple.withValues(alpha: .70),
+        border: Border.all(color: ReactColors.purple.withValues(alpha: .70)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.science_rounded, color: ReactColors.purple, size: 22),
+          SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'DEV MODIFIER TESTER',
+                  style: TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .8,
+                  ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  'CHOOSE AND TEST ANY OF THE 7 DAILY RULES',
+                  style: TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
           ),
-          child: const Row(
-            children: [
-              Icon(Icons.science_rounded, color: ReactColors.purple, size: 22),
-              SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'DEV MODIFIER TESTER',
-                      style: TextStyle(
-                        color: ReactColors.textPrimary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: .8,
-                      ),
-                    ),
-                    SizedBox(height: 3),
-                    Text(
-                      'CHOOSE AND TEST ANY OF THE 7 DAILY RULES',
-                      style: TextStyle(
-                        color: ReactColors.textSecondary,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: ReactColors.textSecondary,
-              ),
-            ],
-          ),
-        ),
-      );
+          Icon(Icons.chevron_right_rounded, color: ReactColors.textSecondary),
+        ],
+      ),
+    ),
+  );
 }
 
 class _RunCard extends StatelessWidget {
-  const _RunCard({required this.state, required this.narrow, required this.onTap});
+  const _RunCard({
+    required this.state,
+    required this.narrow,
+    required this.onTap,
+  });
   final _DailyState state;
   final bool narrow;
   final VoidCallback onTap;
@@ -509,7 +503,9 @@ class _RunCard extends StatelessWidget {
                   ),
                 ),
                 child: Icon(
-                  state.playedToday ? Icons.replay_rounded : Icons.wb_sunny_outlined,
+                  state.playedToday
+                      ? Icons.replay_rounded
+                      : Icons.wb_sunny_outlined,
                   color: ReactColors.electricBlueBright,
                   size: narrow ? 32 : 40,
                 ),
@@ -523,7 +519,7 @@ class _RunCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _Metric(
-                  label: 'YOUR BEST',
+                  label: 'TODAY BEST',
                   value: '${state.best}',
                   color: ReactColors.lime,
                 ),
@@ -559,7 +555,9 @@ class _RunCard extends StatelessWidget {
                 ),
               ),
               icon: Icon(
-                state.playedToday ? Icons.replay_rounded : Icons.play_arrow_rounded,
+                state.playedToday
+                    ? Icons.replay_rounded
+                    : Icons.play_arrow_rounded,
               ),
               label: Text(
                 state.playedToday ? 'PLAY AGAIN' : 'PLAY DAILY',
@@ -649,12 +647,12 @@ class _HistoryDay extends StatelessWidget {
     final status = future
         ? '—'
         : entry.completed
-            ? '✓'
-            : entry.score != null
-                ? '${entry.score}'
-                : entry.attempted
-                    ? 'PLAYED'
-                    : '—';
+        ? '✓'
+        : entry.score != null
+        ? '${entry.score}'
+        : entry.attempted
+        ? 'PLAYED'
+        : '—';
 
     return Container(
       height: 76,
@@ -666,8 +664,8 @@ class _HistoryDay extends StatelessWidget {
           color: today
               ? ReactColors.electricBlueBright
               : future
-                  ? const Color(0xFF1A2A3D)
-                  : color.withValues(alpha: entry.attempted ? .48 : .20),
+              ? const Color(0xFF1A2A3D)
+              : color.withValues(alpha: entry.attempted ? .48 : .20),
         ),
       ),
       child: Column(
@@ -675,7 +673,9 @@ class _HistoryDay extends StatelessWidget {
           Text(
             _dayLabels[entry.date.weekday - 1],
             style: TextStyle(
-              color: today ? ReactColors.textPrimary : ReactColors.textSecondary,
+              color: today
+                  ? ReactColors.textPrimary
+                  : ReactColors.textSecondary,
               fontSize: 8,
               fontWeight: FontWeight.w900,
             ),
@@ -686,8 +686,8 @@ class _HistoryDay extends StatelessWidget {
             color: future
                 ? ReactColors.textSecondary.withValues(alpha: .45)
                 : entry.attempted
-                    ? color
-                    : color.withValues(alpha: .38),
+                ? color
+                : color.withValues(alpha: .38),
             size: 15,
           ),
           const Spacer(),
@@ -698,8 +698,8 @@ class _HistoryDay extends StatelessWidget {
                 color: entry.completed
                     ? ReactColors.lime
                     : entry.failed
-                        ? ReactColors.coral
-                        : ReactColors.textSecondary,
+                    ? ReactColors.coral
+                    : ReactColors.textSecondary,
                 fontSize: status == 'PLAYED' ? 5.8 : 9,
                 fontWeight: FontWeight.w900,
               ),
@@ -752,35 +752,39 @@ class _InfoCard extends StatelessWidget {
 }
 
 class _Metric extends StatelessWidget {
-  const _Metric({required this.label, required this.value, required this.color});
+  const _Metric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
   final String label;
   final String value;
   final Color color;
 
   @override
   Widget build(BuildContext context) => Column(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 7.5,
-              fontWeight: FontWeight.w900,
-            ),
+    children: [
+      Text(
+        label,
+        style: const TextStyle(
+          color: ReactColors.textSecondary,
+          fontSize: 7.5,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      const SizedBox(height: 4),
+      FittedBox(
+        child: Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
           ),
-          const SizedBox(height: 4),
-          FittedBox(
-            child: Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-        ],
-      );
+        ),
+      ),
+    ],
+  );
 }
 
 class _Divider extends StatelessWidget {
@@ -807,60 +811,60 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        height: compact ? 96 : 104,
-        padding: EdgeInsets.all(compact ? 11 : 14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF07111D),
-          borderRadius: BorderRadius.circular(19),
-          border: Border.all(color: color.withValues(alpha: .28)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: compact ? 20 : 22),
-            const Spacer(),
-            FittedBox(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: ReactColors.textSecondary,
-                  fontSize: 7.5,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
+    height: compact ? 96 : 104,
+    padding: EdgeInsets.all(compact ? 11 : 14),
+    decoration: BoxDecoration(
+      color: const Color(0xFF07111D),
+      borderRadius: BorderRadius.circular(19),
+      border: Border.all(color: color.withValues(alpha: .28)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: color, size: compact ? 20 : 22),
+        const Spacer(),
+        FittedBox(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 7.5,
+              fontWeight: FontWeight.w900,
             ),
-            const SizedBox(height: 3),
-            FittedBox(
-              child: Text(
-                value,
-                style: TextStyle(
-                  color: color,
-                  fontSize: compact ? 16 : 18,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-      );
+        const SizedBox(height: 3),
+        FittedBox(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: compact ? 16 : 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 IconData _modifierIcon(DailyModifier modifier) => switch (modifier) {
-      DailyModifier.lightsOut => Icons.visibility_off_rounded,
-      DailyModifier.surge => Icons.bolt_rounded,
-      DailyModifier.noClock => Icons.timer_off_rounded,
-      DailyModifier.echo => Icons.repeat_rounded,
-      DailyModifier.reverse => Icons.swap_horiz_rounded,
-      DailyModifier.chain => Icons.link_rounded,
-      DailyModifier.redline => Icons.speed_rounded,
-    };
+  DailyModifier.lightsOut => Icons.visibility_off_rounded,
+  DailyModifier.surge => Icons.bolt_rounded,
+  DailyModifier.noClock => Icons.timer_off_rounded,
+  DailyModifier.echo => Icons.repeat_rounded,
+  DailyModifier.reverse => Icons.swap_horiz_rounded,
+  DailyModifier.chain => Icons.link_rounded,
+  DailyModifier.redline => Icons.speed_rounded,
+};
 
 Color _modifierColor(DailyModifier modifier) => switch (modifier) {
-      DailyModifier.lightsOut => ReactColors.purple,
-      DailyModifier.surge => ReactColors.coral,
-      DailyModifier.noClock => ReactColors.lime,
-      DailyModifier.echo => ReactColors.electricBlueBright,
-      DailyModifier.reverse => ReactColors.purple,
-      DailyModifier.chain => ReactColors.lime,
-      DailyModifier.redline => ReactColors.coral,
-    };
+  DailyModifier.lightsOut => ReactColors.purple,
+  DailyModifier.surge => ReactColors.coral,
+  DailyModifier.noClock => ReactColors.lime,
+  DailyModifier.echo => ReactColors.electricBlueBright,
+  DailyModifier.reverse => ReactColors.purple,
+  DailyModifier.chain => ReactColors.lime,
+  DailyModifier.redline => ReactColors.coral,
+};

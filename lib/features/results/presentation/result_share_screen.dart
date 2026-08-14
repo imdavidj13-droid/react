@@ -38,8 +38,9 @@ class _ResultShareScreenState extends State<ResultShareScreen> {
     setState(() => _sharing = true);
     try {
       await WidgetsBinding.instance.endOfFrame;
-      final boundary = _shareCardKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
+      final boundary =
+          _shareCardKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
       if (boundary == null) {
         throw StateError('Share card is not ready yet.');
       }
@@ -91,7 +92,10 @@ class _ResultShareScreenState extends State<ResultShareScreen> {
                       foregroundColor: ReactColors.textPrimary,
                       side: const BorderSide(color: Color(0xFF1E3552)),
                     ),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 18,
+                    ),
                   ),
                   const Expanded(
                     child: Center(
@@ -159,8 +163,8 @@ class _ResultShareScreenState extends State<ResultShareScreen> {
                     style: FilledButton.styleFrom(
                       backgroundColor: ReactColors.electricBlueBright,
                       foregroundColor: const Color(0xFF020711),
-                      disabledBackgroundColor:
-                          ReactColors.electricBlueBright.withValues(alpha: .35),
+                      disabledBackgroundColor: ReactColors.electricBlueBright
+                          .withValues(alpha: .35),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(17),
                       ),
@@ -205,7 +209,6 @@ class _ShareCard extends StatelessWidget {
     final color = _modeColor(result.mode);
     final isPassIt = result.mode == ReactGameMode.passIt;
     final isDaily = result.mode == ReactGameMode.daily;
-    final daily = isDaily ? DailyChallenge.today() : null;
 
     return SizedBox(
       width: 360,
@@ -215,11 +218,7 @@ class _ShareCard extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF02060C),
-              Color(0xFF071628),
-              Color(0xFF030811),
-            ],
+            colors: [Color(0xFF02060C), Color(0xFF071628), Color(0xFF030811)],
           ),
           borderRadius: BorderRadius.circular(30),
           border: Border.all(color: color.withValues(alpha: .76), width: 1.4),
@@ -265,7 +264,7 @@ class _ShareCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      isPassIt ? 'COMMANDS CLEARED' : 'FINAL SCORE',
+                      _scoreLabel(result.mode),
                       style: const TextStyle(
                         color: ReactColors.textSecondary,
                         fontSize: 8,
@@ -286,14 +285,16 @@ class _ShareCard extends StatelessWidget {
                     if (newBest && !isPassIt) ...[
                       const SizedBox(height: 7),
                       _Badge(
-                        label: isDaily ? 'NEW MODIFIER BEST' : 'NEW PERSONAL BEST',
+                        label: isDaily
+                            ? 'NEW MODIFIER BEST'
+                            : 'NEW PERSONAL BEST',
                         color: ReactColors.lime,
                         icon: Icons.workspace_premium_rounded,
                       ),
                     ],
                     const Spacer(),
-                    if (daily != null) ...[
-                      _DailySummary(challenge: daily, color: color),
+                    if (isDaily) ...[
+                      _DailySummary(result: result, color: color),
                       const SizedBox(height: 10),
                     ] else if (isPassIt) ...[
                       _PassItSummary(result: result, color: color),
@@ -342,20 +343,52 @@ class _CardHeader extends StatelessWidget {
 }
 
 class _DailySummary extends StatelessWidget {
-  const _DailySummary({required this.challenge, required this.color});
+  const _DailySummary({required this.result, required this.color});
 
-  final DailyChallenge challenge;
+  final ReactRunResult result;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
+    final fallback = result.dailyModifierLabel == null
+        ? DailyChallenge.today()
+        : null;
+    final date = result.dailyDate;
+    final dateLabel = date == null
+        ? fallback?.dateLabel ?? 'DAILY CHALLENGE'
+        : _dailyDateLabel(date);
+    final modifierLabel =
+        result.dailyModifierLabel ?? fallback?.modifier.label ?? 'DAILY';
+    final rule =
+        result.dailyModifierRule ??
+        fallback?.modifier.shortRule ??
+        '60 COMMAND TARGET';
+
     return _InfoStrip(
       icon: Icons.calendar_today_rounded,
       color: color,
-      title: challenge.modifier.label,
-      subtitle: '${challenge.dateLabel}  •  ${challenge.modifier.shortRule}',
+      title: modifierLabel,
+      subtitle: '$dateLabel  •  $rule',
     );
   }
+}
+
+String _dailyDateLabel(DateTime date) {
+  const months = <String>[
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
+  ];
+  return '${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]} ${date.year}';
 }
 
 class _PassItSummary extends StatelessWidget {
@@ -434,8 +467,8 @@ class _OutcomeStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return _InfoStrip(
       icon: switch (result.outcome) {
-        ReactRunOutcome.winner || ReactRunOutcome.completed =>
-          Icons.emoji_events_rounded,
+        ReactRunOutcome.winner ||
+        ReactRunOutcome.completed => Icons.emoji_events_rounded,
         ReactRunOutcome.timeUp => Icons.timer_rounded,
         ReactRunOutcome.missedCommand => Icons.bolt_rounded,
         ReactRunOutcome.quit => Icons.stop_circle_outlined,
@@ -707,6 +740,14 @@ class _ShareGridPainter extends CustomPainter {
       oldDelegate.color != color;
 }
 
+String _scoreLabel(ReactGameMode mode) => switch (mode) {
+  ReactGameMode.classic => 'FINAL SCORE',
+  ReactGameMode.blitz => '60 SECOND SCORE',
+  ReactGameMode.endless => 'COMMANDS SURVIVED',
+  ReactGameMode.daily => 'DAILY SCORE',
+  ReactGameMode.passIt => 'MATCH COMMANDS',
+};
+
 String _heroEyebrow(ReactRunResult result) {
   if (result.mode == ReactGameMode.passIt && result.winnerPlayer != null) {
     return 'PLAYER ${result.winnerPlayer} WINS';
@@ -715,14 +756,14 @@ String _heroEyebrow(ReactRunResult result) {
 }
 
 String _outcomeDetail(ReactRunResult result) => switch (result.outcome) {
-      ReactRunOutcome.missedCommand =>
-        result.failedCommand?.title ?? 'MISSED COMMAND',
-      ReactRunOutcome.timeUp => '60 SECOND RUN COMPLETE',
-      ReactRunOutcome.completed =>
-        'ALL ${result.successfulCommands} COMMANDS CLEARED',
-      ReactRunOutcome.winner => 'LAST PLAYER STANDING',
-      ReactRunOutcome.quit => 'RUN ENDED',
-    };
+  ReactRunOutcome.missedCommand =>
+    result.failedCommand?.title ?? 'MISSED COMMAND',
+  ReactRunOutcome.timeUp => '60 SECOND RUN COMPLETE',
+  ReactRunOutcome.completed =>
+    'ALL ${result.successfulCommands} COMMANDS CLEARED',
+  ReactRunOutcome.winner => 'LAST PLAYER STANDING',
+  ReactRunOutcome.quit => 'RUN ENDED',
+};
 
 String _shareText(ReactRunResult result) {
   if (result.mode == ReactGameMode.passIt && result.winnerPlayer != null) {
@@ -730,17 +771,17 @@ String _shareText(ReactRunResult result) {
         '${result.successfulCommands} commands cleared.';
   }
   if (result.mode == ReactGameMode.daily) {
-    final daily = DailyChallenge.today();
-    return 'RE△CT DAILY ${daily.modifier.label} — ${result.score}/$dailyTarget. '
-        'Can you beat it?';
+    final modifier =
+        result.dailyModifierLabel ?? DailyChallenge.today().modifier.label;
+    return 'RE△CT DAILY $modifier — ${result.score}/60. Can you beat it?';
   }
   return 'RE△CT ${result.mode.label} — ${result.score} points. Can you beat it?';
 }
 
 Color _modeColor(ReactGameMode mode) => switch (mode) {
-      ReactGameMode.classic => ReactColors.electricBlueBright,
-      ReactGameMode.blitz => ReactColors.coral,
-      ReactGameMode.endless => ReactColors.lime,
-      ReactGameMode.daily => ReactColors.purple,
-      ReactGameMode.passIt => const Color(0xFFFFB85A),
-    };
+  ReactGameMode.classic => ReactColors.electricBlueBright,
+  ReactGameMode.blitz => ReactColors.coral,
+  ReactGameMode.endless => ReactColors.lime,
+  ReactGameMode.daily => ReactColors.purple,
+  ReactGameMode.passIt => const Color(0xFFFFB85A),
+};

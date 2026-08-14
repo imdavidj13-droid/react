@@ -1,31 +1,19 @@
 import 'react_command.dart';
 import 'react_command_performance.dart';
 
-enum ReactGameMode {
-  classic,
-  blitz,
-  endless,
-  daily,
-  passIt,
-}
+enum ReactGameMode { classic, blitz, endless, daily, passIt }
 
 extension ReactGameModeUi on ReactGameMode {
   String get label => switch (this) {
-        ReactGameMode.classic => 'CLASSIC',
-        ReactGameMode.blitz => 'BLITZ',
-        ReactGameMode.endless => 'ENDLESS',
-        ReactGameMode.daily => 'DAILY',
-        ReactGameMode.passIt => 'PASS IT',
-      };
+    ReactGameMode.classic => 'CLASSIC',
+    ReactGameMode.blitz => 'BLITZ',
+    ReactGameMode.endless => 'ENDLESS',
+    ReactGameMode.daily => 'DAILY',
+    ReactGameMode.passIt => 'PASS IT',
+  };
 }
 
-enum ReactRunOutcome {
-  missedCommand,
-  timeUp,
-  completed,
-  winner,
-  quit,
-}
+enum ReactRunOutcome { missedCommand, timeUp, completed, winner, quit }
 
 class ReactRunResult {
   const ReactRunResult({
@@ -74,12 +62,11 @@ class ReactRunResult {
   final Map<ReactCommand, ReactCommandPerformance> commandPerformance;
 
   String get outcomeLabel => switch (outcome) {
-        ReactRunOutcome.missedCommand => 'RUN OVER',
-        ReactRunOutcome.timeUp => 'TIME UP',
-        ReactRunOutcome.completed => 'COMPLETE',
-        ReactRunOutcome.winner => winnerPlayer == null
-            ? 'WINNER'
-            : 'PLAYER $winnerPlayer WINS',
-        ReactRunOutcome.quit => 'RUN ENDED',
-      };
+    ReactRunOutcome.missedCommand => 'RUN OVER',
+    ReactRunOutcome.timeUp => 'TIME UP',
+    ReactRunOutcome.completed => 'COMPLETE',
+    ReactRunOutcome.winner =>
+      winnerPlayer == null ? 'WINNER' : 'PLAYER $winnerPlayer WINS',
+    ReactRunOutcome.quit => 'RUN ENDED',
+  };
 }

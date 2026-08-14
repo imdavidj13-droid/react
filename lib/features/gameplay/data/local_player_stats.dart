@@ -15,8 +15,10 @@ class LocalPlayerStats {
 
   static String _bestKey(ReactGameMode mode) => 'best_${mode.name}';
   static String _modeRunsKey(ReactGameMode mode) => 'mode_runs_${mode.name}';
-  static String _modeCommandsKey(ReactGameMode mode) => 'mode_commands_${mode.name}';
-  static String _modeResponseMsKey(ReactGameMode mode) => 'mode_response_ms_${mode.name}';
+  static String _modeCommandsKey(ReactGameMode mode) =>
+      'mode_commands_${mode.name}';
+  static String _modeResponseMsKey(ReactGameMode mode) =>
+      'mode_response_ms_${mode.name}';
   static String _commandAttemptsKey(ReactCommand command) =>
       'command_attempts_${command.name}';
   static String _commandSuccessesKey(ReactCommand command) =>
@@ -27,6 +29,7 @@ class LocalPlayerStats {
       'daily_best_${modifier.name}';
 
   static const _runsKey = 'runs_played';
+  static const _bestStreakKey = 'best_command_streak';
   static const _dailyLastPlayedKey = 'daily_last_played';
   static const _dailyActiveChallengeKey = 'daily_active_challenge';
   static const _dailyStreakKey = 'daily_streak';
@@ -50,6 +53,11 @@ class LocalPlayerStats {
     final prefs = await SharedPreferences.getInstance();
     final today = _normalizedToday();
     return _decodeDailyHistory(prefs)[_dateKey(today)]?.score ?? 0;
+  }
+
+  static Future<int> bestCommandStreak() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_bestStreakKey) ?? 0;
   }
 
   static Future<int> runsPlayed() async {
@@ -136,7 +144,8 @@ class LocalPlayerStats {
     SharedPreferences prefs,
   ) {
     final saved = <String, DailyHistoryEntry>{};
-    for (final raw in prefs.getStringList(_dailyHistoryKey) ?? const <String>[]) {
+    for (final raw
+        in prefs.getStringList(_dailyHistoryKey) ?? const <String>[]) {
       try {
         final decoded = jsonDecode(raw) as Map<String, dynamic>;
         final entry = DailyHistoryEntry.tryFromJson(decoded);
@@ -207,6 +216,11 @@ class LocalPlayerStats {
       }
     }
 
+    final currentBestStreak = prefs.getInt(_bestStreakKey) ?? 0;
+    if (result.maxStreak > currentBestStreak) {
+      await prefs.setInt(_bestStreakKey, result.maxStreak);
+    }
+
     await prefs.setInt(_runsKey, (prefs.getInt(_runsKey) ?? 0) + 1);
     await prefs.setInt(
       _modeRunsKey(result.mode),
@@ -215,9 +229,11 @@ class LocalPlayerStats {
 
     if (result.successfulCommands > 0) {
       final previousCommands = prefs.getInt(_modeCommandsKey(result.mode)) ?? 0;
-      final previousResponseMs = prefs.getInt(_modeResponseMsKey(result.mode)) ?? 0;
+      final previousResponseMs =
+          prefs.getInt(_modeResponseMsKey(result.mode)) ?? 0;
       final runResponseMs =
-          (result.averageTimeSeconds * 1000 * result.successfulCommands).round();
+          (result.averageTimeSeconds * 1000 * result.successfulCommands)
+              .round();
 
       await prefs.setInt(
         _modeCommandsKey(result.mode),
@@ -234,11 +250,13 @@ class LocalPlayerStats {
       final command = performance.command;
       await prefs.setInt(
         _commandAttemptsKey(command),
-        (prefs.getInt(_commandAttemptsKey(command)) ?? 0) + performance.attempts,
+        (prefs.getInt(_commandAttemptsKey(command)) ?? 0) +
+            performance.attempts,
       );
       await prefs.setInt(
         _commandSuccessesKey(command),
-        (prefs.getInt(_commandSuccessesKey(command)) ?? 0) + performance.successes,
+        (prefs.getInt(_commandSuccessesKey(command)) ?? 0) +
+            performance.successes,
       );
       await prefs.setInt(
         _commandResponseMsKey(command),
@@ -305,6 +323,7 @@ class LocalPlayerStats {
     }
 
     await prefs.remove(_runsKey);
+    await prefs.remove(_bestStreakKey);
     await prefs.remove(_dailyLastPlayedKey);
     await prefs.remove(_dailyActiveChallengeKey);
     await prefs.remove(_dailyStreakKey);
@@ -330,7 +349,8 @@ class LocalPlayerStats {
     DailyHistoryEntry entry,
   ) async {
     final decoded = <DailyHistoryEntry>[];
-    for (final raw in prefs.getStringList(_dailyHistoryKey) ?? const <String>[]) {
+    for (final raw
+        in prefs.getStringList(_dailyHistoryKey) ?? const <String>[]) {
       try {
         final item = DailyHistoryEntry.tryFromJson(
           jsonDecode(raw) as Map<String, dynamic>,

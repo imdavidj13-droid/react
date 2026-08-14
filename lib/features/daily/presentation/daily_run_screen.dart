@@ -50,6 +50,8 @@ class _DailyRunScreenState extends State<DailyRunScreen>
 
   int _score = 0;
   int _misses = 0;
+  int _currentStreak = 0;
+  int _maxStreak = 0;
   int _totalResponseMs = 0;
   int _surgeRemaining = 0;
   int _pausedRemainingMs = 0;
@@ -91,8 +93,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
   int get _commandElapsedMs =>
       _elapsedBeforeArmMs + _commandClock.elapsedMilliseconds;
 
-  int get _commandRemainingMs =>
-      max(0, _commandDurationMs - _commandElapsedMs);
+  int get _commandRemainingMs => max(0, _commandDurationMs - _commandElapsedMs);
 
   double get _averageTimeSeconds =>
       _score == 0 ? 0 : (_totalResponseMs / _score) / 1000;
@@ -105,10 +106,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     _modifier = _challenge.modifier;
     _random = Random(_challenge.seed);
     _game = ReactGame()
-      ..configure(
-        accent: ReactColors.electricBlueBright,
-        intensity: .30,
-      );
+      ..configure(accent: ReactColors.electricBlueBright, intensity: .30);
     _startCommand();
   }
 
@@ -156,10 +154,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
       ..reset()
       ..start();
     _nextTimer?.cancel();
-    _nextTimer = Timer(
-      Duration(milliseconds: safe),
-      _runPendingTransition,
-    );
+    _nextTimer = Timer(Duration(milliseconds: safe), _runPendingTransition);
   }
 
   void _scheduleNextCommand(int delayMs, {ReactCommand? forced}) {
@@ -236,10 +231,10 @@ class _DailyRunScreenState extends State<DailyRunScreen>
       _feedback = _redlineCommand
           ? 'REDLINE'
           : _surgeCommand
-              ? 'SURGE'
-              : forced != null && _isEcho
-                  ? 'ECHO'
-                  : null;
+          ? 'SURGE'
+          : forced != null && _isEcho
+          ? 'ECHO'
+          : null;
     });
 
     _syncFlameIntensity();
@@ -286,7 +281,9 @@ class _DailyRunScreenState extends State<DailyRunScreen>
         _miss();
         return;
       }
-      setState(() => _progress = (remaining / _commandDurationMs).clamp(0.0, 1.0));
+      setState(
+        () => _progress = (remaining / _commandDurationMs).clamp(0.0, 1.0),
+      );
     });
   }
 
@@ -331,6 +328,8 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     setState(() {
       _acceptingInput = false;
       _score += 1;
+      _currentStreak += 1;
+      _maxStreak = max(_maxStreak, _currentStreak);
       _totalResponseMs += responseMs;
 
       if (_isSurge) {
@@ -348,8 +347,8 @@ class _DailyRunScreenState extends State<DailyRunScreen>
       _feedback = responseMs <= 650
           ? '+1  PERFECT'
           : responseMs <= 1150
-              ? '+1  GREAT'
-              : '+1  GOOD';
+          ? '+1  GREAT'
+          : '+1  GOOD';
     });
 
     unawaited(ReactAudio.play(ReactSoundCue.success));
@@ -371,10 +370,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     );
   }
 
-  int _successDelayMs({
-    required bool wasSurge,
-    required bool wasRedline,
-  }) {
+  int _successDelayMs({required bool wasSurge, required bool wasRedline}) {
     if (_isChain) return 70;
     if (_isSurge && _surgeRemaining > 0) return wasSurge ? 90 : 220;
     if (_isRedline && wasRedline) return 180;
@@ -388,6 +384,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     _commandClock.stop();
     _commandTracker.recordMiss(_command);
     _game.triggerMiss();
+    _currentStreak = 0;
     unawaited(ReactAudio.play(ReactSoundCue.miss));
     setState(() {
       _acceptingInput = false;
@@ -410,8 +407,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
 
     if (value) {
       _pausedHadCommand = _acceptingInput;
-      _pausedRemainingMs =
-          _pausedHadCommand ? max(1, _commandRemainingMs) : 0;
+      _pausedRemainingMs = _pausedHadCommand ? max(1, _commandRemainingMs) : 0;
       _commandClock.stop();
       _commandTimer?.cancel();
       _obscureTimer?.cancel();
@@ -478,8 +474,13 @@ class _DailyRunScreenState extends State<DailyRunScreen>
             averageTimeSeconds: _averageTimeSeconds,
             outcome: outcome,
             misses: _misses,
-            failedCommand:
-                outcome == ReactRunOutcome.missedCommand ? _command : null,
+            maxStreak: _maxStreak,
+            failedCommand: outcome == ReactRunOutcome.missedCommand
+                ? _command
+                : null,
+            dailyDate: _challenge.date,
+            dailyModifierLabel: _modifier.label,
+            dailyModifierRule: _modifier.shortRule,
             commandPerformance: _commandTracker.snapshot(),
           ),
         ),
@@ -517,8 +518,9 @@ class _DailyRunScreenState extends State<DailyRunScreen>
             SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final arenaSize =
-                      constraints.maxWidth.clamp(318.0, 390.0).toDouble();
+                  final arenaSize = constraints.maxWidth
+                      .clamp(318.0, 390.0)
+                      .toDouble();
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
                     child: Column(
@@ -558,7 +560,8 @@ class _DailyRunScreenState extends State<DailyRunScreen>
                               child: Text(
                                 _feedback ?? '',
                                 style: TextStyle(
-                                  color: _feedback == 'MISS' ||
+                                  color:
+                                      _feedback == 'MISS' ||
                                           _feedback == 'REDLINE'
                                       ? ReactColors.coral
                                       : ReactColors.electricBlueBright,

@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'react_command.dart';
-import 'react_command_performance.dart';
 import 'react_run_result.dart';
 
 class ReactRunHistoryEntry {
@@ -52,8 +51,9 @@ class ReactRunHistoryEntry {
         .where((item) => item.successes > 0)
         .toList(growable: false);
 
-    successful.sort((a, b) =>
-        a.averageReactionSeconds.compareTo(b.averageReactionSeconds));
+    successful.sort(
+      (a, b) => a.averageReactionSeconds.compareTo(b.averageReactionSeconds),
+    );
     attempted.sort((a, b) {
       final accuracy = a.accuracy.compareTo(b.accuracy);
       if (accuracy != 0) return accuracy;
@@ -75,29 +75,31 @@ class ReactRunHistoryEntry {
       playerClears: result.playerClears,
       dailyDate: result.dailyDate,
       dailyModifierLabel: result.dailyModifierLabel,
-      strongestCommand: successful.isEmpty ? null : successful.first.command.title,
+      strongestCommand: successful.isEmpty
+          ? null
+          : successful.first.command.title,
       weakestCommand: attempted.isEmpty ? null : attempted.first.command.title,
     );
   }
 
   String encode() => jsonEncode({
-        'mode': mode.name,
-        'score': score,
-        'successfulCommands': successfulCommands,
-        'misses': misses,
-        'averageTimeSeconds': averageTimeSeconds,
-        'outcome': outcome.name,
-        'playedAt': playedAt.toIso8601String(),
-        'maxStreak': maxStreak,
-        'failedCommand': failedCommand,
-        'winnerPlayer': winnerPlayer,
-        'playerLives': playerLives,
-        'playerClears': playerClears,
-        'dailyDate': dailyDate?.toIso8601String(),
-        'dailyModifierLabel': dailyModifierLabel,
-        'strongestCommand': strongestCommand,
-        'weakestCommand': weakestCommand,
-      });
+    'mode': mode.name,
+    'score': score,
+    'successfulCommands': successfulCommands,
+    'misses': misses,
+    'averageTimeSeconds': averageTimeSeconds,
+    'outcome': outcome.name,
+    'playedAt': playedAt.toIso8601String(),
+    'maxStreak': maxStreak,
+    'failedCommand': failedCommand,
+    'winnerPlayer': winnerPlayer,
+    'playerLives': playerLives,
+    'playerClears': playerClears,
+    'dailyDate': dailyDate?.toIso8601String(),
+    'dailyModifierLabel': dailyModifierLabel,
+    'strongestCommand': strongestCommand,
+    'weakestCommand': weakestCommand,
+  });
 
   static ReactRunHistoryEntry? tryDecode(String raw) {
     try {

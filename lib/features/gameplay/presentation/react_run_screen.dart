@@ -32,6 +32,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   late final ReactGame _game;
   late final Random _random;
   late final List<int> _playerLives;
+  late final List<int> _playerClears;
 
   final Stopwatch _commandClock = Stopwatch();
   final Stopwatch _blitzClock = Stopwatch();
@@ -49,6 +50,8 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   int _score = 0;
   int _successfulCommands = 0;
   int _misses = 0;
+  int _currentStreak = 0;
+  int _maxStreak = 0;
   int _totalResponseMs = 0;
   int _lives = 3;
   int _currentPlayer = 0;
@@ -74,12 +77,12 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   String? _feedback;
 
   ModeTimingRules get _timing => switch (widget.mode) {
-        ReactGameMode.classic => ReactModeTiming.classic,
-        ReactGameMode.blitz => ReactModeTiming.blitz,
-        ReactGameMode.endless => ReactModeTiming.endless,
-        ReactGameMode.daily => ReactModeTiming.daily,
-        ReactGameMode.passIt => ReactModeTiming.passIt,
-      };
+    ReactGameMode.classic => ReactModeTiming.classic,
+    ReactGameMode.blitz => ReactModeTiming.blitz,
+    ReactGameMode.endless => ReactModeTiming.endless,
+    ReactGameMode.daily => ReactModeTiming.daily,
+    ReactGameMode.passIt => ReactModeTiming.passIt,
+  };
 
   int get _timingScore =>
       widget.mode == ReactGameMode.passIt ? _passItTurnClears : _score;
@@ -91,8 +94,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   int get _commandElapsedMs =>
       _commandElapsedBaseMs + _commandClock.elapsedMilliseconds;
 
-  int get _commandRemainingMs =>
-      max(0, _commandDurationMs - _commandElapsedMs);
+  int get _commandRemainingMs => max(0, _commandDurationMs - _commandElapsedMs);
 
   double get _averageTimeSeconds => _successfulCommands == 0
       ? 0
@@ -118,6 +120,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       widget.mode == ReactGameMode.passIt ? passItPlayers : 3,
       3,
     );
+    _playerClears = List<int>.filled(_playerLives.length, 0);
 
     _game = ReactGame()
       ..configure(
@@ -189,7 +192,8 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       return;
     }
 
-    final next = ReactCommand.values[_random.nextInt(ReactCommand.values.length)];
+    final next =
+        ReactCommand.values[_random.nextInt(ReactCommand.values.length)];
     setState(() {
       _command = next;
       _progress = 1;
@@ -255,23 +259,25 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _commandTimer?.cancel();
     _commandClock.stop();
 
-    final responseMs =
-        _commandElapsedMs.clamp(0, _commandDurationMs).toInt();
+    final responseMs = _commandElapsedMs.clamp(0, _commandDurationMs).toInt();
     _commandTracker.recordSuccess(_command, responseMs);
 
     setState(() {
       _acceptingInput = false;
       _score += 1;
       _successfulCommands += 1;
+      _currentStreak += 1;
+      _maxStreak = max(_maxStreak, _currentStreak);
       _totalResponseMs += responseMs;
       if (widget.mode == ReactGameMode.passIt) {
         _passItTurnClears += 1;
+        _playerClears[_currentPlayer] += 1;
       }
       _feedback = responseMs <= 650
           ? '+1  PERFECT'
           : responseMs <= 1150
-              ? '+1  GREAT'
-              : '+1  GOOD';
+          ? '+1  GREAT'
+          : '+1  GOOD';
     });
 
     unawaited(ReactAudio.play(ReactSoundCue.success));
@@ -290,6 +296,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _commandClock.stop();
     _commandTracker.recordMiss(_command);
     _game.triggerMiss();
+    _currentStreak = 0;
 
     switch (widget.mode) {
       case ReactGameMode.classic:
@@ -334,7 +341,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
           _misses += 1;
           _feedback = 'MISS';
         });
-        _finish(ReactRunOutcome.missedCommand);
+        _scheduleTransition(320, () => _finish(ReactRunOutcome.missedCommand));
         return;
 
       case ReactGameMode.daily:
@@ -559,17 +566,17 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     if (!mounted) return;
 
     final screen = switch (widget.mode) {
-      ReactGameMode.classic || ReactGameMode.blitz || ReactGameMode.endless =>
-        ReactRunLaunchScreen(mode: widget.mode),
-      ReactGameMode.passIt =>
-        const ReactRunScreen(mode: ReactGameMode.passIt),
+      ReactGameMode.classic ||
+      ReactGameMode.blitz ||
+      ReactGameMode.endless => ReactRunLaunchScreen(mode: widget.mode),
+      ReactGameMode.passIt => const ReactRunScreen(mode: ReactGameMode.passIt),
       ReactGameMode.daily => null,
     };
     if (screen == null) return;
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => screen),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute<void>(builder: (_) => screen));
   }
 
   void _quitRun() {
@@ -595,7 +602,8 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     _commandClock.stop();
     _blitzClock.stop();
 
-    if (outcome == ReactRunOutcome.completed || outcome == ReactRunOutcome.winner) {
+    if (outcome == ReactRunOutcome.completed ||
+        outcome == ReactRunOutcome.winner) {
       unawaited(ReactAudio.play(ReactSoundCue.completed));
     }
 
@@ -609,12 +617,16 @@ class _ReactRunScreenState extends State<ReactRunScreen>
             averageTimeSeconds: _averageTimeSeconds,
             outcome: outcome,
             misses: _misses,
+            maxStreak: _maxStreak,
             failedCommand: outcome == ReactRunOutcome.missedCommand
                 ? _command
                 : null,
             winnerPlayer: winnerPlayer,
             playerLives: widget.mode == ReactGameMode.passIt
                 ? List<int>.unmodifiable(_playerLives)
+                : null,
+            playerClears: widget.mode == ReactGameMode.passIt
+                ? List<int>.unmodifiable(_playerClears)
                 : null,
             commandPerformance: _commandTracker.snapshot(),
           ),
@@ -624,21 +636,21 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   }
 
   String get _statusLabel => switch (widget.mode) {
-        ReactGameMode.classic => 'LIVES',
-        ReactGameMode.blitz => 'TIME',
-        ReactGameMode.endless => 'PACE',
-        ReactGameMode.daily => 'STEP',
-        ReactGameMode.passIt => 'PLAYER',
-      };
+    ReactGameMode.classic => 'LIVES',
+    ReactGameMode.blitz => 'TIME',
+    ReactGameMode.endless => 'PACE',
+    ReactGameMode.daily => 'STEP',
+    ReactGameMode.passIt => 'PLAYER',
+  };
 
   String get _statusValue => switch (widget.mode) {
-        ReactGameMode.classic => List.filled(_lives, '♥').join(' '),
-        ReactGameMode.blitz => '${(_blitzMsRemaining / 1000).ceil()}s',
-        ReactGameMode.endless => '${(_baseCommandMs / 1000).toStringAsFixed(2)}s',
-        ReactGameMode.daily => 'DAILY',
-        ReactGameMode.passIt =>
-          'P${_currentPlayer + 1}  ${_playerLives[_currentPlayer]}♥',
-      };
+    ReactGameMode.classic => List.filled(_lives, '♥').join(' '),
+    ReactGameMode.blitz => '${(_blitzMsRemaining / 1000).ceil()}s',
+    ReactGameMode.endless => '${(_baseCommandMs / 1000).toStringAsFixed(2)}s',
+    ReactGameMode.daily => 'DAILY',
+    ReactGameMode.passIt =>
+      'P${_currentPlayer + 1}  ${_playerLives[_currentPlayer]}♥',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -657,8 +669,9 @@ class _ReactRunScreenState extends State<ReactRunScreen>
             SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final arenaSize =
-                      constraints.maxWidth.clamp(318.0, 390.0).toDouble();
+                  final arenaSize = constraints.maxWidth
+                      .clamp(318.0, 390.0)
+                      .toDouble();
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
                     child: Column(
@@ -697,7 +710,9 @@ class _ReactRunScreenState extends State<ReactRunScreen>
                                 _feedback ?? '',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: _feedback?.contains('LOST A LIFE') == true ||
+                                  color:
+                                      _feedback?.contains('LOST A LIFE') ==
+                                              true ||
                                           _feedback?.startsWith('MISS') == true
                                       ? ReactColors.coral
                                       : ReactColors.electricBlueBright,
@@ -747,20 +762,20 @@ class _ReactRunScreenState extends State<ReactRunScreen>
 }
 
 Color _modeColor(ReactGameMode mode) => switch (mode) {
-      ReactGameMode.classic => ReactColors.electricBlueBright,
-      ReactGameMode.blitz => ReactColors.coral,
-      ReactGameMode.endless => ReactColors.lime,
-      ReactGameMode.daily => ReactColors.electricBlueBright,
-      ReactGameMode.passIt => ReactColors.purple,
-    };
+  ReactGameMode.classic => ReactColors.electricBlueBright,
+  ReactGameMode.blitz => ReactColors.coral,
+  ReactGameMode.endless => ReactColors.lime,
+  ReactGameMode.daily => ReactColors.electricBlueBright,
+  ReactGameMode.passIt => ReactColors.purple,
+};
 
 double _initialFlameIntensity(ReactGameMode mode) => switch (mode) {
-      ReactGameMode.classic => .18,
-      ReactGameMode.blitz => .45,
-      ReactGameMode.endless => .24,
-      ReactGameMode.daily => .28,
-      ReactGameMode.passIt => .30,
-    };
+  ReactGameMode.classic => .18,
+  ReactGameMode.blitz => .45,
+  ReactGameMode.endless => .24,
+  ReactGameMode.daily => .28,
+  ReactGameMode.passIt => .30,
+};
 
 class _Header extends StatelessWidget {
   const _Header({
@@ -947,7 +962,8 @@ class _Arena extends StatelessWidget {
                 Icon(
                   command.icon,
                   color: ReactColors.electricBlueBright,
-                  size: command == ReactCommand.pinch ||
+                  size:
+                      command == ReactCommand.pinch ||
                           command == ReactCommand.spread
                       ? 88
                       : 96,
@@ -1137,28 +1153,28 @@ class _Metric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 6.5,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: ReactColors.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      );
+    mainAxisAlignment: MainAxisAlignment.center,
+    crossAxisAlignment: CrossAxisAlignment.end,
+    children: [
+      Text(
+        label,
+        style: const TextStyle(
+          color: ReactColors.textSecondary,
+          fontSize: 6.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        value,
+        style: const TextStyle(
+          color: ReactColors.textPrimary,
+          fontSize: 13,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    ],
+  );
 }
 
 class _Divider extends StatelessWidget {
@@ -1166,11 +1182,11 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 1,
-        height: 30,
-        margin: const EdgeInsets.symmetric(horizontal: 9),
-        color: const Color(0xFF1B304A),
-      );
+    width: 1,
+    height: 30,
+    margin: const EdgeInsets.symmetric(horizontal: 9),
+    color: const Color(0xFF1B304A),
+  );
 }
 
 class _PauseOverlay extends StatelessWidget {
@@ -1186,57 +1202,57 @@ class _PauseOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-        color: const Color(0xE6050911),
-        child: Center(
-          child: Container(
-            width: 300,
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              color: const Color(0xFF07111D),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFF2B496B)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.pause_circle_outline_rounded,
-                  color: ReactColors.electricBlueBright,
-                  size: 52,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'PAUSED',
-                  style: TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'THE CURRENT COMMAND IS FROZEN',
-                  style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                FilledButton(onPressed: onResume, child: const Text('RESUME')),
-                if (onRestart != null)
-                  TextButton(
-                    onPressed: onRestart,
-                    child: const Text('RESTART RUN'),
-                  ),
-                TextButton(onPressed: onQuit, child: const Text('QUIT RUN')),
-              ],
-            ),
-          ),
+    color: const Color(0xE6050911),
+    child: Center(
+      child: Container(
+        width: 300,
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          color: const Color(0xFF07111D),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFF2B496B)),
         ),
-      );
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.pause_circle_outline_rounded,
+              color: ReactColors.electricBlueBright,
+              size: 52,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'PAUSED',
+              style: TextStyle(
+                color: ReactColors.textPrimary,
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'THE CURRENT COMMAND IS FROZEN',
+              style: TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 18),
+            FilledButton(onPressed: onResume, child: const Text('RESUME')),
+            if (onRestart != null)
+              TextButton(
+                onPressed: onRestart,
+                child: const Text('RESTART RUN'),
+              ),
+            TextButton(onPressed: onQuit, child: const Text('QUIT RUN')),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _HandoffOverlay extends StatelessWidget {
@@ -1325,11 +1341,13 @@ class _HandoffOverlay extends StatelessWidget {
                   matchOver
                       ? 'PLAYER $winnerPlayer WINS'
                       : hasLifeLoss
-                          ? 'PASS TO PLAYER $player'
-                          : 'PLAYER $player STARTS',
+                      ? 'PASS TO PLAYER $player'
+                      : 'PLAYER $player STARTS',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: matchOver ? ReactColors.lime : ReactColors.textPrimary,
+                    color: matchOver
+                        ? ReactColors.lime
+                        : ReactColors.textPrimary,
                     fontSize: 27,
                     fontWeight: FontWeight.w900,
                   ),
