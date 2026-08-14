@@ -68,6 +68,14 @@ String _dailyDateLabel(DateTime date) {
 )
 
 share = share_path.read_text()
+old_daily_condition = "                    if (isDaily && result.dailyModifierLabel != null) ...[\n"
+new_daily_condition = "                    if (isDaily) ...[\n"
+if old_daily_condition not in share:
+    raise RuntimeError('Expected generated Daily share condition was not found.')
+share = share.replace(old_daily_condition, new_daily_condition, 1)
+share_path.write_text(share)
+
+share = share_path.read_text()
 start = share.index('String _shareText(ReactRunResult result) {')
 end = share.index('Color _modeColor(ReactGameMode mode)', start)
 share_text = '''String _shareText(ReactRunResult result) {
@@ -189,6 +197,6 @@ records_path = Path('lib/features/leaderboard/presentation/personal_records_scre
 records = records_path.read_text()
 if 'childAspectRatio: 1.55,' not in records:
     raise RuntimeError('Expected Personal Records grid ratio was not found.')
-records_path.write_text(records.replace('childAspectRatio: 1.55,', 'childAspectRatio: 1.30,', 1))
+records_path.write_text(records.replace('childAspectRatio: 1.55,', 'childAspectRatio: 1.10,', 1))
 
 print('Daily fallback, Results badge, and compact record layouts updated.')
