@@ -5,9 +5,9 @@ text = path.read_text()
 
 old = "String _heroEyebrow(ReactRunResult result) => switch (result.mode) {\\n"
 new = "String _heroEyebrow(ReactRunResult result) {\\n"
-if old not in text:
-    raise RuntimeError('Expected share helper signature was not found in patcher.')
-text = text.replace(old, new, 1)
+if text.count(old) < 2:
+    raise RuntimeError('Expected both share helper signature occurrences were not found.')
+text = text.replace(old, new)
 
 for marker in (
     "class _ResultStat extends StatelessWidget {''',\n)",
