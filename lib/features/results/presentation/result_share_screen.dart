@@ -93,13 +93,16 @@ class _ResultShareScreenState extends State<ResultShareScreen> {
                   ),
                   const Expanded(
                     child: Center(
-                      child: Text(
-                        'SHARE RESULT',
-                        style: TextStyle(
-                          color: ReactColors.textPrimary,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.5,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'SHARE RESULT',
+                          style: TextStyle(
+                            color: ReactColors.textPrimary,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.5,
+                          ),
                         ),
                       ),
                     ),
@@ -282,25 +285,30 @@ class _ShareCard extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 11,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: .09),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: color.withValues(alpha: .55),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 11,
+                              vertical: 6,
                             ),
-                          ),
-                          child: Text(
-                            result.mode.label,
-                            style: TextStyle(
-                              color: color,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.2,
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: .09),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: color.withValues(alpha: .55),
+                              ),
+                            ),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                result.mode.label,
+                                style: TextStyle(
+                                  color: color,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -441,23 +449,35 @@ class _ShareCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 7),
-                        const Text(
-                          'REACTION • REFLEX • SPEED',
-                          style: TextStyle(
-                            color: ReactColors.textSecondary,
-                            fontSize: 7,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1,
+                        const Expanded(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'REACTION • REFLEX • SPEED',
+                              style: TextStyle(
+                                color: ReactColors.textSecondary,
+                                fontSize: 7,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1,
+                              ),
+                            ),
                           ),
                         ),
-                        const Spacer(),
-                        const Text(
-                          'CAN YOU BEAT IT?',
-                          style: TextStyle(
-                            color: ReactColors.textPrimary,
-                            fontSize: 7,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: .8,
+                        const SizedBox(width: 12),
+                        const Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              'CAN YOU BEAT IT?',
+                              style: TextStyle(
+                                color: ReactColors.textPrimary,
+                                fontSize: 7,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: .8,
+                              ),
+                            ),
                           ),
                         ),
                       ],
