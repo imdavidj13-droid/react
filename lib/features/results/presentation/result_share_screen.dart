@@ -209,6 +209,7 @@ class _ShareCard extends StatelessWidget {
     final color = _modeColor(result.mode);
     final isPassIt = result.mode == ReactGameMode.passIt;
     final isDaily = result.mode == ReactGameMode.daily;
+    final medals = _shareMedals(result);
 
     return SizedBox(
       width: 360,
@@ -292,6 +293,10 @@ class _ShareCard extends StatelessWidget {
                         icon: Icons.workspace_premium_rounded,
                       ),
                     ],
+                    if (medals.isNotEmpty) ...[
+                      const SizedBox(height: 7),
+                      _MedalStrip(medals: medals),
+                    ],
                     const Spacer(),
                     if (isDaily) ...[
                       _DailySummary(result: result, color: color),
@@ -337,6 +342,24 @@ class _CardHeader extends StatelessWidget {
         ),
         const Spacer(),
         _Badge(label: mode.label, color: color),
+      ],
+    );
+  }
+}
+
+class _MedalStrip extends StatelessWidget {
+  const _MedalStrip({required this.medals});
+
+  final List<_ShareMedal> medals;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 5,
+      children: [
+        for (final medal in medals)
+          _Badge(label: medal.label, color: medal.color, icon: medal.icon),
       ],
     );
   }
@@ -738,6 +761,73 @@ class _ShareGridPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ShareGridPainter oldDelegate) =>
       oldDelegate.color != color;
+}
+
+class _ShareMedal {
+  const _ShareMedal(this.label, this.icon, this.color);
+
+  final String label;
+  final IconData icon;
+  final Color color;
+}
+
+List<_ShareMedal> _shareMedals(ReactRunResult result) {
+  final medals = <_ShareMedal>[];
+  if (result.successfulCommands > 0 && result.misses == 0) {
+    medals.add(
+      const _ShareMedal(
+        'PERFECT RUN',
+        Icons.auto_awesome_rounded,
+        ReactColors.lime,
+      ),
+    );
+  }
+  if (result.averageTimeSeconds > 0 && result.averageTimeSeconds <= .65) {
+    medals.add(
+      const _ShareMedal(
+        'LIGHTNING',
+        Icons.bolt_rounded,
+        ReactColors.electricBlueBright,
+      ),
+    );
+  }
+  if (result.mode == ReactGameMode.endless && result.score >= 25) {
+    medals.add(
+      const _ShareMedal(
+        'SURVIVOR',
+        Icons.all_inclusive_rounded,
+        ReactColors.lime,
+      ),
+    );
+  }
+  if (result.mode == ReactGameMode.daily &&
+      result.outcome == ReactRunOutcome.completed) {
+    medals.add(
+      const _ShareMedal(
+        'DAILY MASTER',
+        Icons.emoji_events_rounded,
+        ReactColors.purple,
+      ),
+    );
+  }
+  if (result.mode == ReactGameMode.passIt &&
+      result.outcome == ReactRunOutcome.winner &&
+      result.winnerPlayer != null &&
+      result.playerLives != null) {
+    final winnerIndex = result.winnerPlayer! - 1;
+    if (winnerIndex >= 0 &&
+        winnerIndex < result.playerLives!.length &&
+        result.playerLives![winnerIndex] == 1) {
+      medals.add(
+        const _ShareMedal(
+          'CLUTCH',
+          Icons.favorite_rounded,
+          ReactColors.coral,
+        ),
+      );
+    }
+  }
+  return medals;
 }
 
 String _scoreLabel(ReactGameMode mode) => switch (mode) {
