@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import '../../gameplay/domain/react_run_history_entry.dart';
 import '../../gameplay/domain/react_run_result.dart';
+import '../../leaderboard/data/local_leaderboard_submission_store.dart';
 
 class RunComparison {
   const RunComparison({
@@ -20,6 +23,11 @@ class RunComparison {
     ReactRunHistoryEntry? previous, {
     DateTime? now,
   }) {
+    // ResultsScreen invokes this once from its completion persistence path.
+    // Keep leaderboard capture backend-agnostic and non-blocking here until a
+    // remote submission service is introduced.
+    unawaited(LocalLeaderboardSubmissionStore.enqueueResult(current));
+
     if (previous == null || previous.mode != current.mode) return null;
 
     if (current.mode == ReactGameMode.daily) {
