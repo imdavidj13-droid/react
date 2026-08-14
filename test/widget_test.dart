@@ -35,7 +35,7 @@ void main() {
     expect(find.text('27'), findsOneWidget);
   });
 
-  testWidgets('Home marks Daily as done after today attempt is consumed',
+  testWidgets('Home offers Daily replay after today has been attempted',
       (tester) async {
     SharedPreferences.setMockInitialValues({
       'daily_last_played': todayKey(),
@@ -44,7 +44,7 @@ void main() {
     await tester.pumpWidget(const ReactApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('DONE'), findsOneWidget);
+    expect(find.text('PLAY AGAIN'), findsOneWidget);
     expect(find.text('READY'), findsNothing);
   });
 }
