@@ -10,6 +10,7 @@ import '../../gameplay/presentation/react_run_launch_screen.dart';
 import '../../gameplay/presentation/react_run_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../domain/run_comparison.dart';
+import 'result_share_screen.dart';
 
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({required this.result, super.key});
@@ -77,6 +78,19 @@ class _ResultsScreenState extends State<ResultsScreen> {
     );
   }
 
+  Future<void> _shareResult() async {
+    await _recordFuture;
+    if (!mounted || _isDailyDevRun) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ResultShareScreen(
+          result: result,
+          newBest: _newBest,
+        ),
+      ),
+    );
+  }
+
   Future<void> _backHome() async {
     await _recordFuture;
     if (!mounted) return;
@@ -130,6 +144,33 @@ class _ResultsScreenState extends State<ResultsScreen> {
                       _PassItSummary(result: result),
                     ],
                     SizedBox(height: compact ? 24 : 32),
+                    if (!_isDailyDevRun) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: OutlinedButton.icon(
+                          onPressed: _shareResult,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: _modeColor,
+                            side: BorderSide(
+                              color: _modeColor.withValues(alpha: .72),
+                            ),
+                            backgroundColor: _modeColor.withValues(alpha: .055),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(17),
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                          icon: const Icon(Icons.ios_share_rounded, size: 19),
+                          label: const Text('SHARE RESULT'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
                     if (_isDailyDevRun)
                       NeonButton(
                         label: 'TEST AGAIN',
