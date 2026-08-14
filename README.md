@@ -59,14 +59,14 @@ Until the online backend is introduced, SharedPreferences stores:
 - Per-command attempts, successes, misses and successful reaction-time totals
 - Recent run history
 - Daily played-today state and streak
-- Rolling Daily history with modifier, strongest score and outcome for each day
+- Daily history with modifier, strongest score and outcome for each recorded day
 - Per-modifier Daily best scores
 - Pass It player-count preference
 - Sound preference
 - Visual-effects preference
 - Debug-only Daily modifier override preference
 
-The Profile screen exposes Command Performance and Milestones views. Command Performance shows accuracy and average successful reaction time for every active command. Milestones are calculated entirely from real local records such as commands cleared, mode bests, Daily streaks and completed Pass It matches; there is no XP, level or currency system. The Daily screen shows a rolling seven-day modifier/result strip. No fake global ranks or online statistics are shown in the current offline build.
+The Profile screen exposes Command Performance and Milestones views. Command Performance shows accuracy and average successful reaction time for every active command. Milestones are calculated entirely from real local records such as commands cleared, mode bests, Daily streaks and completed Pass It matches; there is no XP, level or currency system. The Daily screen shows the current Monday-to-Sunday modifier/result strip. No fake global ranks or online statistics are shown in the current offline build.
 
 ## Settings
 
