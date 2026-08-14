@@ -172,7 +172,7 @@ class _DailyDevScreenState extends State<DailyDevScreen> {
             ),
             const SizedBox(height: 10),
             const Text(
-              'DEV TEST RUNS DO NOT CONSUME THE NORMAL DAILY ATTEMPT OR ALTER REAL RECORDS.',
+              'DEV TEST RUNS DO NOT CHANGE NORMAL DAILY HISTORY, STREAKS OR RECORDS.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: ReactColors.textSecondary,
