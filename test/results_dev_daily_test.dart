@@ -36,6 +36,7 @@ void main() {
 
     expect(find.text('TEST AGAIN'), findsOneWidget);
     expect(find.text('BACK TO DEV TESTER'), findsOneWidget);
+    expect(find.text('SHARE RESULT'), findsNothing);
     expect(find.text('DAILY ATTEMPT COMPLETE'), findsNothing);
     expect(await LocalPlayerStats.hasPlayedDailyToday(), isFalse);
     expect(await LocalPlayerStats.runsPlayed(), 0);
