@@ -1,7 +1,7 @@
 from pathlib import Path
 
-path = Path('lib/features/results/presentation/result_share_screen.dart')
-text = path.read_text()
+share_path = Path('lib/features/results/presentation/result_share_screen.dart')
+text = share_path.read_text()
 start = text.index('String _shareText(ReactRunResult result) {')
 end = text.index('Color _modeColor(ReactGameMode mode)', start)
 replacement = '''String _shareText(ReactRunResult result) {
@@ -17,5 +17,22 @@ replacement = '''String _shareText(ReactRunResult result) {
 }
 
 '''
-path.write_text(text[:start] + replacement + text[end:])
-print('Daily share text updated to use snapshotted run metadata.')
+share_path.write_text(text[:start] + replacement + text[end:])
+
+results_path = Path('lib/features/results/presentation/results_screen.dart')
+results = results_path.read_text()
+old = '''            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.workspace_premium_rounded, color: ReactColors.lime, size: 17),
+'''
+new = '''            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.workspace_premium_rounded, color: ReactColors.lime, size: 17),
+'''
+if old not in results:
+    raise RuntimeError('Expected NEW BEST const Row was not found.')
+results_path.write_text(results.replace(old, new, 1))
+
+print('Daily share metadata and Results badge const handling updated.')
