@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:react/core/settings/react_settings.dart';
+import 'package:react/features/daily/domain/daily_challenge.dart';
 import 'package:react/features/gameplay/data/local_player_stats.dart';
 import 'package:react/features/gameplay/domain/react_run_result.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -194,6 +195,26 @@ void main() {
 
     expect(await LocalPlayerStats.dailyStreak(), 1);
     expect(await LocalPlayerStats.bestFor(ReactGameMode.daily), 10);
+  });
+
+  test('Daily new-best state follows todays modifier record', () async {
+    final modifier = DailyChallenge.today().modifier;
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'best_daily': 60,
+      'daily_best_${modifier.name}': 20,
+    });
+
+    final newRuleBest = await LocalPlayerStats.recordResult(
+      result(mode: ReactGameMode.daily, score: 25),
+    );
+    final lowerRetry = await LocalPlayerStats.recordResult(
+      result(mode: ReactGameMode.daily, score: 24),
+    );
+
+    expect(newRuleBest, isTrue);
+    expect(lowerRetry, isFalse);
+    expect(await LocalPlayerStats.bestFor(ReactGameMode.daily), 60);
+    expect(await LocalPlayerStats.dailyBestForModifier(modifier), 25);
   });
 
   test('persisted dev override does not suppress a normal Daily result', () async {
