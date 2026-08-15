@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:react/core/settings/react_settings.dart';
 import 'package:react/features/gameplay/data/local_player_stats.dart';
+import 'package:react/features/gameplay/domain/react_command.dart';
+import 'package:react/features/gameplay/domain/react_command_performance.dart';
 import 'package:react/features/gameplay/domain/react_run_history_entry.dart';
 import 'package:react/features/gameplay/domain/react_run_result.dart';
 import 'package:react/features/gameplay/presentation/react_run_screen.dart';
@@ -35,6 +37,36 @@ void main() {
       expect(decoded?.dailyModifierLabel, 'CHAIN');
     },
   );
+
+  test('strongest command prioritises accuracy before raw speed', () {
+    final entry = ReactRunHistoryEntry.fromResult(
+      const ReactRunResult(
+        mode: ReactGameMode.classic,
+        score: 11,
+        successfulCommands: 11,
+        averageTimeSeconds: .48,
+        outcome: ReactRunOutcome.missedCommand,
+        misses: 9,
+        commandPerformance: {
+          ReactCommand.tap: ReactCommandPerformance(
+            command: ReactCommand.tap,
+            attempts: 10,
+            successes: 1,
+            totalResponseMs: 300,
+          ),
+          ReactCommand.swipeLeft: ReactCommandPerformance(
+            command: ReactCommand.swipeLeft,
+            attempts: 10,
+            successes: 10,
+            totalResponseMs: 5000,
+          ),
+        },
+      ),
+    );
+
+    expect(entry.strongestCommand, 'SWIPE LEFT');
+    expect(entry.weakestCommand, 'TAP IT');
+  });
 
   test('recording results retains the best command streak', () async {
     await LocalPlayerStats.recordResult(
