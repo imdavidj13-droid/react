@@ -816,7 +816,7 @@ class _MessageCard extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-        if (action != null) action!,
+        ?action,
       ],
     ),
   );
