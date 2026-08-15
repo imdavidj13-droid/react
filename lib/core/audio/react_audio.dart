@@ -33,10 +33,33 @@ abstract final class ReactAudio {
   );
   static final Map<ReactSoundCue, Uint8List> _clips = _buildClips();
   static int _nextPlayer = 0;
+  static bool _initialized = false;
 
   static bool get enabled => ReactSettings.soundEnabled;
 
+  static Future<void> initialize() async {
+    if (_initialized) return;
+    _initialized = true;
+
+    await AudioPlayer.global.setAudioContext(
+      AudioContext(
+        android: const AudioContextAndroid(
+          contentType: AndroidContentType.sonification,
+          usageType: AndroidUsageType.game,
+          audioFocus: AndroidAudioFocus.gain,
+        ),
+        iOS: const AudioContextIOS(
+          category: AVAudioSessionCategory.ambient,
+          options: {AVAudioSessionOptions.mixWithOthers},
+        ),
+      ),
+    );
+
+    ReactSettings.soundPreview = () => play(ReactSoundCue.success);
+  }
+
   static Future<void> play(ReactSoundCue cue) async {
+    if (!_initialized) await initialize();
     if (!enabled) return;
 
     final bytes = _clips[cue];
