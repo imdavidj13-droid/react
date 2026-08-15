@@ -51,7 +51,7 @@ void main() {
   testWidgets('Daily overview tolerates 150 percent text on a compact phone',
       (tester) async {
     await pumpLargeText(tester, const DailyScreen());
-    expect(find.text('DAILY'), findsWidgets);
+    expect(find.text('DAILY RUN'), findsOneWidget);
   });
 
   testWidgets('Leaderboard tolerates 150 percent text on a compact phone',
