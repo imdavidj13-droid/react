@@ -11,6 +11,7 @@ import '../../gameplay/presentation/react_run_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../leaderboard/data/local_leaderboard_submission_store.dart';
 import '../domain/run_comparison.dart';
+import '../domain/run_medal.dart';
 import 'result_share_screen.dart';
 
 class ResultsScreen extends StatefulWidget {
@@ -832,59 +833,36 @@ class _RunMedal {
   final Color color;
 }
 
-List<_RunMedal> _runMedals(ReactRunResult result) {
-  final medals = <_RunMedal>[];
-  if (result.successfulCommands > 0 && result.misses == 0) {
-    medals.add(
-      const _RunMedal(
+List<_RunMedal> _runMedals(ReactRunResult result) => [
+  for (final medal in earnedRunMedals(result))
+    switch (medal) {
+      RunMedal.perfectRun => const _RunMedal(
         'PERFECT RUN',
         Icons.check_circle_rounded,
         ReactColors.lime,
       ),
-    );
-  }
-  if (result.averageTimeSeconds > 0 && result.averageTimeSeconds <= .65) {
-    medals.add(
-      const _RunMedal(
+      RunMedal.lightning => const _RunMedal(
         'LIGHTNING',
         Icons.bolt_rounded,
         ReactColors.electricBlueBright,
       ),
-    );
-  }
-  if (result.mode == ReactGameMode.endless && result.score >= 25) {
-    medals.add(
-      const _RunMedal(
+      RunMedal.survivor => const _RunMedal(
         'SURVIVOR',
         Icons.all_inclusive_rounded,
         ReactColors.lime,
       ),
-    );
-  }
-  if (result.mode == ReactGameMode.daily &&
-      result.outcome == ReactRunOutcome.completed) {
-    medals.add(
-      const _RunMedal(
+      RunMedal.dailyMaster => const _RunMedal(
         'DAILY MASTER',
         Icons.emoji_events_rounded,
         ReactColors.purple,
       ),
-    );
-  }
-  if (result.mode == ReactGameMode.passIt &&
-      result.winnerPlayer != null &&
-      result.playerLives != null) {
-    final winnerIndex = result.winnerPlayer! - 1;
-    if (winnerIndex >= 0 &&
-        winnerIndex < result.playerLives!.length &&
-        result.playerLives![winnerIndex] == 1) {
-      medals.add(
-        const _RunMedal('CLUTCH', Icons.favorite_rounded, ReactColors.coral),
-      );
-    }
-  }
-  return medals;
-}
+      RunMedal.clutch => const _RunMedal(
+        'CLUTCH',
+        Icons.favorite_rounded,
+        ReactColors.coral,
+      ),
+    },
+];
 
 class _ResultStat extends StatelessWidget {
   const _ResultStat({
