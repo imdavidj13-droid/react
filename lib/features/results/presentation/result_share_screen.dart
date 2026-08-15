@@ -5,7 +5,6 @@ import 'package:flutter/rendering.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/react_colors.dart';
-import '../../daily/domain/daily_challenge.dart';
 import '../../gameplay/domain/react_command.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import '../domain/run_medal.dart';
@@ -374,19 +373,11 @@ class _DailySummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fallback = result.dailyModifierLabel == null
-        ? DailyChallenge.today()
-        : null;
     final date = result.dailyDate;
-    final dateLabel = date == null
-        ? fallback?.dateLabel ?? 'DAILY CHALLENGE'
-        : _dailyDateLabel(date);
-    final modifierLabel =
-        result.dailyModifierLabel ?? fallback?.modifier.label ?? 'DAILY';
+    final dateLabel = date == null ? 'DATE UNAVAILABLE' : _dailyDateLabel(date);
+    final modifierLabel = result.dailyModifierLabel ?? 'DAILY CHALLENGE';
     final rule =
-        result.dailyModifierRule ??
-        fallback?.modifier.shortRule ??
-        '60 COMMAND TARGET';
+        result.dailyModifierRule ?? '60 COMMANDS • ONE MISS ENDS THE ATTEMPT';
 
     return _InfoStrip(
       icon: Icons.calendar_today_rounded,
@@ -834,8 +825,7 @@ String _shareText(ReactRunResult result) {
         '${result.successfulCommands} commands cleared.';
   }
   if (result.mode == ReactGameMode.daily) {
-    final modifier =
-        result.dailyModifierLabel ?? DailyChallenge.today().modifier.label;
+    final modifier = result.dailyModifierLabel ?? 'CHALLENGE';
     return 'RE△CT DAILY $modifier — ${result.score}/60. Can you beat it?';
   }
   return 'RE△CT ${result.mode.label} — ${result.score} points. Can you beat it?';
