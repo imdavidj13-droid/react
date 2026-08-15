@@ -25,9 +25,9 @@ class ReactGestureSurface extends StatefulWidget {
 class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   static const _minimumSwipeDistance = 48.0;
   static const _tapMovementTolerance = 18.0;
-  static const _minimumPinchSpreadDelta = 18.0;
-  static const _pinchRatio = 0.88;
-  static const _spreadRatio = 1.12;
+  static const _minimumPinchSpreadDelta = 14.0;
+  static const _pinchRatio = 0.92;
+  static const _spreadRatio = 1.08;
   static const _doubleTapWindow = Duration(milliseconds: 420);
   static const _holdDuration = Duration(milliseconds: 360);
   static const _holdMovementTolerance = 24.0;
@@ -42,7 +42,6 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   Timer? _doubleTapTimer;
   Timer? _holdTimer;
   int? _primaryPointer;
-  ReactCommand? _pendingMultiTouchCommand;
   bool _multiTouchSeen = false;
   bool _holdSatisfied = false;
   bool _tapMovementInvalidated = false;
@@ -65,7 +64,6 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       _firstTapAt = null;
       _secondTapStartedInWindow = false;
       _holdSatisfied = false;
-      _pendingMultiTouchCommand = null;
 
       if (_pointers.isNotEmpty) {
         _blockedUntilPointersClear = true;
@@ -102,7 +100,6 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
 
     if (_pointers.length > 2) {
       _cancelled = true;
-      _pendingMultiTouchCommand = null;
       _holdSatisfied = false;
       _holdTimer?.cancel();
       _doubleTapTimer?.cancel();
@@ -130,7 +127,6 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       _holdSatisfied = false;
       _tapMovementInvalidated = false;
       _holdMovementInvalidated = false;
-      _pendingMultiTouchCommand = null;
       _resolved = false;
       _cancelled = false;
 
@@ -176,8 +172,6 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
     }
 
     if (_pointers.length >= 2) {
-      if (_pendingMultiTouchCommand != null) return;
-
       final startDistance = _twoFingerStartDistance;
       final currentDistance = _currentTwoFingerDistance();
       if (startDistance == null || currentDistance == null || startDistance < 24) {
@@ -188,12 +182,12 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
       final ratio = currentDistance / startDistance;
 
       if (distanceDelta <= -_minimumPinchSpreadDelta && ratio <= _pinchRatio) {
-        _pendingMultiTouchCommand = ReactCommand.pinch;
+        _emit(ReactCommand.pinch);
         return;
       }
 
       if (distanceDelta >= _minimumPinchSpreadDelta && ratio >= _spreadRatio) {
-        _pendingMultiTouchCommand = ReactCommand.spread;
+        _emit(ReactCommand.spread);
       }
       return;
     }
@@ -233,13 +227,7 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
     }
 
     if (_multiTouchSeen) {
-      if (_pointers.isEmpty) {
-        final pending = _pendingMultiTouchCommand;
-        if (pending != null) {
-          _emit(pending);
-        }
-        _resetGestureState();
-      }
+      if (_pointers.isEmpty) _resetGestureState();
       return;
     }
 
@@ -338,7 +326,6 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
   void _onPointerCancel(PointerCancelEvent event) {
     _pointers.remove(event.pointer);
     _cancelled = true;
-    _pendingMultiTouchCommand = null;
     _holdSatisfied = false;
     _holdTimer?.cancel();
     _doubleTapTimer?.cancel();
@@ -374,7 +361,6 @@ class _ReactGestureSurfaceState extends State<ReactGestureSurface> {
     _holdSatisfied = false;
     _tapMovementInvalidated = false;
     _holdMovementInvalidated = false;
-    _pendingMultiTouchCommand = null;
     _twoFingerStartDistance = null;
     _holdTimer?.cancel();
     _cancelled = false;
