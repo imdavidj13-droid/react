@@ -48,4 +48,23 @@ void main() {
     expect(find.textContaining('NO EXTRA LIVES'), findsOneWidget);
     expect(find.textContaining('PAID GAMEPLAY ADVANTAGES'), findsOneWidget);
   });
+
+  testWidgets('shop pack opens a non-purchasable detail preview', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: ShopScreen()),
+    );
+
+    await tester.tap(find.text('REDLINE'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('INCLUDES'), findsOneWidget);
+    expect(find.text('Redline arena palette'), findsOneWidget);
+    expect(find.text('£1.99'), findsWidgets);
+    expect(find.textContaining('STORE CHECKOUT IS NOT ENABLED YET'), findsOneWidget);
+
+    final comingSoon = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'COMING SOON'),
+    );
+    expect(comingSoon.onPressed, isNull);
+  });
 }
