@@ -4,9 +4,14 @@ import '../../../core/settings/react_settings.dart';
 import '../../../core/theme/react_colors.dart';
 
 class HowToPlayScreen extends StatefulWidget {
-  const HowToPlayScreen({super.key, this.firstRun = false});
+  const HowToPlayScreen({
+    super.key,
+    this.firstRun = false,
+    this.onFinished,
+  });
 
   final bool firstRun;
+  final VoidCallback? onFinished;
 
   @override
   State<HowToPlayScreen> createState() => _HowToPlayScreenState();
@@ -73,7 +78,11 @@ class _HowToPlayScreenState extends State<HowToPlayScreen> {
       await ReactSettings.setHowToPlayCompleted(true);
     }
     if (!mounted) return;
-    Navigator.of(context).pop();
+    if (widget.onFinished != null) {
+      widget.onFinished!();
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   Future<void> _next() async {
