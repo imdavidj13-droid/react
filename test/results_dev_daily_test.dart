@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:react/core/settings/react_settings.dart';
 import 'package:react/features/gameplay/data/local_player_stats.dart';
 import 'package:react/features/gameplay/domain/react_run_result.dart';
 import 'package:react/features/results/presentation/results_screen.dart';
@@ -9,13 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    ReactSettings.dailyDevOverrideEnabled = true;
-    ReactSettings.dailyDevModifier = 'redline';
-    ReactSettings.dailyDevRunActive = true;
-  });
-
-  tearDown(() {
-    ReactSettings.dailyDevRunActive = false;
   });
 
   testWidgets('Daily developer Results stays repeatable and does not consume Daily',
@@ -27,6 +19,7 @@ void main() {
       averageTimeSeconds: .72,
       outcome: ReactRunOutcome.missedCommand,
       misses: 1,
+      isDailyDevRun: true,
     );
 
     await tester.pumpWidget(
