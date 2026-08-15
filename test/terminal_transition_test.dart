@@ -91,8 +91,14 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     expect(find.text('60 SECOND SCORE'), findsNothing);
 
+    // Returning to the foreground intentionally stays paused until the player
+    // explicitly resumes. That action must restore the frozen terminal timer.
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
+    expect(find.text('PAUSED'), findsOneWidget);
+    await tester.tap(find.text('RESUME'));
+    await tester.pump();
+
     await tester.pump(const Duration(milliseconds: 321));
     await tester.pumpAndSettle();
     expect(find.text('60 SECOND SCORE'), findsOneWidget);
