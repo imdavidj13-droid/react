@@ -27,6 +27,12 @@ class _DailyDevScreenState extends State<DailyDevScreen> {
     );
   }
 
+  @override
+  void dispose() {
+    ReactSettings.dailyDevRunActive = false;
+    super.dispose();
+  }
+
   Future<void> _setEnabled(bool value) async {
     setState(() => _enabled = value);
     await ReactSettings.setDailyDevOverrideEnabled(value);
@@ -40,19 +46,19 @@ class _DailyDevScreenState extends State<DailyDevScreen> {
   Future<void> _launch() async {
     if (!_enabled || !mounted) return;
 
+    // Keep the dev identity alive for the whole tester flow. The launch screen
+    // replaces itself with Daily gameplay, so clearing this in a try/finally
+    // here would clear it as soon as that replacement happens, before the run
+    // reaches Results.
     ReactSettings.dailyDevRunActive = true;
-    try {
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => const ReactRunLaunchScreen(
-            mode: ReactGameMode.daily,
-            consumeDailyAttempt: false,
-          ),
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const ReactRunLaunchScreen(
+          mode: ReactGameMode.daily,
+          consumeDailyAttempt: false,
         ),
-      );
-    } finally {
-      ReactSettings.dailyDevRunActive = false;
-    }
+      ),
+    );
   }
 
   @override
