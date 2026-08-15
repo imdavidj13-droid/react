@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:react/core/settings/react_settings.dart';
 import 'package:react/features/daily/domain/daily_challenge.dart';
 import 'package:react/features/gameplay/data/local_player_stats.dart';
 import 'package:react/features/gameplay/domain/react_command.dart';
@@ -10,8 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    ReactSettings.dailyDevRunActive = false;
-    ReactSettings.dailyDevOverrideEnabled = false;
   });
 
   test('aggregates per-command attempts successes misses and reaction time', () async {
@@ -187,7 +184,6 @@ void main() {
   test('developer Daily result never changes real Daily history or modifier best',
       () async {
     final modifier = DailyChallenge.today().modifier;
-    ReactSettings.dailyDevRunActive = true;
     await LocalPlayerStats.recordResult(
       const ReactRunResult(
         mode: ReactGameMode.daily,
@@ -195,6 +191,7 @@ void main() {
         successfulCommands: 60,
         averageTimeSeconds: .6,
         outcome: ReactRunOutcome.completed,
+        isDailyDevRun: true,
       ),
     );
 
