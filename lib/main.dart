@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app/react_app.dart';
+import 'core/audio/react_audio.dart';
 import 'core/settings/react_settings.dart';
 
 Future<void> main() async {
@@ -24,5 +25,6 @@ Future<void> main() async {
   );
 
   await ReactSettings.load();
+  await ReactAudio.initialize();
   runApp(const ReactApp());
 }
