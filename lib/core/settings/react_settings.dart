@@ -8,12 +8,14 @@ class ReactSettings {
   static const _passItPlayerCountKey = 'settings_pass_it_player_count';
   static const _dailyDevOverrideKey = 'settings_daily_dev_override_enabled';
   static const _dailyDevModifierKey = 'settings_daily_dev_modifier';
+  static const _howToPlayCompletedKey = 'settings_how_to_play_completed';
 
   static bool soundEnabled = true;
   static bool visualEffectsEnabled = true;
   static int passItPlayerCount = 3;
   static bool dailyDevOverrideEnabled = false;
   static String dailyDevModifier = 'lightsOut';
+  static bool howToPlayCompleted = false;
 
   // Registered by the audio controller during app startup. Keeping this as a
   // callback avoids coupling persistent settings to a concrete audio package.
@@ -32,6 +34,7 @@ class ReactSettings {
         (prefs.getInt(_passItPlayerCountKey) ?? 3).clamp(2, 4).toInt();
     dailyDevOverrideEnabled = prefs.getBool(_dailyDevOverrideKey) ?? false;
     dailyDevModifier = prefs.getString(_dailyDevModifierKey) ?? 'lightsOut';
+    howToPlayCompleted = prefs.getBool(_howToPlayCompletedKey) ?? false;
     dailyDevRunActive = false;
   }
 
@@ -65,5 +68,11 @@ class ReactSettings {
     dailyDevModifier = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_dailyDevModifierKey, value);
+  }
+
+  static Future<void> setHowToPlayCompleted(bool value) async {
+    howToPlayCompleted = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_howToPlayCompletedKey, value);
   }
 }
