@@ -41,7 +41,7 @@ void main() {
     expect(find.text('REDLINE'), findsOneWidget);
     expect(find.text('SYNTHWAVE'), findsOneWidget);
 
-    final scrollable = find.byType(CustomScrollView);
+    final scrollable = find.byType(Scrollable).first;
     await tester.scrollUntilVisible(
       find.text('ARCADE SFX'),
       250,
