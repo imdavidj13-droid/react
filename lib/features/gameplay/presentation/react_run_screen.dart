@@ -17,7 +17,11 @@ import 'react_gesture_surface.dart';
 import 'react_run_launch_screen.dart';
 
 class ReactRunScreen extends StatefulWidget {
-  const ReactRunScreen({required this.mode, super.key});
+  const ReactRunScreen({required this.mode, super.key})
+      : assert(
+          mode != ReactGameMode.daily,
+          'Daily mode must use DailyRunScreen.',
+        );
 
   final ReactGameMode mode;
 
@@ -72,6 +76,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   bool _handoff = false;
   bool _pausedHadActiveCommand = false;
   bool _blitzWarningPlayed = false;
+  bool _blitzEnding = false;
 
   VoidCallback? _pendingTransitionAction;
   String? _feedback;
@@ -80,7 +85,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     ReactGameMode.classic => ReactModeTiming.classic,
     ReactGameMode.blitz => ReactModeTiming.blitz,
     ReactGameMode.endless => ReactModeTiming.endless,
-    ReactGameMode.daily => ReactModeTiming.daily,
+    ReactGameMode.daily => throw StateError('Daily uses DailyRunScreen.'),
     ReactGameMode.passIt => ReactModeTiming.passIt,
   };
 
@@ -133,7 +138,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     if (widget.mode == ReactGameMode.blitz) {
       _blitzClock.start();
       _runTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
-        if (!mounted || _finished || _paused) return;
+        if (!mounted || _finished || _paused || _blitzEnding) return;
 
         final remaining = _blitzMsRemaining;
         if (remaining <= 10000 && !_blitzWarningPlayed) {
@@ -142,7 +147,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         }
 
         if (remaining <= 0) {
-          _finish(ReactRunOutcome.timeUp);
+          _beginBlitzTimeUp();
         } else {
           setState(() {});
         }
@@ -179,10 +184,10 @@ class _ReactRunScreenState extends State<ReactRunScreen>
 
   void _startCommand() {
     _commandTimer?.cancel();
-    if (!mounted || _finished || _paused || _handoff) return;
+    if (!mounted || _finished || _paused || _handoff || _blitzEnding) return;
 
     if (widget.mode == ReactGameMode.blitz && _blitzMsRemaining <= 0) {
-      _finish(ReactRunOutcome.timeUp);
+      _beginBlitzTimeUp();
       return;
     }
 
@@ -206,6 +211,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   }
 
   void _armCommandTimer(int remainingMs) {
+    if (_blitzEnding) return;
     final fullDuration = _commandDurationMs;
     final safeRemaining = remainingMs.clamp(1, fullDuration).toInt();
 
@@ -221,7 +227,13 @@ class _ReactRunScreenState extends State<ReactRunScreen>
 
     _commandTimer?.cancel();
     _commandTimer = Timer.periodic(_tick, (_) {
-      if (!mounted || _finished || _paused || !_acceptingInput) return;
+      if (!mounted ||
+          _finished ||
+          _paused ||
+          _blitzEnding ||
+          !_acceptingInput) {
+        return;
+      }
 
       final remaining = _commandRemainingMs;
       if (remaining <= 0) {
@@ -235,10 +247,16 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   }
 
   void _handleCommand(ReactCommand performed) {
-    if (!_acceptingInput || _finished || _paused || _handoff) return;
+    if (!_acceptingInput ||
+        _finished ||
+        _paused ||
+        _handoff ||
+        _blitzEnding) {
+      return;
+    }
 
     if (widget.mode == ReactGameMode.blitz && _blitzMsRemaining <= 0) {
-      _finish(ReactRunOutcome.timeUp);
+      _beginBlitzTimeUp();
       return;
     }
 
@@ -255,7 +273,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   }
 
   void _complete() {
-    if (!_acceptingInput || _finished) return;
+    if (!_acceptingInput || _finished || _blitzEnding) return;
     _commandTimer?.cancel();
     _commandClock.stop();
 
@@ -291,7 +309,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
   }
 
   void _miss() {
-    if (!_acceptingInput || _finished) return;
+    if (!_acceptingInput || _finished || _blitzEnding) return;
     _commandTimer?.cancel();
     _commandClock.stop();
     _commandTracker.recordMiss(_command);
@@ -328,7 +346,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
           _feedback = 'MISS  -${penalty ~/ 1000} SEC';
         });
         if (_blitzMsRemaining <= 0) {
-          _finish(ReactRunOutcome.timeUp);
+          _beginBlitzTimeUp();
         } else {
           _scheduleTransition(_timing.missDelayMs, _startCommand);
         }
@@ -345,14 +363,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         return;
 
       case ReactGameMode.daily:
-        unawaited(ReactAudio.play(ReactSoundCue.miss));
-        setState(() {
-          _acceptingInput = false;
-          _misses += 1;
-          _feedback = 'MISS';
-        });
-        _finish(ReactRunOutcome.missedCommand);
-        return;
+        throw StateError('Daily uses DailyRunScreen.');
 
       case ReactGameMode.passIt:
         final lostPlayer = _currentPlayer;
@@ -375,12 +386,26 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     }
   }
 
+  void _beginBlitzTimeUp() {
+    if (_finished || _blitzEnding || !mounted) return;
+    _blitzEnding = true;
+    _acceptingInput = false;
+    _commandTimer?.cancel();
+    _runTimer?.cancel();
+    _commandClock.stop();
+    _blitzClock.stop();
+    _clearPendingTransition();
+    setState(() => _feedback = 'TIME UP');
+    unawaited(ReactAudio.play(ReactSoundCue.completed));
+    _scheduleTransition(320, () => _finish(ReactRunOutcome.timeUp));
+  }
+
   void _syncFlameIntensity() {
     final intensity = switch (widget.mode) {
       ReactGameMode.classic => (.18 + _score * .008).clamp(.18, .48),
       ReactGameMode.blitz => (.45 + _score * .006).clamp(.45, .72),
       ReactGameMode.endless => (.24 + _score * .035).clamp(.24, 1.0),
-      ReactGameMode.daily => (.28 + _score * .014).clamp(.28, .72),
+      ReactGameMode.daily => throw StateError('Daily uses DailyRunScreen.'),
       ReactGameMode.passIt => .30,
     };
     _game.setIntensity(intensity.toDouble());
@@ -537,7 +562,9 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       return;
     }
 
-    if (widget.mode == ReactGameMode.blitz && !_blitzClock.isRunning) {
+    if (widget.mode == ReactGameMode.blitz &&
+        !_blitzEnding &&
+        !_blitzClock.isRunning) {
       _blitzClock.start();
     }
 
@@ -639,7 +666,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     ReactGameMode.classic => 'LIVES',
     ReactGameMode.blitz => 'TIME',
     ReactGameMode.endless => 'PACE',
-    ReactGameMode.daily => 'STEP',
+    ReactGameMode.daily => throw StateError('Daily uses DailyRunScreen.'),
     ReactGameMode.passIt => 'PLAYER',
   };
 
@@ -647,7 +674,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     ReactGameMode.classic => List.filled(_lives, '♥').join(' '),
     ReactGameMode.blitz => '${(_blitzMsRemaining / 1000).ceil()}s',
     ReactGameMode.endless => '${(_baseCommandMs / 1000).toStringAsFixed(2)}s',
-    ReactGameMode.daily => 'DAILY',
+    ReactGameMode.daily => throw StateError('Daily uses DailyRunScreen.'),
     ReactGameMode.passIt =>
       'P${_currentPlayer + 1}  ${_playerLives[_currentPlayer]}♥',
   };
@@ -687,7 +714,10 @@ class _ReactRunScreenState extends State<ReactRunScreen>
                         Expanded(
                           child: Center(
                             child: ReactGestureSurface(
-                              enabled: _acceptingInput && !_paused && !_handoff,
+                              enabled: _acceptingInput &&
+                                  !_paused &&
+                                  !_handoff &&
+                                  !_blitzEnding,
                               expectedCommand: _command,
                               onCommand: _handleCommand,
                               child: _Arena(
@@ -711,7 +741,8 @@ class _ReactRunScreenState extends State<ReactRunScreen>
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color:
-                                      _feedback?.contains('LOST A LIFE') ==
+                                      _feedback == 'TIME UP' ||
+                                          _feedback?.contains('LOST A LIFE') ==
                                               true ||
                                           _feedback?.startsWith('MISS') == true
                                       ? ReactColors.coral
@@ -739,7 +770,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
             if (_paused)
               _PauseOverlay(
                 onResume: () => _setPaused(false),
-                onRestart: widget.mode == ReactGameMode.daily ? null : _restart,
+                onRestart: _restart,
                 onQuit: _quitRun,
               ),
             if (_handoff && !_paused)
@@ -765,7 +796,7 @@ Color _modeColor(ReactGameMode mode) => switch (mode) {
   ReactGameMode.classic => ReactColors.electricBlueBright,
   ReactGameMode.blitz => ReactColors.coral,
   ReactGameMode.endless => ReactColors.lime,
-  ReactGameMode.daily => ReactColors.electricBlueBright,
+  ReactGameMode.daily => throw StateError('Daily uses DailyRunScreen.'),
   ReactGameMode.passIt => ReactColors.purple,
 };
 
@@ -773,7 +804,7 @@ double _initialFlameIntensity(ReactGameMode mode) => switch (mode) {
   ReactGameMode.classic => .18,
   ReactGameMode.blitz => .45,
   ReactGameMode.endless => .24,
-  ReactGameMode.daily => .28,
+  ReactGameMode.daily => throw StateError('Daily uses DailyRunScreen.'),
   ReactGameMode.passIt => .30,
 };
 
@@ -887,7 +918,7 @@ class _HudCard extends StatelessWidget {
             label,
             style: const TextStyle(
               color: ReactColors.textSecondary,
-              fontSize: 8,
+              fontSize: 9,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.1,
             ),
@@ -974,7 +1005,7 @@ class _Arena extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: ReactColors.textSecondary,
-                    fontSize: 8,
+                    fontSize: 9,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.2,
                   ),
@@ -1007,7 +1038,7 @@ class _Arena extends StatelessWidget {
                     'SEC',
                     style: TextStyle(
                       color: ReactColors.textSecondary,
-                      fontSize: 8,
+                      fontSize: 9,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -1123,7 +1154,7 @@ class _BottomBar extends StatelessWidget {
             mode.label,
             style: TextStyle(
               color: _modeColor(mode),
-              fontSize: 9,
+              fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 1,
             ),
@@ -1160,7 +1191,7 @@ class _Metric extends StatelessWidget {
         label,
         style: const TextStyle(
           color: ReactColors.textSecondary,
-          fontSize: 6.5,
+          fontSize: 8,
           fontWeight: FontWeight.w800,
         ),
       ),
@@ -1235,7 +1266,7 @@ class _PauseOverlay extends StatelessWidget {
               'THE CURRENT COMMAND IS FROZEN',
               style: TextStyle(
                 color: ReactColors.textSecondary,
-                fontSize: 8,
+                fontSize: 9,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1,
               ),
