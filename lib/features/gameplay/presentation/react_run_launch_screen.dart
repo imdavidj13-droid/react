@@ -76,6 +76,26 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen>
     }
     if (!mounted) return;
 
+    // Daily persistence above is asynchronous. If the app backgrounds during
+    // that await, do not replace the route while inactive. The periodic timer
+    // will retry once the lifecycle is resumed.
+    if (_suspended) {
+      _launching = false;
+      if (_timer?.isActive != true) {
+        _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+          if (!mounted) {
+            timer.cancel();
+            return;
+          }
+          if (_suspended || _launching) return;
+          timer.cancel();
+          _launching = true;
+          unawaited(_beginRun());
+        });
+      }
+      return;
+    }
+
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => widget.mode == ReactGameMode.daily
@@ -150,7 +170,7 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen>
                 _suspended ? 'PAUSED' : 'GET READY',
                 style: const TextStyle(
                   color: ReactColors.textSecondary,
-                  fontSize: 9,
+                  fontSize: 10,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 2,
                 ),
