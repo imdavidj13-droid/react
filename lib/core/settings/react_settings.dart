@@ -15,6 +15,10 @@ class ReactSettings {
   static bool dailyDevOverrideEnabled = false;
   static String dailyDevModifier = 'lightsOut';
 
+  // Registered by the audio controller during app startup. Keeping this as a
+  // callback avoids coupling persistent settings to a concrete audio package.
+  static Future<void> Function()? soundPreview;
+
   // Runtime-only guard used to isolate developer Daily runs from the real
   // calendar challenge. This is deliberately never persisted: a debug choice
   // must not leak into normal Daily play or a later release build.
@@ -35,6 +39,7 @@ class ReactSettings {
     soundEnabled = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_soundKey, value);
+    if (value) await soundPreview?.call();
   }
 
   static Future<void> setVisualEffectsEnabled(bool value) async {
