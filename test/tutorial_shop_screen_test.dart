@@ -31,7 +31,20 @@ void main() {
     expect(find.text('MAKE RE△CT YOURS'), findsOneWidget);
     expect(find.text('REDLINE'), findsOneWidget);
     expect(find.text('SYNTHWAVE'), findsOneWidget);
+
+    final scrollable = find.byType(CustomScrollView);
+    await tester.scrollUntilVisible(
+      find.text('ARCADE SFX'),
+      250,
+      scrollable: scrollable,
+    );
     expect(find.text('ARCADE SFX'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.textContaining('NO EXTRA LIVES'),
+      250,
+      scrollable: scrollable,
+    );
     expect(find.textContaining('NO EXTRA LIVES'), findsOneWidget);
     expect(find.textContaining('PAID GAMEPLAY ADVANTAGES'), findsOneWidget);
   });
