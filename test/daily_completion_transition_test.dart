@@ -107,8 +107,14 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     expect(find.byType(ResultsScreen), findsNothing);
 
+    // Foregrounding intentionally leaves the run paused. Explicit Resume must
+    // restore the remaining terminal-transition duration before navigating.
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
+    expect(find.text('DAILY PAUSED'), findsOneWidget);
+    await tester.tap(find.text('RESUME'));
+    await tester.pump();
+
     await tester.pump(const Duration(milliseconds: 261));
     await tester.pumpAndSettle();
 
