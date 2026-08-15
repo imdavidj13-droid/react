@@ -31,6 +31,7 @@ class ReactRunResult {
     this.dailyDate,
     this.dailyModifierLabel,
     this.dailyModifierRule,
+    this.isDailyDevRun = false,
     this.commandPerformance = const <ReactCommand, ReactCommandPerformance>{},
   });
 
@@ -58,6 +59,11 @@ class ReactRunResult {
   final DateTime? dailyDate;
   final String? dailyModifierLabel;
   final String? dailyModifierRule;
+
+  /// Frozen identity for developer modifier runs. This must travel with the
+  /// result because the runtime dev flag can be cleared when routes replace
+  /// each other before Results persistence runs.
+  final bool isDailyDevRun;
 
   final Map<ReactCommand, ReactCommandPerformance> commandPerformance;
 
