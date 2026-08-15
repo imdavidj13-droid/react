@@ -51,9 +51,11 @@ class ReactRunHistoryEntry {
         .where((item) => item.successes > 0)
         .toList(growable: false);
 
-    successful.sort(
-      (a, b) => a.averageReactionSeconds.compareTo(b.averageReactionSeconds),
-    );
+    successful.sort((a, b) {
+      final accuracy = b.accuracy.compareTo(a.accuracy);
+      if (accuracy != 0) return accuracy;
+      return a.averageReactionSeconds.compareTo(b.averageReactionSeconds);
+    });
     attempted.sort((a, b) {
       final accuracy = a.accuracy.compareTo(b.accuracy);
       if (accuracy != 0) return accuracy;
