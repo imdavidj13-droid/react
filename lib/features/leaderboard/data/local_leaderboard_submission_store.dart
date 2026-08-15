@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/settings/react_settings.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import '../domain/leaderboard_submission.dart';
 import '../domain/leaderboard_submission_eligibility.dart';
@@ -16,7 +17,9 @@ class LocalLeaderboardSubmissionStore {
     ReactRunResult result, {
     DateTime? completedAt,
   }) async {
-    if (result.isDailyDevRun) {
+    final isDailyDevRun = result.isDailyDevRun ||
+        (result.mode == ReactGameMode.daily && ReactSettings.dailyDevRunActive);
+    if (isDailyDevRun) {
       return null;
     }
     if (!LeaderboardSubmissionEligibility.isEligibleResult(result)) {
