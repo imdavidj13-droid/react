@@ -108,7 +108,10 @@ void main() {
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 260));
+
+    // Cross the restored transition boundary rather than asserting on the
+    // exact timer deadline, then let replacement navigation settle.
+    await tester.pump(const Duration(milliseconds: 261));
     await tester.pumpAndSettle();
 
     expect(find.text('DAILY SCORE'), findsOneWidget);
