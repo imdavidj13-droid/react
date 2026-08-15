@@ -29,9 +29,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   ReactRunResult get result => widget.result;
 
-  bool get _isDailyDevRun =>
-      result.isDailyDevRun ||
-      (result.mode == ReactGameMode.daily && ReactSettings.dailyDevRunActive);
+  bool get _isDailyDevRun => result.isDailyDevRun;
 
   Color get _modeColor => switch (result.mode) {
     ReactGameMode.classic => ReactColors.electricBlueBright,
