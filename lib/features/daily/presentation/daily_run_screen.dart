@@ -5,6 +5,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/audio/react_audio.dart';
+import '../../../core/settings/react_settings.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../../game/react_game.dart';
 import '../../gameplay/domain/react_command.dart';
@@ -33,6 +34,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
   late final DailyModifier _modifier;
   late final Random _random;
   late final ReactGame _game;
+  late final bool _isDailyDevRun;
 
   final Stopwatch _commandClock = Stopwatch();
   final Stopwatch _transitionClock = Stopwatch();
@@ -103,6 +105,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _isDailyDevRun = ReactSettings.dailyDevRunActive;
     _challenge = DailyChallenge.today();
     _modifier = _challenge.modifier;
     _random = Random(_challenge.seed);
@@ -483,6 +486,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
             dailyDate: _challenge.date,
             dailyModifierLabel: _modifier.label,
             dailyModifierRule: _modifier.shortRule,
+            isDailyDevRun: _isDailyDevRun,
             commandPerformance: _commandTracker.snapshot(),
           ),
         ),
@@ -703,7 +707,7 @@ class _HudCard extends StatelessWidget {
             label,
             style: const TextStyle(
               color: ReactColors.textSecondary,
-              fontSize: 7.5,
+              fontSize: 8,
               fontWeight: FontWeight.w900,
               letterSpacing: 1,
             ),
@@ -787,7 +791,7 @@ class _DailyArena extends StatelessWidget {
                       'DO THE OPPOSITE',
                       style: TextStyle(
                         color: ReactColors.coral,
-                        fontSize: 8,
+                        fontSize: 9,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.2,
                       ),
@@ -810,7 +814,7 @@ class _DailyArena extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: ReactColors.textSecondary,
-                      fontSize: 8,
+                      fontSize: 9,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.2,
                     ),
@@ -845,7 +849,7 @@ class _DailyArena extends StatelessWidget {
                       'SEC',
                       style: TextStyle(
                         color: ReactColors.textSecondary,
-                        fontSize: 8,
+                        fontSize: 9,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -941,7 +945,7 @@ class _DailyBottomBar extends StatelessWidget {
             'DAILY',
             style: TextStyle(
               color: ReactColors.electricBlueBright,
-              fontSize: 9,
+              fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 1,
             ),
@@ -1014,7 +1018,7 @@ class _DailyPauseOverlay extends StatelessWidget {
                 'THE CURRENT COMMAND IS FROZEN',
                 style: TextStyle(
                   color: ReactColors.textSecondary,
-                  fontSize: 8,
+                  fontSize: 9,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1,
                 ),
