@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../core/settings/react_settings.dart';
 import '../../daily/domain/daily_challenge.dart';
 import '../../daily/domain/daily_history_entry.dart';
 import '../domain/react_command.dart';
@@ -35,6 +34,7 @@ class LocalPlayerStats {
   static const _dailyStreakKey = 'daily_streak';
   static const _historyKey = 'recent_run_history';
   static const _dailyHistoryKey = 'daily_history';
+  static const _leaderboardPendingKey = 'leaderboard_pending_submissions';
   static const _historyLimit = 12;
   static const _dailyHistoryLimit = 14;
 
@@ -201,7 +201,7 @@ class LocalPlayerStats {
   }
 
   static Future<bool> recordResult(ReactRunResult result) async {
-    if (result.mode == ReactGameMode.daily && ReactSettings.dailyDevRunActive) {
+    if (result.isDailyDevRun) {
       return false;
     }
 
@@ -268,8 +268,9 @@ class LocalPlayerStats {
     await _recordHistory(prefs, result);
 
     if (result.mode == ReactGameMode.daily) {
-      final challengeDate =
-          _activeDailyChallengeDate(prefs) ?? _normalizedToday();
+      final challengeDate = result.dailyDate ??
+          _activeDailyChallengeDate(prefs) ??
+          _normalizedToday();
       await _recordDaily(prefs, date: challengeDate);
       final modifier = DailyChallenge.forDate(challengeDate).modifier;
       final currentModifierBest =
@@ -329,6 +330,7 @@ class LocalPlayerStats {
     await prefs.remove(_dailyStreakKey);
     await prefs.remove(_historyKey);
     await prefs.remove(_dailyHistoryKey);
+    await prefs.remove(_leaderboardPendingKey);
   }
 
   static Future<void> _recordHistory(
