@@ -4,6 +4,8 @@ import '../../../core/settings/react_settings.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
+import '../../shop/presentation/shop_screen.dart';
+import '../../tutorial/presentation/how_to_play_screen.dart';
 import 'command_performance_screen.dart';
 import 'milestones_screen.dart';
 
@@ -53,6 +55,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (!mounted) return;
     setState(() => _stats = _ProfileStats.load());
+  }
+
+  Future<void> _openHowToPlay() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const HowToPlayScreen()),
+    );
+  }
+
+  Future<void> _openShop() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ShopScreen()),
+    );
   }
 
   Future<void> _resetProgress() async {
@@ -130,12 +144,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: _openMilestones,
               ),
               const SizedBox(height: 18),
+              const _SectionLabel('DISCOVER'),
+              const SizedBox(height: 10),
+              _ActionTile(
+                icon: Icons.menu_book_rounded,
+                title: 'HOW TO PLAY',
+                subtitle: 'Review all 9 commands and the core rules at any time.',
+                color: ReactColors.electricBlueBright,
+                onTap: _openHowToPlay,
+              ),
+              const SizedBox(height: 10),
+              _ActionTile(
+                icon: Icons.shopping_bag_outlined,
+                title: 'SHOP',
+                subtitle: 'Preview cosmetic themes, sound packs and visual styles.',
+                color: ReactColors.coral,
+                onTap: _openShop,
+              ),
+              const SizedBox(height: 18),
               const _SectionLabel('GAME SETTINGS'),
               const SizedBox(height: 10),
               _SettingTile(
                 icon: Icons.volume_up_rounded,
-                title: 'TEST SOUNDS',
-                subtitle: 'Temporary system sounds for gameplay and countdown feedback.',
+                title: 'SOUND EFFECTS',
+                subtitle: 'Gameplay, countdown and result sound effects.',
                 value: _soundEnabled,
                 color: ReactColors.electricBlueBright,
                 onChanged: _setSound,
