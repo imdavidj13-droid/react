@@ -13,6 +13,11 @@ class ShopScreen extends StatelessWidget {
       price: '£1.99',
       accent: ReactColors.coral,
       icon: Icons.local_fire_department_rounded,
+      includes: [
+        'Redline arena palette',
+        'Matching timer and success effects',
+        'Hard-edged countdown and result SFX',
+      ],
     ),
     _ShopPack(
       title: 'SYNTHWAVE',
@@ -21,6 +26,11 @@ class ShopScreen extends StatelessWidget {
       price: '£1.99',
       accent: ReactColors.purple,
       icon: Icons.waves_rounded,
+      includes: [
+        'Purple-blue neon arena',
+        'Retro command presentation',
+        'Synth-inspired gameplay SFX',
+      ],
     ),
     _ShopPack(
       title: 'MONO',
@@ -29,6 +39,11 @@ class ShopScreen extends StatelessWidget {
       price: '£0.99',
       accent: ReactColors.textPrimary,
       icon: Icons.contrast_rounded,
+      includes: [
+        'Monochrome arena palette',
+        'Reduced glow treatment',
+        'Minimal competitive UI styling',
+      ],
     ),
     _ShopPack(
       title: 'ARCADE SFX',
@@ -37,6 +52,11 @@ class ShopScreen extends StatelessWidget {
       price: '£0.99',
       accent: ReactColors.lime,
       icon: Icons.graphic_eq_rounded,
+      includes: [
+        'Alternate countdown cues',
+        'Arcade success and miss sounds',
+        'Alternate completion and warning cues',
+      ],
     ),
     _ShopPack(
       title: 'GLITCH COMMANDS',
@@ -45,6 +65,11 @@ class ShopScreen extends StatelessWidget {
       price: '£0.99',
       accent: ReactColors.electricBlueBright,
       icon: Icons.broken_image_outlined,
+      includes: [
+        'Glitch command typography',
+        'Digital command transitions',
+        'Matching command accent effects',
+      ],
     ),
     _ShopPack(
       title: 'PRO SHARE CARDS',
@@ -53,8 +78,25 @@ class ShopScreen extends StatelessWidget {
       price: '£0.99',
       accent: ReactColors.purple,
       icon: Icons.ios_share_rounded,
+      includes: [
+        'Premium Classic result layout',
+        'Premium Daily result layout',
+        'Additional score-card treatments',
+      ],
     ),
   ];
+
+  static Future<void> _showPackDetails(
+    BuildContext context,
+    _ShopPack pack,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _PackDetailsSheet(pack: pack),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +129,10 @@ class ShopScreen extends StatelessWidget {
               sliver: SliverList.separated(
                 itemCount: _packs.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, index) => _PackCard(pack: _packs[index]),
+                itemBuilder: (context, index) => _PackCard(
+                  pack: _packs[index],
+                  onTap: () => _showPackDetails(context, _packs[index]),
+                ),
               ),
             ),
             SliverPadding(
@@ -214,93 +259,262 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _PackCard extends StatelessWidget {
-  const _PackCard({required this.pack});
+  const _PackCard({required this.pack, required this.onTap});
+
+  final _ShopPack pack;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(19),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF07111D),
+          borderRadius: BorderRadius.circular(19),
+          border: Border.all(color: pack.accent.withValues(alpha: .32)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: pack.accent.withValues(alpha: .10),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: pack.accent.withValues(alpha: .32)),
+              ),
+              child: Icon(pack.icon, color: pack.accent, size: 25),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    pack.category,
+                    style: TextStyle(
+                      color: pack.accent,
+                      fontSize: 7.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    pack.title,
+                    style: const TextStyle(
+                      color: ReactColors.textPrimary,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    pack.subtitle,
+                    style: const TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 9,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  pack.price,
+                  style: TextStyle(
+                    color: pack.accent,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: pack.accent,
+                  size: 21,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PackDetailsSheet extends StatelessWidget {
+  const _PackDetailsSheet({required this.pack});
 
   final _ShopPack pack;
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(19),
-        border: Border.all(color: pack.accent.withValues(alpha: .32)),
+      padding: EdgeInsets.fromLTRB(20, 10, 20, 20 + bottomInset),
+      decoration: const BoxDecoration(
+        color: Color(0xFF07111D),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border(top: BorderSide(color: Color(0xFF263851))),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: pack.accent.withValues(alpha: .10),
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: pack.accent.withValues(alpha: .32)),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF334761),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
             ),
-            child: Icon(pack.icon, color: pack.accent, size: 25),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 18),
+            Row(
               children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: pack.accent.withValues(alpha: .10),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: pack.accent.withValues(alpha: .38),
+                    ),
+                  ),
+                  child: Icon(pack.icon, color: pack.accent, size: 29),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        pack.category,
+                        style: TextStyle(
+                          color: pack.accent,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        pack.title,
+                        style: const TextStyle(
+                          color: ReactColors.textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 Text(
-                  pack.category,
+                  pack.price,
                   style: TextStyle(
                     color: pack.accent,
-                    fontSize: 7.5,
+                    fontSize: 18,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  pack.title,
-                  style: const TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  pack.subtitle,
-                  style: const TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 9,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                pack.price,
-                style: TextStyle(
-                  color: pack.accent,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                ),
+            const SizedBox(height: 18),
+            Text(
+              pack.subtitle,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 11,
+                height: 1.45,
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(height: 4),
-              const Text(
-                'PLACEHOLDER',
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              'INCLUDES',
+              style: TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 8.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 10),
+            for (final item in pack.includes) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(
+                      Icons.check_circle_outline_rounded,
+                      color: pack.accent,
+                      size: 17,
+                    ),
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: const TextStyle(
+                        color: ReactColors.textPrimary,
+                        fontSize: 10.5,
+                        height: 1.35,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 9),
+            ],
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF050A13),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: const Color(0xFF263851)),
+              ),
+              child: const Text(
+                'PREVIEW ONLY • STORE CHECKOUT IS NOT ENABLED YET.',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: ReactColors.textSecondary,
-                  fontSize: 6.5,
+                  fontSize: 8,
                   fontWeight: FontWeight.w900,
                   letterSpacing: .7,
                 ),
               ),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: FilledButton.icon(
+                onPressed: null,
+                icon: const Icon(Icons.lock_outline_rounded),
+                label: const Text('COMING SOON'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -350,6 +564,7 @@ class _ShopPack {
     required this.price,
     required this.accent,
     required this.icon,
+    required this.includes,
   });
 
   final String title;
@@ -358,4 +573,5 @@ class _ShopPack {
   final String price;
   final Color accent;
   final IconData icon;
+  final List<String> includes;
 }
