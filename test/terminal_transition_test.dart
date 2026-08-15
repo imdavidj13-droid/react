@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:react/core/settings/react_settings.dart';
+import 'package:react/features/gameplay/domain/react_command.dart';
 import 'package:react/features/gameplay/domain/react_run_result.dart';
+import 'package:react/features/gameplay/presentation/react_gesture_surface.dart';
 import 'package:react/features/gameplay/presentation/react_run_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,6 +12,42 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     await ReactSettings.load();
   });
+
+  ReactCommand displayedCommand() {
+    for (final command in ReactCommand.values) {
+      if (find.text(command.title).evaluate().isNotEmpty) return command;
+    }
+    throw StateError('No gameplay command is currently displayed.');
+  }
+
+  Offset wrongSwipeFor(ReactCommand expected) => switch (expected) {
+        ReactCommand.swipeLeft => const Offset(90, 0),
+        ReactCommand.swipeRight => const Offset(-90, 0),
+        ReactCommand.swipeUp => const Offset(0, 90),
+        ReactCommand.swipeDown => const Offset(0, -90),
+        _ => const Offset(-90, 0),
+      };
+
+  Future<void> performWrongCommand(WidgetTester tester) async {
+    final target = find.byType(ReactGestureSurface);
+    final gesture = await tester.startGesture(tester.getCenter(target));
+    await gesture.moveBy(wrongSwipeFor(displayedCommand()));
+    await gesture.up();
+    await tester.pump();
+  }
+
+  Future<void> forceBlitzTimeUp(WidgetTester tester) async {
+    // Flutter test fake time does not advance Dart Stopwatch, which drives the
+    // real 60-second Blitz clock. Twenty deterministic misses apply the same
+    // 3-second penalties and reach the terminal condition without wall time.
+    for (var miss = 0; miss < 20; miss++) {
+      await performWrongCommand(tester);
+      if (miss < 19) {
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+      }
+    }
+  }
 
   test('generic run screen rejects Daily because it has a dedicated engine', () {
     expect(
@@ -24,10 +62,7 @@ void main() {
     );
     await tester.pump();
 
-    // Advance beyond the 60 second boundary, then give the periodic game timer
-    // one render frame to publish the terminal TIME UP state.
-    await tester.pump(const Duration(seconds: 61));
-    await tester.pump();
+    await forceBlitzTimeUp(tester);
 
     expect(find.text('TIME UP'), findsOneWidget);
     expect(find.text('60 SECOND SCORE'), findsNothing);
@@ -35,7 +70,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 319));
     expect(find.text('TIME UP'), findsOneWidget);
 
-    // Cross the transition boundary and render the navigation scheduled by it.
     await tester.pump(const Duration(milliseconds: 2));
     await tester.pumpAndSettle();
     expect(find.text('60 SECOND SCORE'), findsOneWidget);
@@ -46,8 +80,8 @@ void main() {
       const MaterialApp(home: ReactRunScreen(mode: ReactGameMode.blitz)),
     );
     await tester.pump();
-    await tester.pump(const Duration(seconds: 61));
-    await tester.pump();
+
+    await forceBlitzTimeUp(tester);
     expect(find.text('TIME UP'), findsOneWidget);
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
