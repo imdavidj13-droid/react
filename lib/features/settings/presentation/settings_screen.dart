@@ -221,18 +221,24 @@ class _Header extends StatelessWidget {
           ),
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
         ),
-        const Spacer(),
-        const Text(
-          'PROFILE',
-          style: TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 27,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.8,
+        const SizedBox(width: 8),
+        const Expanded(
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                'PROFILE',
+                style: TextStyle(
+                  color: ReactColors.textPrimary,
+                  fontSize: 27,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.8,
+                ),
+              ),
+            ),
           ),
         ),
-        const Spacer(),
-        const SizedBox(width: 40),
+        const SizedBox(width: 56),
       ],
     );
   }
@@ -243,6 +249,36 @@ class _ProfileHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final text = Column(
+      crossAxisAlignment: largeText
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
+      children: const [
+        Text(
+          'LOCAL PLAYER',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: ReactColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .8,
+          ),
+        ),
+        SizedBox(height: 5),
+        Text(
+          'Your records and preferences are saved on this device.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 10,
+            height: 1.35,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -253,46 +289,37 @@ class _ProfileHero extends StatelessWidget {
           color: ReactColors.electricBlueBright.withValues(alpha: .45),
         ),
       ),
-      child: const Row(
-        children: [
-          CircleAvatar(
-            radius: 34,
-            backgroundColor: Color(0xFF050A13),
-            child: Icon(
-              Icons.person_rounded,
-              color: ReactColors.electricBlueBright,
-              size: 37,
-            ),
-          ),
-          SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: largeText
+          ? Column(
               children: [
-                Text(
-                  'LOCAL PLAYER',
-                  style: TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .8,
+                const CircleAvatar(
+                  radius: 34,
+                  backgroundColor: Color(0xFF050A13),
+                  child: Icon(
+                    Icons.person_rounded,
+                    color: ReactColors.electricBlueBright,
+                    size: 37,
                   ),
                 ),
-                SizedBox(height: 5),
-                Text(
-                  'Your records and preferences are saved on this device.',
-                  style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 10,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
+                const SizedBox(height: 12),
+                text,
+              ],
+            )
+          : Row(
+              children: [
+                const CircleAvatar(
+                  radius: 34,
+                  backgroundColor: Color(0xFF050A13),
+                  child: Icon(
+                    Icons.person_rounded,
+                    color: ReactColors.electricBlueBright,
+                    size: 37,
                   ),
                 ),
+                const SizedBox(width: 14),
+                Expanded(child: text),
               ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -538,6 +565,31 @@ class _SettingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final copy = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: ReactColors.textPrimary,
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 9,
+            height: 1.3,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
       decoration: BoxDecoration(
@@ -545,42 +597,56 @@ class _SettingTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: color.withValues(alpha: .30)),
       ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 25),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
+      child: largeText
+          ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
+                Row(
+                  children: [
+                    Icon(icon, color: color, size: 25),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(title, style: const TextStyle(
+                      color: ReactColors.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ))),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.only(left: 37),
+                  child: Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 9,
+                      height: 1.3,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 9,
-                    height: 1.3,
-                    fontWeight: FontWeight.w600,
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Switch(
+                    value: value,
+                    onChanged: onChanged,
+                    activeThumbColor: color,
                   ),
                 ),
               ],
+            )
+          : Row(
+              children: [
+                Icon(icon, color: color, size: 25),
+                const SizedBox(width: 12),
+                Expanded(child: copy),
+                Switch(
+                  value: value,
+                  onChanged: onChanged,
+                  activeThumbColor: color,
+                ),
+              ],
             ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: color,
-          ),
-        ],
-      ),
     );
   }
 }
