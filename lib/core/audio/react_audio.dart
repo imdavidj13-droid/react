@@ -162,7 +162,8 @@ abstract final class ReactAudio {
             : sin(2 * pi * tone.frequencyHz * i / _sampleRate);
         final sample = (wave * envelope * tone.amplitude * 32767)
             .round()
-            .clamp(-32768, 32767);
+            .clamp(-32768, 32767)
+            .toInt();
         bytes.setInt16(44 + sampleIndex * 2, sample, Endian.little);
         sampleIndex += 1;
       }
