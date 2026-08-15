@@ -5,6 +5,7 @@ import 'package:react/features/daily/domain/daily_challenge.dart';
 import 'package:react/features/daily/presentation/daily_run_screen.dart';
 import 'package:react/features/gameplay/domain/react_command.dart';
 import 'package:react/features/gameplay/presentation/react_gesture_surface.dart';
+import 'package:react/features/results/presentation/results_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -97,24 +98,21 @@ void main() {
     }
 
     expect(find.text('DAILY COMPLETE'), findsOneWidget);
-    expect(find.text('DAILY SCORE'), findsNothing);
+    expect(find.byType(ResultsScreen), findsNothing);
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
     await tester.pump();
     expect(find.text('DAILY PAUSED'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 2));
-    expect(find.text('DAILY SCORE'), findsNothing);
+    expect(find.byType(ResultsScreen), findsNothing);
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
-
-    // Cross the restored transition boundary rather than asserting on the
-    // exact timer deadline, then let replacement navigation settle.
     await tester.pump(const Duration(milliseconds: 261));
     await tester.pumpAndSettle();
 
-    expect(find.text('DAILY SCORE'), findsOneWidget);
+    expect(find.byType(ResultsScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
