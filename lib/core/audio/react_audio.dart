@@ -48,9 +48,8 @@ abstract final class ReactAudio {
           usageType: AndroidUsageType.game,
           audioFocus: AndroidAudioFocus.gain,
         ),
-        iOS: AudioContextIOS(
+        iOS: const AudioContextIOS(
           category: AVAudioSessionCategory.ambient,
-          options: const {AVAudioSessionOptions.mixWithOthers},
         ),
       ),
     );
