@@ -18,6 +18,7 @@ void main() {
     required int score,
     ReactRunOutcome outcome = ReactRunOutcome.missedCommand,
     double averageTimeSeconds = .8,
+    bool isDailyDevRun = false,
   }) {
     return ReactRunResult(
       mode: mode,
@@ -25,6 +26,7 @@ void main() {
       successfulCommands: score,
       averageTimeSeconds: averageTimeSeconds,
       outcome: outcome,
+      isDailyDevRun: isDailyDevRun,
     );
   }
 
@@ -269,14 +271,12 @@ void main() {
   });
 
   test('Daily developer runs never alter real local records', () async {
-    ReactSettings.dailyDevOverrideEnabled = true;
-    ReactSettings.dailyDevRunActive = true;
-
     final newBest = await LocalPlayerStats.recordResult(
       result(
         mode: ReactGameMode.daily,
         score: 60,
         outcome: ReactRunOutcome.completed,
+        isDailyDevRun: true,
       ),
     );
 
