@@ -10,6 +10,7 @@ void main() {
     ReactSettings.passItPlayerCount = 3;
     ReactSettings.dailyDevOverrideEnabled = false;
     ReactSettings.dailyDevModifier = 'lightsOut';
+    ReactSettings.soundPreview = null;
   });
 
   test('settings default to enabled with three Pass It players', () async {
@@ -29,6 +30,17 @@ void main() {
     await ReactSettings.load();
 
     expect(ReactSettings.soundEnabled, isFalse);
+  });
+
+  test('enabling sound plays one registered preview', () async {
+    var previews = 0;
+    ReactSettings.soundPreview = () async => previews += 1;
+
+    await ReactSettings.setSoundEnabled(false);
+    expect(previews, 0);
+
+    await ReactSettings.setSoundEnabled(true);
+    expect(previews, 1);
   });
 
   test('visual effects preference persists', () async {
