@@ -6,6 +6,7 @@ import '../core/theme/react_colors.dart';
 import '../core/theme/react_theme.dart';
 import '../features/daily/presentation/daily_dev_screen.dart';
 import '../features/home/presentation/home_screen.dart';
+import '../features/shop/presentation/shop_screen.dart';
 import '../features/tutorial/presentation/how_to_play_screen.dart';
 
 class ReactApp extends StatelessWidget {
@@ -47,7 +48,45 @@ class _FirstRunShellState extends State<_FirstRunShell> {
       );
     }
 
-    return kDebugMode ? const _DebugHome() : const HomeScreen();
+    return kDebugMode ? const _DebugHome() : const _HomeShell();
+  }
+}
+
+class _HomeShell extends StatelessWidget {
+  const _HomeShell();
+
+  void _openShop(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ShopScreen()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        const HomeScreen(),
+        Positioned(
+          left: 12,
+          top: MediaQuery.paddingOf(context).top + 10,
+          child: Material(
+            color: Colors.transparent,
+            child: IconButton(
+              tooltip: 'Shop',
+              onPressed: () => _openShop(context),
+              style: IconButton.styleFrom(
+                backgroundColor: const Color(0xFF07101E),
+                foregroundColor: ReactColors.electricBlueBright,
+                side: BorderSide(
+                  color: ReactColors.electricBlueBright.withValues(alpha: .75),
+                ),
+              ),
+              icon: const Icon(Icons.shopping_bag_outlined, size: 22),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -58,10 +97,10 @@ class _DebugHome extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        const HomeScreen(),
+        const _HomeShell(),
         Positioned(
           left: 12,
-          top: MediaQuery.paddingOf(context).top + 10,
+          top: MediaQuery.paddingOf(context).top + 66,
           child: Material(
             color: Colors.transparent,
             child: IconButton(
