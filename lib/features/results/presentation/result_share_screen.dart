@@ -8,6 +8,7 @@ import '../../../core/theme/react_colors.dart';
 import '../../daily/domain/daily_challenge.dart';
 import '../../gameplay/domain/react_command.dart';
 import '../../gameplay/domain/react_run_result.dart';
+import '../domain/run_medal.dart';
 
 class ResultShareScreen extends StatefulWidget {
   const ResultShareScreen({
@@ -771,64 +772,36 @@ class _ShareMedal {
   final Color color;
 }
 
-List<_ShareMedal> _shareMedals(ReactRunResult result) {
-  final medals = <_ShareMedal>[];
-  if (result.successfulCommands > 0 && result.misses == 0) {
-    medals.add(
-      const _ShareMedal(
+List<_ShareMedal> _shareMedals(ReactRunResult result) => [
+  for (final medal in earnedRunMedals(result))
+    switch (medal) {
+      RunMedal.perfectRun => const _ShareMedal(
         'PERFECT RUN',
         Icons.auto_awesome_rounded,
         ReactColors.lime,
       ),
-    );
-  }
-  if (result.averageTimeSeconds > 0 && result.averageTimeSeconds <= .65) {
-    medals.add(
-      const _ShareMedal(
+      RunMedal.lightning => const _ShareMedal(
         'LIGHTNING',
         Icons.bolt_rounded,
         ReactColors.electricBlueBright,
       ),
-    );
-  }
-  if (result.mode == ReactGameMode.endless && result.score >= 25) {
-    medals.add(
-      const _ShareMedal(
+      RunMedal.survivor => const _ShareMedal(
         'SURVIVOR',
         Icons.all_inclusive_rounded,
         ReactColors.lime,
       ),
-    );
-  }
-  if (result.mode == ReactGameMode.daily &&
-      result.outcome == ReactRunOutcome.completed) {
-    medals.add(
-      const _ShareMedal(
+      RunMedal.dailyMaster => const _ShareMedal(
         'DAILY MASTER',
         Icons.emoji_events_rounded,
         ReactColors.purple,
       ),
-    );
-  }
-  if (result.mode == ReactGameMode.passIt &&
-      result.outcome == ReactRunOutcome.winner &&
-      result.winnerPlayer != null &&
-      result.playerLives != null) {
-    final winnerIndex = result.winnerPlayer! - 1;
-    if (winnerIndex >= 0 &&
-        winnerIndex < result.playerLives!.length &&
-        result.playerLives![winnerIndex] == 1) {
-      medals.add(
-        const _ShareMedal(
-          'CLUTCH',
-          Icons.favorite_rounded,
-          ReactColors.coral,
-        ),
-      );
-    }
-  }
-  return medals;
-}
+      RunMedal.clutch => const _ShareMedal(
+        'CLUTCH',
+        Icons.favorite_rounded,
+        ReactColors.coral,
+      ),
+    },
+];
 
 String _scoreLabel(ReactGameMode mode) => switch (mode) {
   ReactGameMode.classic => 'FINAL SCORE',
