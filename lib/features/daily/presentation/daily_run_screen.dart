@@ -360,6 +360,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     _game.triggerSuccess();
 
     if (_score >= dailyTarget) {
+      setState(() => _feedback = 'DAILY COMPLETE');
       _scheduleFinish(260, ReactRunOutcome.completed);
       return;
     }
@@ -567,9 +568,10 @@ class _DailyRunScreenState extends State<DailyRunScreen>
                               child: Text(
                                 _feedback ?? '',
                                 style: TextStyle(
-                                  color:
-                                      _feedback == 'MISS' ||
-                                          _feedback == 'REDLINE'
+                                  color: _feedback == 'DAILY COMPLETE'
+                                      ? ReactColors.lime
+                                      : _feedback == 'MISS' ||
+                                            _feedback == 'REDLINE'
                                       ? ReactColors.coral
                                       : ReactColors.electricBlueBright,
                                   fontSize: 15,
