@@ -10,6 +10,7 @@ void main() {
     ReactSettings.passItPlayerCount = 3;
     ReactSettings.dailyDevOverrideEnabled = false;
     ReactSettings.dailyDevModifier = 'lightsOut';
+    ReactSettings.howToPlayCompleted = false;
     ReactSettings.soundPreview = null;
   });
 
@@ -21,6 +22,7 @@ void main() {
     expect(ReactSettings.passItPlayerCount, 3);
     expect(ReactSettings.dailyDevOverrideEnabled, isFalse);
     expect(ReactSettings.dailyDevModifier, 'lightsOut');
+    expect(ReactSettings.howToPlayCompleted, isFalse);
   });
 
   test('sound preference persists', () async {
@@ -96,5 +98,14 @@ void main() {
       await ReactSettings.setDailyDevModifier(name);
       expect(ReactSettings.dailyDevModifier, name);
     }
+  });
+
+  test('how to play completion persists', () async {
+    await ReactSettings.setHowToPlayCompleted(true);
+    ReactSettings.howToPlayCompleted = false;
+
+    await ReactSettings.load();
+
+    expect(ReactSettings.howToPlayCompleted, isTrue);
   });
 }
