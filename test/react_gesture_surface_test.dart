@@ -245,7 +245,8 @@ void main() {
     });
   }
 
-  testWidgets('Pinch resolves only after both pointers release', (tester) async {
+  testWidgets('Pinch resolves immediately when the threshold is crossed',
+      (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.pinch);
     final center = tester.getCenter(target());
 
@@ -253,19 +254,20 @@ void main() {
     final right = await tester.createGesture(pointer: 2);
     await left.down(center + const Offset(-60, 0));
     await right.down(center + const Offset(60, 0));
-    await left.moveTo(center + const Offset(-48, 0));
-    await right.moveTo(center + const Offset(48, 0));
-    await tester.pump();
-    expect(commands, isEmpty);
-    await left.up();
-    expect(commands, isEmpty);
-    await right.up();
+    await left.moveTo(center + const Offset(-52, 0));
+    await right.moveTo(center + const Offset(52, 0));
     await tester.pump();
 
     expect(commands, [ReactCommand.pinch]);
+
+    await left.up();
+    await right.up();
+    await tester.pump();
+    expect(commands, [ReactCommand.pinch]);
   });
 
-  testWidgets('Spread resolves only after both pointers release', (tester) async {
+  testWidgets('Spread resolves immediately when the threshold is crossed',
+      (tester) async {
     final commands = await pumpSurface(tester, ReactCommand.spread);
     final center = tester.getCenter(target());
 
@@ -273,16 +275,55 @@ void main() {
     final right = await tester.createGesture(pointer: 2);
     await left.down(center + const Offset(-48, 0));
     await right.down(center + const Offset(48, 0));
-    await left.moveTo(center + const Offset(-60, 0));
-    await right.moveTo(center + const Offset(60, 0));
-    await tester.pump();
-    expect(commands, isEmpty);
-    await left.up();
-    expect(commands, isEmpty);
-    await right.up();
+    await left.moveTo(center + const Offset(-56, 0));
+    await right.moveTo(center + const Offset(56, 0));
     await tester.pump();
 
     expect(commands, [ReactCommand.spread]);
+
+    await left.up();
+    await right.up();
+    await tester.pump();
+    expect(commands, [ReactCommand.spread]);
+  });
+
+  testWidgets('Small two-finger movement does not trigger Pinch or Spread',
+      (tester) async {
+    final commands = await pumpSurface(tester, ReactCommand.spread);
+    final center = tester.getCenter(target());
+
+    final left = await tester.createGesture(pointer: 1);
+    final right = await tester.createGesture(pointer: 2);
+    await left.down(center + const Offset(-50, 0));
+    await right.down(center + const Offset(50, 0));
+    await left.moveTo(center + const Offset(-54, 0));
+    await right.moveTo(center + const Offset(54, 0));
+    await tester.pump();
+
+    expect(commands, isEmpty);
+
+    await left.up();
+    await right.up();
+    await tester.pump();
+    expect(commands, isEmpty);
+  });
+
+  testWidgets('Spread stays practical when fingers start far apart', (tester) async {
+    final commands = await pumpSurface(tester, ReactCommand.spread);
+    final center = tester.getCenter(target());
+
+    final left = await tester.createGesture(pointer: 1);
+    final right = await tester.createGesture(pointer: 2);
+    await left.down(center + const Offset(-90, 0));
+    await right.down(center + const Offset(90, 0));
+    await left.moveTo(center + const Offset(-98, 0));
+    await right.moveTo(center + const Offset(98, 0));
+    await tester.pump();
+
+    expect(commands, [ReactCommand.spread]);
+
+    await left.up();
+    await right.up();
   });
 
   testWidgets('Cancelled two-finger gesture emits no command', (tester) async {
@@ -293,8 +334,8 @@ void main() {
     final right = await tester.createGesture(pointer: 2);
     await left.down(center + const Offset(-60, 0));
     await right.down(center + const Offset(60, 0));
-    await left.moveTo(center + const Offset(-45, 0));
-    await right.moveTo(center + const Offset(45, 0));
+    await left.moveTo(center + const Offset(-57, 0));
+    await right.moveTo(center + const Offset(57, 0));
     await left.cancel();
     await right.up();
     await tester.pump();
