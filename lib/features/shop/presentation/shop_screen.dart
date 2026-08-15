@@ -1,12 +1,34 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
+import '../data/local_shop_state.dart';
 
-class ShopScreen extends StatelessWidget {
+class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
+
+  @override
+  State<ShopScreen> createState() => _ShopScreenState();
+}
+
+class _ShopScreenState extends State<ShopScreen> {
+  static const _corePack = _ShopPack(
+    id: LocalShopState.corePackId,
+    title: 'RE△CT CORE',
+    subtitle: 'The original electric-blue RE△CT arena and gameplay presentation.',
+    category: 'BUILT IN',
+    price: 'OWNED',
+    accent: ReactColors.electricBlueBright,
+    icon: Icons.bolt_rounded,
+    includes: [
+      'Original electric-blue arena',
+      'Core gameplay effects and command style',
+      'Standard RE△CT sound presentation',
+    ],
+  );
 
   static const _packs = <_ShopPack>[
     _ShopPack(
+      id: 'redline',
       title: 'REDLINE',
       subtitle: 'Aggressive red arena, harder-edged glow and matching SFX.',
       category: 'REACTION PACK',
@@ -20,6 +42,7 @@ class ShopScreen extends StatelessWidget {
       ],
     ),
     _ShopPack(
+      id: 'synthwave',
       title: 'SYNTHWAVE',
       subtitle: 'Retro neon presentation with a purple-blue arcade sound set.',
       category: 'REACTION PACK',
@@ -33,6 +56,7 @@ class ShopScreen extends StatelessWidget {
       ],
     ),
     _ShopPack(
+      id: 'mono',
       title: 'MONO',
       subtitle: 'Clean black-and-white competitive visuals with minimal effects.',
       category: 'THEME',
@@ -46,6 +70,7 @@ class ShopScreen extends StatelessWidget {
       ],
     ),
     _ShopPack(
+      id: 'arcade_sfx',
       title: 'ARCADE SFX',
       subtitle: 'Alternative countdown, success, miss and completion sounds.',
       category: 'SOUND PACK',
@@ -59,6 +84,7 @@ class ShopScreen extends StatelessWidget {
       ],
     ),
     _ShopPack(
+      id: 'glitch_commands',
       title: 'GLITCH COMMANDS',
       subtitle: 'Digital command typography and distortion-style transitions.',
       category: 'COMMAND STYLE',
@@ -72,6 +98,7 @@ class ShopScreen extends StatelessWidget {
       ],
     ),
     _ShopPack(
+      id: 'pro_share_cards',
       title: 'PRO SHARE CARDS',
       subtitle: 'Premium result-card layouts for sharing scores and Daily runs.',
       category: 'SHARE STYLE',
@@ -86,15 +113,30 @@ class ShopScreen extends StatelessWidget {
     ),
   ];
 
-  static Future<void> _showPackDetails(
-    BuildContext context,
-    _ShopPack pack,
-  ) async {
+  late Future<String> _equippedPack;
+
+  @override
+  void initState() {
+    super.initState();
+    _equippedPack = LocalShopState.equippedPack();
+  }
+
+  Future<void> _equipCore() async {
+    await LocalShopState.equip(LocalShopState.corePackId);
+    if (!mounted) return;
+    setState(() => _equippedPack = LocalShopState.equippedPack());
+  }
+
+  Future<void> _showPackDetails(_ShopPack pack, {required bool owned}) async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _PackDetailsSheet(pack: pack),
+      builder: (context) => _PackDetailsSheet(
+        pack: pack,
+        owned: owned,
+        onEquip: owned ? _equipCore : null,
+      ),
     );
   }
 
@@ -106,40 +148,64 @@ class ShopScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: ReactColors.background,
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(pad, 12, pad, 10),
-              sliver: SliverToBoxAdapter(
-                child: _Header(onBack: () => Navigator.of(context).pop()),
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(pad, 8, pad, 12),
-              sliver: const SliverToBoxAdapter(child: _ShopHero()),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: pad),
-              sliver: const SliverToBoxAdapter(
-                child: _SectionLabel('COMING SOON'),
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(pad, 10, pad, 20),
-              sliver: SliverList.separated(
-                itemCount: _packs.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, index) => _PackCard(
-                  pack: _packs[index],
-                  onTap: () => _showPackDetails(context, _packs[index]),
+        child: FutureBuilder<String>(
+          future: _equippedPack,
+          builder: (context, snapshot) {
+            final equipped = snapshot.data ?? LocalShopState.corePackId;
+            return CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(pad, 12, pad, 10),
+                  sliver: SliverToBoxAdapter(
+                    child: _Header(onBack: () => Navigator.of(context).pop()),
+                  ),
                 ),
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(pad, 0, pad, 28),
-              sliver: const SliverToBoxAdapter(child: _FairPlayCard()),
-            ),
-          ],
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(pad, 8, pad, 12),
+                  sliver: const SliverToBoxAdapter(child: _ShopHero()),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: pad),
+                  sliver: const SliverToBoxAdapter(child: _SectionLabel('YOUR STYLE')),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(pad, 10, pad, 18),
+                  sliver: SliverToBoxAdapter(
+                    child: _PackCard(
+                      pack: _corePack,
+                      owned: true,
+                      equipped: equipped == LocalShopState.corePackId,
+                      onTap: () => _showPackDetails(_corePack, owned: true),
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: pad),
+                  sliver: const SliverToBoxAdapter(child: _SectionLabel('COMING SOON')),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(pad, 10, pad, 20),
+                  sliver: SliverList.separated(
+                    itemCount: _packs.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) => _PackCard(
+                      pack: _packs[index],
+                      owned: LocalShopState.isOwned(_packs[index].id),
+                      equipped: equipped == _packs[index].id,
+                      onTap: () => _showPackDetails(
+                        _packs[index],
+                        owned: LocalShopState.isOwned(_packs[index].id),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(pad, 0, pad, 28),
+                  sliver: const SliverToBoxAdapter(child: _FairPlayCard()),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -148,7 +214,6 @@ class ShopScreen extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   const _Header({required this.onBack});
-
   final VoidCallback onBack;
 
   @override
@@ -194,17 +259,11 @@ class _ShopHero extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: ReactColors.electricBlueBright.withValues(alpha: .42),
-        ),
+        border: Border.all(color: ReactColors.electricBlueBright.withValues(alpha: .42)),
       ),
       child: const Column(
         children: [
-          Icon(
-            Icons.shopping_bag_outlined,
-            color: ReactColors.electricBlueBright,
-            size: 40,
-          ),
+          Icon(Icons.shopping_bag_outlined, color: ReactColors.electricBlueBright, size: 40),
           SizedBox(height: 12),
           Text(
             'MAKE RE△CT YOURS',
@@ -235,7 +294,6 @@ class _ShopHero extends StatelessWidget {
 
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.label);
-
   final String label;
 
   @override
@@ -259,13 +317,21 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _PackCard extends StatelessWidget {
-  const _PackCard({required this.pack, required this.onTap});
+  const _PackCard({
+    required this.pack,
+    required this.owned,
+    required this.equipped,
+    required this.onTap,
+  });
 
   final _ShopPack pack;
+  final bool owned;
+  final bool equipped;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final status = equipped ? 'EQUIPPED' : owned ? 'OWNED' : pack.price;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(19),
@@ -275,7 +341,7 @@ class _PackCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF07111D),
           borderRadius: BorderRadius.circular(19),
-          border: Border.all(color: pack.accent.withValues(alpha: .32)),
+          border: Border.all(color: pack.accent.withValues(alpha: equipped ? .65 : .32)),
         ),
         child: Row(
           children: [
@@ -330,18 +396,14 @@ class _PackCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  pack.price,
-                  style: TextStyle(
-                    color: pack.accent,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                  ),
+                  status,
+                  style: TextStyle(color: pack.accent, fontSize: 11.5, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 5),
                 Icon(
-                  Icons.chevron_right_rounded,
+                  owned ? Icons.check_circle_rounded : Icons.lock_outline_rounded,
                   color: pack.accent,
-                  size: 21,
+                  size: 19,
                 ),
               ],
             ),
@@ -353,9 +415,15 @@ class _PackCard extends StatelessWidget {
 }
 
 class _PackDetailsSheet extends StatelessWidget {
-  const _PackDetailsSheet({required this.pack});
+  const _PackDetailsSheet({
+    required this.pack,
+    required this.owned,
+    required this.onEquip,
+  });
 
   final _ShopPack pack;
+  final bool owned;
+  final Future<void> Function()? onEquip;
 
   @override
   Widget build(BuildContext context) {
@@ -392,9 +460,7 @@ class _PackDetailsSheet extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: pack.accent.withValues(alpha: .10),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: pack.accent.withValues(alpha: .38),
-                    ),
+                    border: Border.all(color: pack.accent.withValues(alpha: .38)),
                   ),
                   child: Icon(pack.icon, color: pack.accent, size: 29),
                 ),
@@ -425,12 +491,8 @@ class _PackDetailsSheet extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  pack.price,
-                  style: TextStyle(
-                    color: pack.accent,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
+                  owned ? 'OWNED' : pack.price,
+                  style: TextStyle(color: pack.accent, fontSize: 16, fontWeight: FontWeight.w900),
                 ),
               ],
             ),
@@ -461,11 +523,7 @@ class _PackDetailsSheet extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
-                    child: Icon(
-                      Icons.check_circle_outline_rounded,
-                      color: pack.accent,
-                      size: 17,
-                    ),
+                    child: Icon(Icons.check_circle_outline_rounded, color: pack.accent, size: 17),
                   ),
                   const SizedBox(width: 9),
                   Expanded(
@@ -492,10 +550,12 @@ class _PackDetailsSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(15),
                 border: Border.all(color: const Color(0xFF263851)),
               ),
-              child: const Text(
-                'PREVIEW ONLY • STORE CHECKOUT IS NOT ENABLED YET.',
+              child: Text(
+                owned
+                    ? 'OWNED ON THIS DEVICE • COSMETIC ONLY.'
+                    : 'PREVIEW ONLY • STORE CHECKOUT IS NOT ENABLED YET.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: ReactColors.textSecondary,
                   fontSize: 8,
                   fontWeight: FontWeight.w900,
@@ -508,9 +568,14 @@ class _PackDetailsSheet extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: FilledButton.icon(
-                onPressed: null,
-                icon: const Icon(Icons.lock_outline_rounded),
-                label: const Text('COMING SOON'),
+                onPressed: owned
+                    ? () async {
+                        await onEquip?.call();
+                        if (context.mounted) Navigator.of(context).pop();
+                      }
+                    : null,
+                icon: Icon(owned ? Icons.check_circle_outline_rounded : Icons.lock_outline_rounded),
+                label: Text(owned ? 'EQUIP' : 'COMING SOON'),
               ),
             ),
           ],
@@ -558,6 +623,7 @@ class _FairPlayCard extends StatelessWidget {
 
 class _ShopPack {
   const _ShopPack({
+    required this.id,
     required this.title,
     required this.subtitle,
     required this.category,
@@ -567,6 +633,7 @@ class _ShopPack {
     required this.includes,
   });
 
+  final String id;
   final String title;
   final String subtitle;
   final String category;
