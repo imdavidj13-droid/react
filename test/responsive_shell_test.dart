@@ -103,11 +103,15 @@ void main() {
   testWidgets('Scores fits and scrolls on a 320x640 screen', (tester) async {
     await pumpAtSize(tester, const LeaderboardScreen(), const Size(320, 640));
 
-    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -600));
+    await tester.scrollUntilVisible(
+      find.text('YOUR PERFORMANCE'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('YOUR MODE STATS'), findsOneWidget);
+    expect(find.text('YOUR PERFORMANCE'), findsOneWidget);
   });
 
   testWidgets('Results fits and scrolls on a 320x640 screen', (tester) async {
