@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../core/settings/react_settings.dart';
 import '../../daily/domain/daily_challenge.dart';
 import '../../daily/domain/daily_history_entry.dart';
 import '../domain/react_command.dart';
@@ -202,9 +201,7 @@ class LocalPlayerStats {
   }
 
   static Future<bool> recordResult(ReactRunResult result) async {
-    final isDailyDevRun = result.isDailyDevRun ||
-        (result.mode == ReactGameMode.daily && ReactSettings.dailyDevRunActive);
-    if (isDailyDevRun) {
+    if (result.isDailyDevRun) {
       return false;
     }
 
