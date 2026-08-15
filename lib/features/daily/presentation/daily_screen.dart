@@ -810,43 +810,50 @@ class _StatCard extends StatelessWidget {
   final bool compact;
 
   @override
-  Widget build(BuildContext context) => Container(
-    height: compact ? 96 : 104,
-    padding: EdgeInsets.all(compact ? 11 : 14),
-    decoration: BoxDecoration(
-      color: const Color(0xFF07111D),
-      borderRadius: BorderRadius.circular(19),
-      border: Border.all(color: color.withValues(alpha: .28)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: color, size: compact ? 20 : 22),
-        const Spacer(),
-        FittedBox(
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 7.5,
-              fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) {
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final height = largeText
+        ? (compact ? 112.0 : 120.0)
+        : (compact ? 96.0 : 104.0);
+
+    return Container(
+      height: height,
+      padding: EdgeInsets.all(compact ? 11 : 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: color.withValues(alpha: .28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: compact ? 20 : 22),
+          const Spacer(),
+          FittedBox(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 7.5,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 3),
-        FittedBox(
-          child: Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: compact ? 16 : 18,
-              fontWeight: FontWeight.w900,
+          const SizedBox(height: 3),
+          FittedBox(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: compact ? 16 : 18,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 IconData _modifierIcon(DailyModifier modifier) => switch (modifier) {
