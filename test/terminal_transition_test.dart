@@ -24,7 +24,10 @@ void main() {
     );
     await tester.pump();
 
+    // Advance beyond the 60 second boundary, then give the periodic game timer
+    // one render frame to publish the terminal TIME UP state.
     await tester.pump(const Duration(seconds: 61));
+    await tester.pump();
 
     expect(find.text('TIME UP'), findsOneWidget);
     expect(find.text('60 SECOND SCORE'), findsNothing);
@@ -32,7 +35,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 319));
     expect(find.text('TIME UP'), findsOneWidget);
 
-    await tester.pump(const Duration(milliseconds: 1));
+    // Cross the transition boundary and render the navigation scheduled by it.
+    await tester.pump(const Duration(milliseconds: 2));
     await tester.pumpAndSettle();
     expect(find.text('60 SECOND SCORE'), findsOneWidget);
   });
@@ -43,6 +47,7 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(seconds: 61));
+    await tester.pump();
     expect(find.text('TIME UP'), findsOneWidget);
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
@@ -54,7 +59,7 @@ void main() {
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 320));
+    await tester.pump(const Duration(milliseconds: 321));
     await tester.pumpAndSettle();
     expect(find.text('60 SECOND SCORE'), findsOneWidget);
   });
