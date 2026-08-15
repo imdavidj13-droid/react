@@ -288,7 +288,7 @@ class _Identity extends StatelessWidget {
           ),
         ),
         const Text(
-          'FIXED SEED',
+          'SAME RUN ALL DAY',
           style: TextStyle(
             color: ReactColors.lime,
             fontSize: 7,
@@ -478,9 +478,9 @@ class _RunCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      state.challenge.modifier.shortRule,
-                      style: const TextStyle(
+                    const Text(
+                      '60 COMMANDS • ONE MISS ENDS THE ATTEMPT',
+                      style: TextStyle(
                         color: ReactColors.lime,
                         fontSize: 7.4,
                         height: 1.25,
@@ -535,8 +535,8 @@ class _RunCard extends StatelessWidget {
               const _Divider(),
               const Expanded(
                 child: _Metric(
-                  label: 'MISSES',
-                  value: '0',
+                  label: 'MISS LIMIT',
+                  value: '1',
                   color: ReactColors.coral,
                 ),
               ),
