@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../core/settings/react_settings.dart';
 import '../core/theme/react_colors.dart';
 import '../core/theme/react_theme.dart';
 import '../features/daily/presentation/daily_dev_screen.dart';
 import '../features/home/presentation/home_screen.dart';
+import '../features/tutorial/presentation/how_to_play_screen.dart';
 
 class ReactApp extends StatelessWidget {
   const ReactApp({super.key});
@@ -15,8 +17,37 @@ class ReactApp extends StatelessWidget {
       title: 'React',
       debugShowCheckedModeBanner: false,
       theme: ReactTheme.dark,
-      home: kDebugMode ? const _DebugHome() : const HomeScreen(),
+      home: const _FirstRunShell(),
     );
+  }
+}
+
+class _FirstRunShell extends StatefulWidget {
+  const _FirstRunShell();
+
+  @override
+  State<_FirstRunShell> createState() => _FirstRunShellState();
+}
+
+class _FirstRunShellState extends State<_FirstRunShell> {
+  late bool _showTutorial;
+
+  @override
+  void initState() {
+    super.initState();
+    _showTutorial = !ReactSettings.howToPlayCompleted;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showTutorial) {
+      return HowToPlayScreen(
+        firstRun: true,
+        onFinished: () => setState(() => _showTutorial = false),
+      );
+    }
+
+    return kDebugMode ? const _DebugHome() : const HomeScreen();
   }
 }
 
