@@ -25,6 +25,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('BLITZ'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('RECENT RUNS'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
     expect(find.text('RECENT RUNS'), findsOneWidget);
     expect(find.text('17 cleared  •  2 misses  •  0.74s avg'), findsOneWidget);
     expect(find.text('17'), findsWidgets);
