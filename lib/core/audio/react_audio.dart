@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 
 import '../settings/react_settings.dart';
+import 'react_audio_storage.dart';
 
 enum ReactSoundCue {
   countdownTick,
@@ -19,10 +20,11 @@ enum ReactSoundCue {
 
 /// Central sound-effect controller for RE△CT.
 ///
-/// Sounds are generated as tiny PCM WAV clips in memory, so Android/iOS get
-/// real media playback without relying on platform UI sounds or external
-/// audio assets. The generated tones are intentionally temporary and can be
-/// replaced later without changing gameplay call sites.
+/// The temporary SFX are generated as small PCM WAV clips. On native
+/// platforms those clips are persisted to temporary files and played with
+/// [DeviceFileSource], which is substantially more reliable than feeding raw
+/// in-memory bytes to the platform player. Non-IO platforms retain a bytes
+/// fallback so the app can still compile and run there.
 abstract final class ReactAudio {
   static const int _sampleRate = 22050;
   static const int _playerCount = 6;
@@ -32,15 +34,20 @@ abstract final class ReactAudio {
     (_) => AudioPlayer(),
   );
   static final Map<ReactSoundCue, Uint8List> _clips = _buildClips();
+  static final Map<ReactSoundCue, String?> _nativeClipPaths = {};
+
   static int _nextPlayer = 0;
   static bool _initialized = false;
+  static Future<void>? _initialization;
 
   static bool get enabled => ReactSettings.soundEnabled;
 
-  static Future<void> initialize() async {
-    if (_initialized) return;
-    _initialized = true;
+  static Future<void> initialize() {
+    if (_initialized) return Future.value();
+    return _initialization ??= _initializeOnce();
+  }
 
+  static Future<void> _initializeOnce() async {
     await AudioPlayer.global.setAudioContext(
       AudioContext(
         android: const AudioContextAndroid(
@@ -54,12 +61,31 @@ abstract final class ReactAudio {
       ),
     );
 
+    for (final entry in _clips.entries) {
+      _nativeClipPaths[entry.key] = await persistReactAudioClip(
+        'react_${entry.key.name}',
+        entry.value,
+      );
+    }
+
+    for (final player in _players) {
+      await player.setReleaseMode(ReleaseMode.stop);
+    }
+
     ReactSettings.soundPreview = () => play(ReactSoundCue.success);
+    _initialized = true;
   }
 
   static Future<void> play(ReactSoundCue cue) async {
-    if (!_initialized) await initialize();
     if (!enabled) return;
+
+    try {
+      await initialize();
+    } catch (_) {
+      // Audio initialization must never block gameplay. A later cue can retry.
+      _initialization = null;
+      return;
+    }
 
     final bytes = _clips[cue];
     if (bytes == null) return;
@@ -67,18 +93,24 @@ abstract final class ReactAudio {
     final player = _players[_nextPlayer];
     _nextPlayer = (_nextPlayer + 1) % _players.length;
 
+    final nativePath = _nativeClipPaths[cue];
+
     try {
       await player.stop();
-      await player.setReleaseMode(ReleaseMode.stop);
-      await player.play(
-        BytesSource(bytes, mimeType: 'audio/wav'),
-        volume: _volumeFor(cue),
-        mode: PlayerMode.lowLatency,
-      );
+      if (nativePath != null) {
+        await player.play(
+          DeviceFileSource(nativePath),
+          volume: _volumeFor(cue),
+        );
+      } else {
+        await player.play(
+          BytesSource(bytes, mimeType: 'audio/wav'),
+          volume: _volumeFor(cue),
+        );
+      }
     } catch (_) {
-      // Audio must never be able to interrupt gameplay. Some platform/player
-      // combinations can reject low-latency byte sources, so retry through the
-      // normal media player before giving up silently.
+      // Keep a final bytes fallback for platforms/player backends that reject
+      // the native file source. Sound failure must never interrupt a run.
       try {
         await player.stop();
         await player.play(
