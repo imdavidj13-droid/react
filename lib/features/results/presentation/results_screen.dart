@@ -9,6 +9,7 @@ import '../../gameplay/domain/react_run_result.dart';
 import '../../gameplay/presentation/react_run_launch_screen.dart';
 import '../../gameplay/presentation/react_run_screen.dart';
 import '../../home/presentation/home_screen.dart';
+import '../../leaderboard/data/local_leaderboard_submission_store.dart';
 import '../domain/run_comparison.dart';
 import 'result_share_screen.dart';
 
@@ -29,7 +30,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
   ReactRunResult get result => widget.result;
 
   bool get _isDailyDevRun =>
-      result.mode == ReactGameMode.daily && ReactSettings.dailyDevRunActive;
+      result.isDailyDevRun ||
+      (result.mode == ReactGameMode.daily && ReactSettings.dailyDevRunActive);
 
   Color get _modeColor => switch (result.mode) {
     ReactGameMode.classic => ReactColors.electricBlueBright,
@@ -52,6 +54,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
         .firstOrNull;
     final comparison = RunComparison.againstPrevious(result, previous);
     final newBest = await LocalPlayerStats.recordResult(result);
+    if (!_isDailyDevRun) {
+      await LocalLeaderboardSubmissionStore.enqueueResult(result);
+    }
     if (!mounted) return;
     setState(() {
       _comparison = comparison;
@@ -64,6 +69,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
       return const ReactRunScreen(mode: ReactGameMode.passIt);
     }
     if (_isDailyDevRun) {
+      ReactSettings.dailyDevRunActive = true;
       return const ReactRunLaunchScreen(
         mode: ReactGameMode.daily,
         consumeDailyAttempt: false,
@@ -102,6 +108,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   Future<void> _backToDevTester() async {
     await _recordFuture;
     if (!mounted) return;
+    ReactSettings.dailyDevRunActive = false;
     Navigator.of(context).pop();
   }
 
