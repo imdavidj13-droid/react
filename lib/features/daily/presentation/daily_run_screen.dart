@@ -58,6 +58,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
   int _elapsedBeforeArmMs = 0;
   int _pendingTransitionDurationMs = 0;
   int _pendingTransitionRemainingMs = 0;
+  int _commandSerial = 0;
 
   double _progress = 1;
   bool _acceptingInput = false;
@@ -226,6 +227,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
 
     setState(() {
       _command = next;
+      _commandSerial += 1;
       _progress = 1;
       _obscured = false;
       _feedback = _redlineCommand
@@ -534,6 +536,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
                         Expanded(
                           child: Center(
                             child: ReactGestureSurface(
+                              key: ValueKey<int>(_commandSerial),
                               enabled: _acceptingInput && !_paused,
                               expectedCommand: _expectedPerformedCommand(),
                               onCommand: _handleCommand,
@@ -756,14 +759,15 @@ class _DailyArena extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          CustomPaint(
-            size: Size.square(size),
-            painter: _DailyRingPainter(
-              progress: progress,
-              accent: accent,
-              hideClock: hideClock,
+          if (!hideClock)
+            CustomPaint(
+              size: Size.square(size),
+              painter: _DailyRingPainter(
+                progress: progress,
+                accent: accent,
+                hideClock: hideClock,
+              ),
             ),
-          ),
           Container(
             width: size * .69,
             height: size * .69,
