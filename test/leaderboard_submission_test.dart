@@ -1,19 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:react/core/settings/react_settings.dart';
+import 'package:react/features/gameplay/data/local_player_stats.dart';
 import 'package:react/features/gameplay/domain/react_run_result.dart';
 import 'package:react/features/leaderboard/data/local_leaderboard_submission_store.dart';
 import 'package:react/features/leaderboard/domain/leaderboard_submission_eligibility.dart';
-import 'package:react/features/results/domain/run_comparison.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    ReactSettings.dailyDevRunActive = false;
-  });
-
-  tearDown(() {
-    ReactSettings.dailyDevRunActive = false;
   });
 
   test('competitive modes accept only valid completed run shapes', () {
@@ -104,7 +98,7 @@ void main() {
 
     final submission = await LocalLeaderboardSubmissionStore.enqueueResult(
       result,
-      completedAt: DateTime.utc(2026, 8, 14, 9, 0),
+      completedAt: DateTime.utc(2026, 8, 14, 9),
     );
     expect(submission, isNotNull);
 
@@ -120,8 +114,7 @@ void main() {
     expect(await LocalLeaderboardSubmissionStore.pending(), isEmpty);
   });
 
-  test('Daily dev runs are never queued', () async {
-    ReactSettings.dailyDevRunActive = true;
+  test('Daily dev run identity is frozen on the result and never queued', () async {
     final result = ReactRunResult(
       mode: ReactGameMode.daily,
       score: 18,
@@ -132,6 +125,7 @@ void main() {
       maxStreak: 8,
       dailyDate: DateTime(2026, 8, 14),
       dailyModifierLabel: 'SURGE',
+      isDailyDevRun: true,
     );
 
     expect(
@@ -139,9 +133,11 @@ void main() {
       isNull,
     );
     expect(await LocalLeaderboardSubmissionStore.pending(), isEmpty);
+    expect(await LocalPlayerStats.recordResult(result), isFalse);
+    expect(await LocalPlayerStats.runsPlayed(), 0);
   });
 
-  test('Results completion pipeline captures an eligible run', () async {
+  test('reset progress also clears pending leaderboard submissions', () async {
     const result = ReactRunResult(
       mode: ReactGameMode.endless,
       score: 21,
@@ -152,12 +148,11 @@ void main() {
       maxStreak: 12,
     );
 
-    RunComparison.againstPrevious(result, null);
-    await Future<void>.delayed(const Duration(milliseconds: 10));
+    await LocalLeaderboardSubmissionStore.enqueueResult(result);
+    expect(await LocalLeaderboardSubmissionStore.pending(), hasLength(1));
 
-    final pending = await LocalLeaderboardSubmissionStore.pending();
-    expect(pending, hasLength(1));
-    expect(pending.single.mode, ReactGameMode.endless);
-    expect(pending.single.score, 21);
+    await LocalPlayerStats.resetProgress();
+
+    expect(await LocalLeaderboardSubmissionStore.pending(), isEmpty);
   });
 }
