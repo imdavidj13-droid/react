@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:react/app/react_app.dart';
+import 'package:react/core/settings/react_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -7,6 +8,10 @@ void main() {
     final now = DateTime.now();
     return '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
+
+  setUp(() {
+    ReactSettings.howToPlayCompleted = true;
+  });
 
   testWidgets('shows the React home shell and local records', (tester) async {
     SharedPreferences.setMockInitialValues({
