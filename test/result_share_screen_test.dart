@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:react/features/daily/domain/daily_challenge.dart';
 import 'package:react/features/gameplay/domain/react_run_result.dart';
 import 'package:react/features/results/presentation/result_share_screen.dart';
 
@@ -60,27 +59,60 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Daily share card identifies today modifier', (tester) async {
-    final challenge = DailyChallenge.today();
-    const result = ReactRunResult(
+  testWidgets('Daily share card uses the frozen run metadata', (tester) async {
+    final result = ReactRunResult(
       mode: ReactGameMode.daily,
       score: 31,
       successfulCommands: 31,
       averageTimeSeconds: .74,
       outcome: ReactRunOutcome.missedCommand,
       misses: 1,
+      dailyDate: DateTime(2026, 8, 14),
+      dailyModifierLabel: 'ECHO',
+      dailyModifierRule: 'EVERY 6TH CLEAR REPEATS THE COMMAND',
     );
 
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
         home: ResultShareScreen(result: result, newBest: true),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('NEW MODIFIER BEST'), findsOneWidget);
-    expect(find.text(challenge.modifier.label), findsOneWidget);
-    expect(find.textContaining(challenge.dateLabel), findsOneWidget);
+    expect(find.text('ECHO'), findsOneWidget);
+    expect(
+      find.text('14 AUG 2026  •  EVERY 6TH CLEAR REPEATS THE COMMAND'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Daily share never substitutes the current challenge',
+      (tester) async {
+    const result = ReactRunResult(
+      mode: ReactGameMode.daily,
+      score: 12,
+      successfulCommands: 12,
+      averageTimeSeconds: .88,
+      outcome: ReactRunOutcome.missedCommand,
+      misses: 1,
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ResultShareScreen(result: result, newBest: false),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('DAILY CHALLENGE'), findsOneWidget);
+    expect(
+      find.text(
+        'DATE UNAVAILABLE  •  60 COMMANDS • ONE MISS ENDS THE ATTEMPT',
+      ),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
