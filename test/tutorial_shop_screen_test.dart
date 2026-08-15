@@ -38,27 +38,47 @@ void main() {
     expect(find.text('YOUR STYLE'), findsOneWidget);
     expect(find.text('RE△CT CORE'), findsOneWidget);
     expect(find.text('EQUIPPED'), findsOneWidget);
+    expect(find.text('FEATURED'), findsOneWidget);
+    expect(find.text('FEATURED PACK'), findsOneWidget);
     expect(find.text('REDLINE'), findsOneWidget);
     expect(find.text('SYNTHWAVE'), findsOneWidget);
+    expect(find.text('LOCKED'), findsWidgets);
 
-    final scrollable = find.byType(Scrollable).first;
-    await tester.scrollUntilVisible(
-      find.text('ARCADE SFX'),
-      250,
-      scrollable: scrollable,
-    );
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
+    await tester.pumpAndSettle();
+
     expect(find.text('ARCADE SFX'), findsOneWidget);
-
-    await tester.scrollUntilVisible(
-      find.textContaining('NO EXTRA LIVES'),
-      250,
-      scrollable: scrollable,
-    );
     expect(find.textContaining('NO EXTRA LIVES'), findsOneWidget);
     expect(find.textContaining('PAID GAMEPLAY ADVANTAGES'), findsOneWidget);
   });
 
-  testWidgets('paid shop pack opens a non-purchasable detail preview', (tester) async {
+  testWidgets('shop category filters show the matching cosmetic group', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: ShopScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('shop_filter_audio')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('AUDIO COSMETICS'), findsOneWidget);
+    expect(find.text('ARCADE SFX'), findsOneWidget);
+    expect(find.text('SYNTHWAVE'), findsNothing);
+    expect(find.text('GLITCH COMMANDS'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('shop_filter_styles')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('STYLES COSMETICS'), findsOneWidget);
+    expect(find.text('GLITCH COMMANDS'), findsOneWidget);
+    expect(find.text('PRO SHARE CARDS'), findsOneWidget);
+    expect(find.text('ARCADE SFX'), findsNothing);
+  });
+
+  testWidgets('featured paid pack opens a non-purchasable detail preview', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: ShopScreen()),
     );
@@ -70,7 +90,10 @@ void main() {
     expect(find.text('INCLUDES'), findsOneWidget);
     expect(find.text('Redline arena palette'), findsOneWidget);
     expect(find.text('£1.99'), findsWidgets);
-    expect(find.textContaining('STORE CHECKOUT IS NOT ENABLED YET'), findsOneWidget);
+    expect(
+      find.textContaining('STORE CHECKOUT IS NOT ENABLED YET'),
+      findsOneWidget,
+    );
 
     final comingSoon = tester.widget<FilledButton>(
       find.widgetWithText(FilledButton, 'COMING SOON'),
