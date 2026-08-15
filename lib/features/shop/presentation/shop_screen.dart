@@ -86,7 +86,7 @@ class ShopScreen extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(pad, 10, pad, 20),
               sliver: SliverList.separated(
                 itemCount: _packs.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
                 itemBuilder: (context, index) => _PackCard(pack: _packs[index]),
               ),
             ),
