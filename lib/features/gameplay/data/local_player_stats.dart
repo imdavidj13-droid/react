@@ -29,6 +29,7 @@ class LocalPlayerStats {
 
   static const _runsKey = 'runs_played';
   static const _bestStreakKey = 'best_command_streak';
+  static const _bestSequenceStreakKey = 'best_sequence_streak';
   static const _dailyLastPlayedKey = 'daily_last_played';
   static const _dailyActiveChallengeKey = 'daily_active_challenge';
   static const _dailyStreakKey = 'daily_streak';
@@ -60,6 +61,11 @@ class LocalPlayerStats {
     return prefs.getInt(_bestStreakKey) ?? 0;
   }
 
+  static Future<int> bestSequenceStreak() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_bestSequenceStreakKey) ?? 0;
+  }
+
   static Future<int> runsPlayed() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_runsKey) ?? 0;
@@ -75,6 +81,9 @@ class LocalPlayerStats {
     return prefs.getInt(_modeCommandsKey(mode)) ?? 0;
   }
 
+  static Future<int> sequenceClears() =>
+      successfulCommandsFor(ReactGameMode.sequence);
+
   static Future<double> averageReactionSecondsFor(ReactGameMode mode) async {
     final prefs = await SharedPreferences.getInstance();
     final commands = prefs.getInt(_modeCommandsKey(mode)) ?? 0;
@@ -88,6 +97,7 @@ class LocalPlayerStats {
     final prefs = await SharedPreferences.getInstance();
     var total = 0;
     for (final mode in ReactGameMode.values) {
+      if (mode == ReactGameMode.sequence) continue;
       total += prefs.getInt(_modeCommandsKey(mode)) ?? 0;
     }
     return total;
@@ -216,9 +226,17 @@ class LocalPlayerStats {
       }
     }
 
-    final currentBestStreak = prefs.getInt(_bestStreakKey) ?? 0;
-    if (result.maxStreak > currentBestStreak) {
-      await prefs.setInt(_bestStreakKey, result.maxStreak);
+    if (result.mode == ReactGameMode.sequence) {
+      final currentSequenceStreak =
+          prefs.getInt(_bestSequenceStreakKey) ?? 0;
+      if (result.maxStreak > currentSequenceStreak) {
+        await prefs.setInt(_bestSequenceStreakKey, result.maxStreak);
+      }
+    } else {
+      final currentBestStreak = prefs.getInt(_bestStreakKey) ?? 0;
+      if (result.maxStreak > currentBestStreak) {
+        await prefs.setInt(_bestStreakKey, result.maxStreak);
+      }
     }
 
     await prefs.setInt(_runsKey, (prefs.getInt(_runsKey) ?? 0) + 1);
@@ -325,6 +343,7 @@ class LocalPlayerStats {
 
     await prefs.remove(_runsKey);
     await prefs.remove(_bestStreakKey);
+    await prefs.remove(_bestSequenceStreakKey);
     await prefs.remove(_dailyLastPlayedKey);
     await prefs.remove(_dailyActiveChallengeKey);
     await prefs.remove(_dailyStreakKey);
