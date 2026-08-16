@@ -399,8 +399,7 @@ class _DailySummary extends StatelessWidget {
     final date = result.dailyDate;
     final dateLabel = date == null ? 'DATE UNAVAILABLE' : _dailyDateLabel(date);
     final modifier = result.dailyModifierLabel ?? 'DAILY CHALLENGE';
-    final rule = result.dailyModifierRule ??
-        '60 COMMANDS • ONE MISS ENDS THE ATTEMPT';
+    final rule = result.dailyModifierRule ?? 'ONE MISS ENDS THE ATTEMPT';
 
     return _InfoStrip(
       color: color,
@@ -452,11 +451,12 @@ class _Metrics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sequence = result.mode == ReactGameMode.sequence;
     return Row(
       children: [
         Expanded(
           child: _Metric(
-            label: 'CLEARS',
+            label: sequence ? 'SEQUENCES' : 'CLEARS',
             value: '${result.successfulCommands}',
             color: ReactColors.electricBlueBright,
           ),
@@ -464,7 +464,7 @@ class _Metrics extends StatelessWidget {
         const SizedBox(width: 7),
         Expanded(
           child: _Metric(
-            label: 'MISSES',
+            label: sequence ? 'MISTAKES' : 'MISSES',
             value: '${result.misses}',
             color: ReactColors.coral,
           ),
@@ -472,7 +472,7 @@ class _Metrics extends StatelessWidget {
         const SizedBox(width: 7),
         Expanded(
           child: _Metric(
-            label: 'AVG',
+            label: sequence ? 'AVG CLEAR' : 'AVG',
             value: _average(result),
             color: ReactColors.textPrimary,
           ),
@@ -490,6 +490,7 @@ class _ProMetrics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sequence = result.mode == ReactGameMode.sequence;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
@@ -501,7 +502,7 @@ class _ProMetrics extends StatelessWidget {
         children: [
           Expanded(
             child: _FlatMetric(
-              label: 'CLEARS',
+              label: sequence ? 'SEQUENCES' : 'CLEARS',
               value: '${result.successfulCommands}',
               color: color,
             ),
@@ -509,7 +510,7 @@ class _ProMetrics extends StatelessWidget {
           const _Divider(),
           Expanded(
             child: _FlatMetric(
-              label: 'AVG TIME',
+              label: sequence ? 'AVG CLEAR' : 'AVG TIME',
               value: _average(result),
               color: ReactColors.textPrimary,
             ),
@@ -517,7 +518,7 @@ class _ProMetrics extends StatelessWidget {
           const _Divider(),
           Expanded(
             child: _FlatMetric(
-              label: 'STREAK',
+              label: sequence ? 'SEQ STREAK' : 'STREAK',
               value: '${result.maxStreak}',
               color: ReactColors.lime,
             ),
@@ -708,7 +709,9 @@ class _Outcome extends StatelessWidget {
     return _InfoStrip(
       color: color,
       icon: _outcomeIcon(result),
-      title: result.outcomeLabel,
+      title: result.mode == ReactGameMode.sequence
+          ? 'OUT OF LIVES'
+          : result.outcomeLabel,
       subtitle: _outcomeDetail(result),
       emphasized: false,
     );
@@ -757,7 +760,7 @@ class _Footer extends StatelessWidget {
         const SizedBox(width: 7),
         Expanded(
           child: Text(
-            pro ? 'REACTION PERFORMANCE CARD' : 'REACTION • REFLEX • SPEED',
+            pro ? 'PERFORMANCE CARD' : 'REACTION • REFLEX • SPEED',
             style: const TextStyle(
               color: ReactColors.textSecondary,
               fontSize: 6.4,
@@ -850,34 +853,46 @@ String _scoreLabel(ReactGameMode mode) => switch (mode) {
       ReactGameMode.endless => 'COMMANDS SURVIVED',
       ReactGameMode.daily => 'DAILY SCORE',
       ReactGameMode.passIt => 'MATCH COMMANDS',
+      ReactGameMode.sequence => 'SEQUENCES CLEARED',
     };
 
 String _heroEyebrow(ReactRunResult result) {
   if (result.mode == ReactGameMode.passIt && result.winnerPlayer != null) {
     return 'PLAYER ${result.winnerPlayer} WINS';
   }
+  if (result.mode == ReactGameMode.sequence) return 'OUT OF LIVES';
   return result.outcomeLabel;
 }
 
-String _outcomeDetail(ReactRunResult result) => switch (result.outcome) {
-      ReactRunOutcome.missedCommand =>
-        result.failedCommand?.title ?? 'MISSED COMMAND',
-      ReactRunOutcome.timeUp => '60 SECOND RUN COMPLETE',
-      ReactRunOutcome.completed =>
-        '${result.successfulCommands} COMMANDS CLEARED',
-      ReactRunOutcome.winner => result.winnerPlayer == null
-          ? 'LAST PLAYER STANDING'
-          : 'PLAYER ${result.winnerPlayer} WINS',
-      ReactRunOutcome.quit => 'RUN ENDED',
-    };
+String _outcomeDetail(ReactRunResult result) {
+  if (result.mode == ReactGameMode.sequence) {
+    return '${result.successfulCommands} SEQUENCES • ${result.misses} MISTAKES';
+  }
+  return switch (result.outcome) {
+    ReactRunOutcome.missedCommand =>
+      result.failedCommand?.title ?? 'MISSED COMMAND',
+    ReactRunOutcome.timeUp => '60 SECOND RUN COMPLETE',
+    ReactRunOutcome.completed =>
+      '${result.successfulCommands} COMMANDS CLEARED',
+    ReactRunOutcome.winner => result.winnerPlayer == null
+        ? 'LAST PLAYER STANDING'
+        : 'PLAYER ${result.winnerPlayer} WINS',
+    ReactRunOutcome.quit => 'RUN ENDED',
+  };
+}
 
-IconData _outcomeIcon(ReactRunResult result) => switch (result.outcome) {
-      ReactRunOutcome.winner || ReactRunOutcome.completed =>
-        Icons.emoji_events_rounded,
-      ReactRunOutcome.timeUp => Icons.timer_rounded,
-      ReactRunOutcome.missedCommand => Icons.bolt_rounded,
-      ReactRunOutcome.quit => Icons.stop_circle_outlined,
-    };
+IconData _outcomeIcon(ReactRunResult result) {
+  if (result.mode == ReactGameMode.sequence) {
+    return Icons.blur_circular_rounded;
+  }
+  return switch (result.outcome) {
+    ReactRunOutcome.winner || ReactRunOutcome.completed =>
+      Icons.emoji_events_rounded,
+    ReactRunOutcome.timeUp => Icons.timer_rounded,
+    ReactRunOutcome.missedCommand => Icons.bolt_rounded,
+    ReactRunOutcome.quit => Icons.stop_circle_outlined,
+  };
+}
 
 String _shareText(ReactRunResult result) {
   if (result.mode == ReactGameMode.passIt && result.winnerPlayer != null) {
@@ -888,6 +903,9 @@ String _shareText(ReactRunResult result) {
     final modifier = result.dailyModifierLabel ?? 'CHALLENGE';
     return 'RE△CT DAILY $modifier — ${result.score}. Can you beat it?';
   }
+  if (result.mode == ReactGameMode.sequence) {
+    return 'RE△CT SEQUENCE — ${result.score} sequences cleared. Can you beat it?';
+  }
   return 'RE△CT ${result.mode.label} — ${result.score} points. Can you beat it?';
 }
 
@@ -897,4 +915,5 @@ Color _modeColor(ReactGameMode mode) => switch (mode) {
       ReactGameMode.endless => ReactColors.lime,
       ReactGameMode.daily => ReactColors.purple,
       ReactGameMode.passIt => const Color(0xFFFFB85A),
+      ReactGameMode.sequence => ReactColors.electricBlueBright,
     };
