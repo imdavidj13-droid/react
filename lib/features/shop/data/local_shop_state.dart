@@ -13,6 +13,7 @@ abstract final class LocalShopState {
   static const synthwavePackId = 'synthwave';
   static const monoPackId = 'mono';
   static const arcadeSfxPackId = 'arcade_sfx';
+  static const glitchCommandsPackId = 'glitch_commands';
 
   static const Set<String> _builtInOwnedPacks = {corePackId};
   static const Set<String> _implementedVisualPacks = {
@@ -23,6 +24,9 @@ abstract final class LocalShopState {
   };
   static const Set<String> _implementedAudioPacks = {
     arcadeSfxPackId,
+  };
+  static const Set<String> _implementedCommandStyles = {
+    glitchCommandsPackId,
   };
 
   static bool get debugUnlocksEnabled => kDebugMode;
@@ -37,6 +41,9 @@ abstract final class LocalShopState {
     if (ReactCosmetics.currentSoundPack == ReactSoundPack.arcade) {
       equipped.add(arcadeSfxPackId);
     }
+    if (ReactCosmetics.currentCommandStyle == ReactCommandStyle.glitch) {
+      equipped.add(glitchCommandsPackId);
+    }
     return equipped;
   }
 
@@ -47,13 +54,17 @@ abstract final class LocalShopState {
 
   static bool isImplemented(String packId) =>
       _implementedVisualPacks.contains(packId) ||
-      _implementedAudioPacks.contains(packId);
+      _implementedAudioPacks.contains(packId) ||
+      _implementedCommandStyles.contains(packId);
 
   static bool isImplementedVisualPack(String packId) =>
       _implementedVisualPacks.contains(packId);
 
   static bool isImplementedAudioPack(String packId) =>
       _implementedAudioPacks.contains(packId);
+
+  static bool isImplementedCommandStyle(String packId) =>
+      _implementedCommandStyles.contains(packId);
 
   static Future<void> equip(String packId) async {
     if (!isOwned(packId) || !isImplemented(packId)) return;
@@ -66,9 +77,17 @@ abstract final class LocalShopState {
 
     if (packId == arcadeSfxPackId) {
       await ReactCosmetics.equipSoundPack(ReactSoundPack.arcade);
+      return;
+    }
+
+    if (packId == glitchCommandsPackId) {
+      await ReactCosmetics.equipCommandStyle(ReactCommandStyle.glitch);
     }
   }
 
   static Future<void> equipCoreAudio() =>
       ReactCosmetics.equipSoundPack(ReactSoundPack.core);
+
+  static Future<void> equipCoreCommandStyle() =>
+      ReactCosmetics.equipCommandStyle(ReactCommandStyle.core);
 }
