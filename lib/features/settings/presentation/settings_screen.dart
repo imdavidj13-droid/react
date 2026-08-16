@@ -149,7 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _ActionTile(
                 icon: Icons.menu_book_rounded,
                 title: 'HOW TO PLAY',
-                subtitle: 'Review all 9 commands and the core rules at any time.',
+                subtitle: 'Review all 9 commands, Sequence mode and core rules at any time.',
                 color: ReactColors.electricBlueBright,
                 onTap: _openHowToPlay,
               ),
@@ -203,6 +203,7 @@ class _ProfileStats {
     this.blitz = 0,
     this.endless = 0,
     this.daily = 0,
+    this.sequence = 0,
     this.streak = 0,
   });
 
@@ -212,6 +213,7 @@ class _ProfileStats {
   final int blitz;
   final int endless;
   final int daily;
+  final int sequence;
   final int streak;
 
   static Future<_ProfileStats> load() async {
@@ -221,6 +223,7 @@ class _ProfileStats {
     final blitz = await LocalPlayerStats.bestFor(ReactGameMode.blitz);
     final endless = await LocalPlayerStats.bestFor(ReactGameMode.endless);
     final daily = await LocalPlayerStats.bestFor(ReactGameMode.daily);
+    final sequence = await LocalPlayerStats.bestFor(ReactGameMode.sequence);
     final streak = await LocalPlayerStats.dailyStreak();
 
     return _ProfileStats(
@@ -230,6 +233,7 @@ class _ProfileStats {
       blitz: blitz,
       endless: endless,
       daily: daily,
+      sequence: sequence,
       streak: streak,
     );
   }
@@ -444,6 +448,18 @@ class _StatsPanel extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 92,
+              child: _Metric(
+                label: 'SEQUENCE',
+                value: '${stats.sequence}',
+                color: ReactColors.electricBlueBright,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -637,11 +653,16 @@ class _SettingTile extends StatelessWidget {
                   children: [
                     Icon(icon, color: color, size: 25),
                     const SizedBox(width: 12),
-                    Expanded(child: Text(title, style: const TextStyle(
-                      color: ReactColors.textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                    ))),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: ReactColors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 6),
