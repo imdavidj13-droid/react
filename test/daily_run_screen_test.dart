@@ -120,11 +120,11 @@ void main() {
     final surface =
         tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface));
     await performCommand(tester, surface.expectedCommand);
-    expect(find.text('$expectedScore/60'), findsOneWidget);
+    expect(find.text('$expectedScore CLEARS'), findsOneWidget);
     await tester.pump(nextCommandDelay);
   }
 
-  testWidgets('Daily gameplay shell renders sixty-step modifier run',
+  testWidgets('Daily gameplay shell renders uncapped modifier run',
       (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
@@ -134,7 +134,8 @@ void main() {
     await pumpDaily(tester, DailyModifier.redline);
 
     expect(find.text('REDLINE'), findsWidgets);
-    expect(find.text('0/60'), findsOneWidget);
+    expect(find.text('0 CLEARS'), findsOneWidget);
+    expect(find.text('MISS LIMIT'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -154,9 +155,8 @@ void main() {
       }
 
       await performCommand(tester, expected);
-
       expect(
-        find.text('1/60'),
+        find.text('1 CLEARS'),
         findsOneWidget,
         reason: '${modifier.label} did not accept its valid input',
       );
@@ -203,7 +203,7 @@ void main() {
     final surface =
         tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface));
     await performCommand(tester, surface.expectedCommand);
-    expect(find.text('1/60'), findsOneWidget);
+    expect(find.text('1 CLEARS'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -239,7 +239,7 @@ void main() {
     final surface =
         tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface));
     await performCommand(tester, surface.expectedCommand);
-    expect(find.text('6/60'), findsOneWidget);
+    expect(find.text('6 CLEARS'), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 180));
 
     expect(find.text('ECHO'), findsWidgets);
@@ -276,13 +276,13 @@ void main() {
         expect(find.text('DO THE OPPOSITE'), findsOneWidget);
         expect(expected, oppositeSwipe(command));
         await performCommand(tester, expected);
-        expect(find.text('${index + 1}/60'), findsOneWidget);
+        expect(find.text('${index + 1} CLEARS'), findsOneWidget);
         break;
       }
 
       expect(expected, command);
       await performCommand(tester, expected);
-      expect(find.text('${index + 1}/60'), findsOneWidget);
+      expect(find.text('${index + 1} CLEARS'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 420));
     }
     expect(tester.takeException(), isNull);
@@ -295,7 +295,7 @@ void main() {
         tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface));
 
     await performCommand(tester, surface.expectedCommand);
-    expect(find.text('1/60'), findsOneWidget);
+    expect(find.text('1 CLEARS'), findsOneWidget);
     expect(
       tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
       isFalse,
