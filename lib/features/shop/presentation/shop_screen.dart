@@ -78,7 +78,7 @@ class _ShopScreenState extends State<ShopScreen> {
       ],
     ),
     _ShopPack(
-      id: 'arcade_sfx',
+      id: LocalShopState.arcadeSfxPackId,
       title: 'ARCADE SFX',
       subtitle: 'Alternative countdown, success, miss and completion sounds.',
       category: 'SOUND PACK',
@@ -86,6 +86,7 @@ class _ShopScreenState extends State<ShopScreen> {
       price: '£0.99',
       accent: ReactColors.lime,
       icon: Icons.graphic_eq_rounded,
+      implemented: true,
       includes: [
         'Alternate countdown cues',
         'Arcade success and miss sounds',
@@ -126,7 +127,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
   static const _featuredPackId = LocalShopState.redlinePackId;
 
-  late Future<String> _equippedPack;
+  late Future<Set<String>> _equippedPackIds;
   _ShopFilter _filter = _ShopFilter.all;
 
   _ShopPack get _featuredPack =>
@@ -142,19 +143,31 @@ class _ShopScreenState extends State<ShopScreen> {
   @override
   void initState() {
     super.initState();
-    _equippedPack = LocalShopState.equippedPack();
+    _equippedPackIds = LocalShopState.equippedPackIds();
+  }
+
+  void _refreshEquipped() {
+    if (!mounted) return;
+    setState(() => _equippedPackIds = LocalShopState.equippedPackIds());
   }
 
   Future<void> _equip(_ShopPack pack) async {
     await LocalShopState.equip(pack.id);
-    if (!mounted) return;
-    setState(() => _equippedPack = LocalShopState.equippedPack());
+    _refreshEquipped();
+  }
+
+  Future<void> _useCoreSfx() async {
+    await LocalShopState.equipCoreAudio();
+    _refreshEquipped();
   }
 
   Future<void> _showPackDetails(_ShopPack pack) async {
     final owned = LocalShopState.isOwned(pack.id);
-    final equipped = await LocalShopState.equippedPack();
+    final equipped = (await LocalShopState.equippedPackIds()).contains(pack.id);
     if (!mounted) return;
+
+    final isArcade = pack.id == LocalShopState.arcadeSfxPackId;
+    final canEquip = owned && pack.implemented;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -163,8 +176,17 @@ class _ShopScreenState extends State<ShopScreen> {
       builder: (context) => _PackDetailsSheet(
         pack: pack,
         owned: owned,
-        equipped: equipped == pack.id,
-        onEquip: owned && pack.implemented ? () => _equip(pack) : null,
+        equipped: equipped,
+        actionLabel: isArcade && equipped
+            ? 'USE CORE SFX'
+            : canEquip
+                ? 'EQUIP'
+                : 'COMING SOON',
+        onAction: isArcade && equipped
+            ? _useCoreSfx
+            : canEquip
+                ? () => _equip(pack)
+                : null,
       ),
     );
   }
@@ -177,10 +199,10 @@ class _ShopScreenState extends State<ShopScreen> {
     return Scaffold(
       backgroundColor: ReactColors.background,
       body: SafeArea(
-        child: FutureBuilder<String>(
-          future: _equippedPack,
+        child: FutureBuilder<Set<String>>(
+          future: _equippedPackIds,
           builder: (context, snapshot) {
-            final equipped = snapshot.data ?? LocalShopState.corePackId;
+            final equipped = snapshot.data ?? {LocalShopState.corePackId};
             final visiblePacks = _visiblePacks;
 
             return CustomScrollView(
@@ -195,7 +217,7 @@ class _ShopScreenState extends State<ShopScreen> {
                   padding: EdgeInsets.fromLTRB(pad, 8, pad, 12),
                   sliver: const SliverToBoxAdapter(child: _ShopHero()),
                 ),
-                if (LocalShopState.debugVisualUnlocksEnabled)
+                if (LocalShopState.debugUnlocksEnabled)
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(pad, 0, pad, 16),
                     sliver: const SliverToBoxAdapter(child: _DevUnlockCard()),
@@ -210,7 +232,7 @@ class _ShopScreenState extends State<ShopScreen> {
                     child: _PackCard(
                       pack: _corePack,
                       owned: true,
-                      equipped: equipped == _corePack.id,
+                      equipped: equipped.contains(_corePack.id),
                       onTap: () => _showPackDetails(_corePack),
                     ),
                   ),
@@ -227,7 +249,7 @@ class _ShopScreenState extends State<ShopScreen> {
                         key: const ValueKey('featured_redline'),
                         pack: _featuredPack,
                         owned: LocalShopState.isOwned(_featuredPack.id),
-                        equipped: equipped == _featuredPack.id,
+                        equipped: equipped.contains(_featuredPack.id),
                         onTap: () => _showPackDetails(_featuredPack),
                       ),
                     ),
@@ -264,7 +286,7 @@ class _ShopScreenState extends State<ShopScreen> {
                         return _PackCard(
                           pack: pack,
                           owned: LocalShopState.isOwned(pack.id),
-                          equipped: equipped == pack.id,
+                          equipped: equipped.contains(pack.id),
                           onTap: () => _showPackDetails(pack),
                         );
                       },
@@ -381,7 +403,7 @@ class _DevUnlockCard extends StatelessWidget {
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'DEV • VISUAL THEMES UNLOCKED',
+              'DEV • IMPLEMENTED COSMETICS UNLOCKED',
               style: TextStyle(
                 color: ReactColors.textPrimary,
                 fontSize: 10,
@@ -476,7 +498,11 @@ class _PackCard extends StatelessWidget {
                       children: [
                         _StatusPill(
                           label: equipped ? 'EQUIPPED' : owned ? 'OWNED' : 'LOCKED',
-                          color: equipped ? ReactColors.lime : owned ? pack.accent : ReactColors.textSecondary,
+                          color: equipped
+                              ? ReactColors.lime
+                              : owned
+                                  ? pack.accent
+                                  : ReactColors.textSecondary,
                         ),
                         if (!owned) ...[
                           const SizedBox(width: 8),
@@ -563,7 +589,11 @@ class _FeaturedPackCard extends StatelessWidget {
                     const SizedBox(height: 10),
                     _StatusPill(
                       label: equipped ? 'EQUIPPED' : owned ? 'OWNED' : 'LOCKED',
-                      color: equipped ? ReactColors.lime : owned ? pack.accent : ReactColors.textSecondary,
+                      color: equipped
+                          ? ReactColors.lime
+                          : owned
+                              ? pack.accent
+                              : ReactColors.textSecondary,
                     ),
                     if (!owned) ...[
                       const SizedBox(height: 7),
@@ -682,13 +712,15 @@ class _PackDetailsSheet extends StatelessWidget {
     required this.pack,
     required this.owned,
     required this.equipped,
-    required this.onEquip,
+    required this.actionLabel,
+    required this.onAction,
   });
 
   final _ShopPack pack;
   final bool owned;
   final bool equipped;
-  final Future<void> Function()? onEquip;
+  final String actionLabel;
+  final Future<void> Function()? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -789,7 +821,8 @@ class _PackDetailsSheet extends StatelessWidget {
                   letterSpacing: .8,
                 ),
               )
-            else if (LocalShopState.debugVisualUnlocksEnabled && pack.id != LocalShopState.corePackId)
+            else if (LocalShopState.debugUnlocksEnabled &&
+                pack.id != LocalShopState.corePackId)
               const Text(
                 'DEV ENTITLEMENT • RELEASE BUILDS REMAIN LOCKED UNTIL PURCHASED.',
                 style: TextStyle(
@@ -803,14 +836,12 @@ class _PackDetailsSheet extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: equipped
+                onPressed: onAction == null
                     ? null
-                    : onEquip == null
-                        ? null
-                        : () async {
-                            await onEquip!();
-                            if (context.mounted) Navigator.of(context).pop();
-                          },
+                    : () async {
+                        await onAction!();
+                        if (context.mounted) Navigator.of(context).pop();
+                      },
                 style: FilledButton.styleFrom(
                   backgroundColor: pack.accent,
                   foregroundColor: Colors.black,
@@ -819,12 +850,11 @@ class _PackDetailsSheet extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 15),
                 ),
                 child: Text(
-                  equipped
-                      ? 'EQUIPPED'
-                      : onEquip != null
-                          ? 'EQUIP'
-                          : 'COMING SOON',
-                  style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: .8),
+                  actionLabel,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .8,
+                  ),
                 ),
               ),
             ),
