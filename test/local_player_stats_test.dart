@@ -19,6 +19,8 @@ void main() {
     ReactRunOutcome outcome = ReactRunOutcome.missedCommand,
     double averageTimeSeconds = .8,
     bool isDailyDevRun = false,
+    int misses = 0,
+    int maxStreak = 0,
   }) {
     return ReactRunResult(
       mode: mode,
@@ -26,6 +28,8 @@ void main() {
       successfulCommands: score,
       averageTimeSeconds: averageTimeSeconds,
       outcome: outcome,
+      misses: misses,
+      maxStreak: maxStreak,
       isDailyDevRun: isDailyDevRun,
     );
   }
@@ -49,9 +53,16 @@ void main() {
       ),
       isTrue,
     );
+    expect(
+      await LocalPlayerStats.recordResult(
+        result(mode: ReactGameMode.sequence, score: 16, misses: 3),
+      ),
+      isTrue,
+    );
 
     expect(await LocalPlayerStats.bestFor(ReactGameMode.classic), 12);
     expect(await LocalPlayerStats.bestFor(ReactGameMode.blitz), 19);
+    expect(await LocalPlayerStats.bestFor(ReactGameMode.sequence), 16);
   });
 
   test('Pass It counts as a run but never creates a personal best', () async {
@@ -98,6 +109,27 @@ void main() {
     expect(await LocalPlayerStats.successfulCommandsFor(ReactGameMode.classic), 10);
     expect(await LocalPlayerStats.successfulCommandsFor(ReactGameMode.blitz), 7);
     expect(await LocalPlayerStats.totalSuccessfulCommands(), 17);
+  });
+
+  test('Sequence clears are tracked without inflating gesture command totals',
+      () async {
+    await LocalPlayerStats.recordResult(
+      result(mode: ReactGameMode.classic, score: 6),
+    );
+    await LocalPlayerStats.recordResult(
+      result(
+        mode: ReactGameMode.sequence,
+        score: 12,
+        averageTimeSeconds: 1.4,
+        misses: 3,
+        maxStreak: 7,
+      ),
+    );
+
+    expect(await LocalPlayerStats.sequenceClears(), 12);
+    expect(await LocalPlayerStats.totalSuccessfulCommands(), 6);
+    expect(await LocalPlayerStats.bestSequenceStreak(), 7);
+    expect(await LocalPlayerStats.bestCommandStreak(), 0);
   });
 
   test('calculates weighted average reaction time per mode', () async {
@@ -296,6 +328,14 @@ void main() {
     await LocalPlayerStats.recordResult(
       result(mode: ReactGameMode.blitz, score: 22),
     );
+    await LocalPlayerStats.recordResult(
+      result(
+        mode: ReactGameMode.sequence,
+        score: 10,
+        misses: 3,
+        maxStreak: 6,
+      ),
+    );
     await LocalPlayerStats.markDailyAttemptStarted();
 
     await LocalPlayerStats.resetProgress();
@@ -303,6 +343,8 @@ void main() {
 
     expect(await LocalPlayerStats.bestFor(ReactGameMode.classic), 0);
     expect(await LocalPlayerStats.bestFor(ReactGameMode.blitz), 0);
+    expect(await LocalPlayerStats.bestFor(ReactGameMode.sequence), 0);
+    expect(await LocalPlayerStats.bestSequenceStreak(), 0);
     expect(await LocalPlayerStats.runsPlayed(), 0);
     expect(await LocalPlayerStats.runsFor(ReactGameMode.classic), 0);
     expect(await LocalPlayerStats.successfulCommandsFor(ReactGameMode.classic), 0);
