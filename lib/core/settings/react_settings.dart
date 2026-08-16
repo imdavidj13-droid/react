@@ -53,10 +53,9 @@ class ReactSettings {
 
   static Future<void> setSoundEnabled(bool value) async {
     soundEnabled = value;
-    await _persist(
-      'sound setting',
-      (prefs) async => prefs.setBool(_soundKey, value),
-    );
+    await _persist('sound setting', (prefs) async {
+      await prefs.setBool(_soundKey, value);
+    });
     if (value) {
       try {
         await soundPreview?.call();
@@ -68,42 +67,37 @@ class ReactSettings {
 
   static Future<void> setVisualEffectsEnabled(bool value) async {
     visualEffectsEnabled = value;
-    await _persist(
-      'visual-effects setting',
-      (prefs) async => prefs.setBool(_visualEffectsKey, value),
-    );
+    await _persist('visual-effects setting', (prefs) async {
+      await prefs.setBool(_visualEffectsKey, value);
+    });
   }
 
   static Future<void> setPassItPlayerCount(int value) async {
     final safeValue = value.clamp(2, 4).toInt();
     passItPlayerCount = safeValue;
-    await _persist(
-      'Pass It player count',
-      (prefs) async => prefs.setInt(_passItPlayerCountKey, safeValue),
-    );
+    await _persist('Pass It player count', (prefs) async {
+      await prefs.setInt(_passItPlayerCountKey, safeValue);
+    });
   }
 
   static Future<void> setDailyDevOverrideEnabled(bool value) async {
     dailyDevOverrideEnabled = value;
-    await _persist(
-      'Daily developer override',
-      (prefs) async => prefs.setBool(_dailyDevOverrideKey, value),
-    );
+    await _persist('Daily developer override', (prefs) async {
+      await prefs.setBool(_dailyDevOverrideKey, value);
+    });
   }
 
   static Future<void> setDailyDevModifier(String value) async {
     dailyDevModifier = value;
-    await _persist(
-      'Daily developer modifier',
-      (prefs) async => prefs.setString(_dailyDevModifierKey, value),
-    );
+    await _persist('Daily developer modifier', (prefs) async {
+      await prefs.setString(_dailyDevModifierKey, value);
+    });
   }
 
   static Future<void> setHowToPlayCompleted(bool value) async {
     howToPlayCompleted = value;
-    await _persist(
-      'How To Play completion',
-      (prefs) async => prefs.setBool(_howToPlayCompletedKey, value),
-    );
+    await _persist('How To Play completion', (prefs) async {
+      await prefs.setBool(_howToPlayCompletedKey, value);
+    });
   }
 }
