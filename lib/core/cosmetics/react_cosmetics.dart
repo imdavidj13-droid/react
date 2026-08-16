@@ -37,7 +37,7 @@ enum ReactSoundPack {
   arcade;
 
   String get packId => switch (this) {
-    ReactSoundPack.core => 'core_audio',
+    ReactSoundPack.core => 'core_sfx',
     ReactSoundPack.arcade => 'arcade_sfx',
   };
 
@@ -45,6 +45,24 @@ enum ReactSoundPack {
     if (value == null) return null;
     for (final pack in values) {
       if (pack.packId == value) return pack;
+    }
+    return null;
+  }
+}
+
+enum ReactCommandStyle {
+  core,
+  glitch;
+
+  String get packId => switch (this) {
+    ReactCommandStyle.core => 'core_commands',
+    ReactCommandStyle.glitch => 'glitch_commands',
+  };
+
+  static ReactCommandStyle? fromPackId(String? value) {
+    if (value == null) return null;
+    for (final style in values) {
+      if (style.packId == value) return style;
     }
     return null;
   }
@@ -66,17 +84,15 @@ class ReactCosmeticPalette {
   final double effectIntensityScale;
 }
 
-/// Runtime cosmetic selections used by gameplay presentation.
-///
-/// Ownership is intentionally handled by the Shop layer. Visual themes and
-/// sound packs use separate persisted slots so players can mix cosmetics.
 abstract final class ReactCosmetics {
   static const _equippedThemeKey = 'shop_equipped_theme';
-  static const _legacyEquippedPackKey = 'shop_equipped_pack';
   static const _equippedSoundPackKey = 'shop_equipped_sound_pack';
+  static const _equippedCommandStyleKey = 'shop_equipped_command_style';
+  static const _legacyEquippedPackKey = 'shop_equipped_pack';
 
   static ReactVisualTheme currentTheme = ReactVisualTheme.core;
   static ReactSoundPack currentSoundPack = ReactSoundPack.core;
+  static ReactCommandStyle currentCommandStyle = ReactCommandStyle.core;
 
   static ReactCosmeticPalette get palette => paletteFor(currentTheme);
 
@@ -86,18 +102,20 @@ abstract final class ReactCosmetics {
         prefs.getString(_legacyEquippedPackKey);
     currentTheme =
         ReactVisualTheme.fromPackId(savedTheme) ?? ReactVisualTheme.core;
-
     currentSoundPack = ReactSoundPack.fromPackId(
           prefs.getString(_equippedSoundPackKey),
         ) ??
         ReactSoundPack.core;
+    currentCommandStyle = ReactCommandStyle.fromPackId(
+          prefs.getString(_equippedCommandStyleKey),
+        ) ??
+        ReactCommandStyle.core;
   }
 
   static Future<void> equipTheme(ReactVisualTheme theme) async {
     currentTheme = theme;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_equippedThemeKey, theme.packId);
-    // Keep the old key in sync while older code/tests transition to slots.
     await prefs.setString(_legacyEquippedPackKey, theme.packId);
   }
 
@@ -105,6 +123,12 @@ abstract final class ReactCosmetics {
     currentSoundPack = pack;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_equippedSoundPackKey, pack.packId);
+  }
+
+  static Future<void> equipCommandStyle(ReactCommandStyle style) async {
+    currentCommandStyle = style;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_equippedCommandStyleKey, style.packId);
   }
 
   static ReactCosmeticPalette paletteFor(ReactVisualTheme theme) => switch (theme) {
@@ -138,8 +162,6 @@ abstract final class ReactCosmetics {
       ),
   };
 
-  /// Keeps the gameplay mode identity while allowing cosmetic packs to own the
-  /// visible Flame colour language.
   static Color effectAccentFor(Color modeAccent) {
     if (currentTheme == ReactVisualTheme.core) return modeAccent;
     final current = palette;
