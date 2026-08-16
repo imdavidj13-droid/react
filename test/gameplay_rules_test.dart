@@ -42,9 +42,8 @@ void main() {
       for (final mode in modes) {
         final fastestBase = mode.commandDurationMsForScore(10000);
         for (final command in ReactCommand.values) {
-          final window = command.reactionWindowMs(fastestBase);
           expect(
-            window,
+            command.reactionWindowMs(fastestBase),
             greaterThanOrEqualTo(command.minimumReactionWindowMs),
             reason: '${command.name} fell below its physical floor',
           );
@@ -81,21 +80,21 @@ void main() {
   });
 
   group('daily timing', () {
-    test('ramps across the full 60-command challenge', () {
+    test('ramps to a safe floor for uncapped endurance', () {
       expect(ReactModeTiming.daily.commandDurationMsForScore(0), 1850);
       expect(ReactModeTiming.daily.commandDurationMsForScore(5), 1775);
       expect(ReactModeTiming.daily.commandDurationMsForScore(30), 1400);
       expect(ReactModeTiming.daily.commandDurationMsForScore(55), 1025);
       expect(ReactModeTiming.daily.commandDurationMsForScore(60), 950);
-      expect(ReactModeTiming.daily.commandDurationMsForScore(500), 950);
+      expect(ReactModeTiming.daily.commandDurationMsForScore(5000), 950);
     });
 
-    test('transition gap keeps tightening into the closing phase', () {
+    test('transition gap tightens to a floor and stays safe indefinitely', () {
       expect(ReactModeTiming.daily.successDelayMsForScore(0), 360);
       expect(ReactModeTiming.daily.successDelayMsForScore(30), 240);
       expect(ReactModeTiming.daily.successDelayMsForScore(55), 140);
       expect(ReactModeTiming.daily.successDelayMsForScore(60), 120);
-      expect(ReactModeTiming.daily.successDelayMsForScore(500), 120);
+      expect(ReactModeTiming.daily.successDelayMsForScore(5000), 120);
     });
 
     test('redline-style compressed bases cannot break physical floors', () {
