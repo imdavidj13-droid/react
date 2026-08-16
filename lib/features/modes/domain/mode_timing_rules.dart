@@ -85,8 +85,8 @@ abstract final class ReactModeTiming {
     missDelayMs: 0,
   );
 
-  // Daily spans sixty commands. The base pace tightens steadily for the whole
-  // challenge while the selected Daily modifier provides the main rule twist.
+  // Daily is an uncapped endurance run. The pace tightens to protected floors
+  // while the selected Daily modifier provides the day's rule twist.
   static const daily = ModeTimingRules(
     startCommandMs: 1850,
     minimumCommandMs: 950,
