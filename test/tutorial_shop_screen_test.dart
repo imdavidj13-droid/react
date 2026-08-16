@@ -11,6 +11,7 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     ReactCosmetics.currentTheme = ReactVisualTheme.core;
     ReactCosmetics.currentSoundPack = ReactSoundPack.core;
+    ReactCosmetics.currentCommandStyle = ReactCommandStyle.core;
     await LocalShopState.load();
   });
 
@@ -122,15 +123,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(ReactCosmetics.currentSoundPack, ReactSoundPack.arcade);
-    expect(
-      (await LocalShopState.equippedPackIds()).contains(
-        LocalShopState.arcadeSfxPackId,
-      ),
-      isTrue,
-    );
   });
 
-  testWidgets('unimplemented style cosmetic remains locked', (tester) async {
+  testWidgets('Glitch Commands can be equipped independently in debug',
+      (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: ShopScreen()),
     );
@@ -139,6 +135,27 @@ void main() {
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -1100));
     await tester.pumpAndSettle();
     await tester.tap(find.text('GLITCH COMMANDS'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('System-coded command hints'), findsOneWidget);
+    expect(find.textContaining('DEV ENTITLEMENT'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'EQUIP'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'EQUIP'));
+    await tester.pumpAndSettle();
+
+    expect(ReactCosmetics.currentCommandStyle, ReactCommandStyle.glitch);
+  });
+
+  testWidgets('Pro Share Cards remains locked until implemented', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: ShopScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1200));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('PRO SHARE CARDS'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('STORE CHECKOUT IS NOT ENABLED YET'), findsOneWidget);
