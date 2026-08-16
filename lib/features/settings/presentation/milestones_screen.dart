@@ -90,20 +90,24 @@ class _MilestoneData {
     this.classicBest = 0,
     this.blitzBest = 0,
     this.endlessBest = 0,
+    this.sequenceBest = 0,
     this.dailyBest = 0,
     this.dailyStreak = 0,
     this.passItRuns = 0,
     this.bestStreak = 0,
+    this.bestSequenceStreak = 0,
   });
 
   final int totalCommands;
   final int classicBest;
   final int blitzBest;
   final int endlessBest;
+  final int sequenceBest;
   final int dailyBest;
   final int dailyStreak;
   final int passItRuns;
   final int bestStreak;
+  final int bestSequenceStreak;
 
   static Future<_MilestoneData> load() async {
     final values = await Future.wait<int>([
@@ -111,10 +115,12 @@ class _MilestoneData {
       LocalPlayerStats.bestFor(ReactGameMode.classic),
       LocalPlayerStats.bestFor(ReactGameMode.blitz),
       LocalPlayerStats.bestFor(ReactGameMode.endless),
+      LocalPlayerStats.bestFor(ReactGameMode.sequence),
       LocalPlayerStats.bestFor(ReactGameMode.daily),
       LocalPlayerStats.dailyStreak(),
       LocalPlayerStats.runsFor(ReactGameMode.passIt),
       LocalPlayerStats.bestCommandStreak(),
+      LocalPlayerStats.bestSequenceStreak(),
     ]);
 
     return _MilestoneData(
@@ -122,10 +128,12 @@ class _MilestoneData {
       classicBest: values[1],
       blitzBest: values[2],
       endlessBest: values[3],
-      dailyBest: values[4],
-      dailyStreak: values[5],
-      passItRuns: values[6],
-      bestStreak: values[7],
+      sequenceBest: values[4],
+      dailyBest: values[5],
+      dailyStreak: values[6],
+      passItRuns: values[7],
+      bestStreak: values[8],
+      bestSequenceStreak: values[9],
     );
   }
 
@@ -133,7 +141,7 @@ class _MilestoneData {
     _Milestone(
       group: _MilestoneGroup.reaction,
       title: 'REACTION READY',
-      description: 'Clear 10 commands across any modes.',
+      description: 'Clear 10 gesture commands across the reaction modes.',
       icon: Icons.bolt_rounded,
       color: ReactColors.electricBlueBright,
       current: totalCommands,
@@ -142,7 +150,7 @@ class _MilestoneData {
     _Milestone(
       group: _MilestoneGroup.reaction,
       title: 'CENTURY',
-      description: 'Clear 100 commands across the game.',
+      description: 'Clear 100 gesture commands across the game.',
       icon: Icons.electric_bolt_rounded,
       color: ReactColors.lime,
       current: totalCommands,
@@ -151,7 +159,7 @@ class _MilestoneData {
     _Milestone(
       group: _MilestoneGroup.reaction,
       title: 'WIRED IN',
-      description: 'Clear 500 commands across the game.',
+      description: 'Clear 500 gesture commands across the game.',
       icon: Icons.memory_rounded,
       color: ReactColors.purple,
       current: totalCommands,
@@ -213,6 +221,24 @@ class _MilestoneData {
     ),
     _Milestone(
       group: _MilestoneGroup.modes,
+      title: 'SEQUENCE 10',
+      description: 'Clear 10 numbered sequences in one run.',
+      icon: Icons.blur_circular_rounded,
+      color: ReactColors.electricBlueBright,
+      current: sequenceBest,
+      target: 10,
+    ),
+    _Milestone(
+      group: _MilestoneGroup.modes,
+      title: 'SEQUENCE 25',
+      description: 'Clear 25 numbered sequences in one run.',
+      icon: Icons.filter_5_rounded,
+      color: ReactColors.electricBlueBright,
+      current: sequenceBest,
+      target: 25,
+    ),
+    _Milestone(
+      group: _MilestoneGroup.modes,
       title: 'DAILY 30',
       description: 'Reach 30 in any Daily challenge.',
       icon: Icons.calendar_month_rounded,
@@ -222,8 +248,8 @@ class _MilestoneData {
     ),
     _Milestone(
       group: _MilestoneGroup.modes,
-      title: 'DAILY COMPLETE',
-      description: 'Clear all 60 commands in a Daily challenge.',
+      title: 'DAILY 60',
+      description: 'Reach 60 in an uncapped Daily challenge.',
       icon: Icons.emoji_events_rounded,
       color: ReactColors.purple,
       current: dailyBest,
@@ -232,11 +258,20 @@ class _MilestoneData {
     _Milestone(
       group: _MilestoneGroup.consistency,
       title: 'STREAK 25',
-      description: 'Clear 25 commands in a row without a miss.',
+      description: 'Clear 25 gesture commands in a row without a miss.',
       icon: Icons.local_fire_department_rounded,
       color: ReactColors.lime,
       current: bestStreak,
       target: 25,
+    ),
+    _Milestone(
+      group: _MilestoneGroup.consistency,
+      title: 'SEQUENCE STREAK 10',
+      description: 'Clear 10 Sequence rounds in a row without losing a life.',
+      icon: Icons.blur_on_rounded,
+      color: ReactColors.electricBlueBright,
+      current: bestSequenceStreak,
+      target: 10,
     ),
     _Milestone(
       group: _MilestoneGroup.consistency,
