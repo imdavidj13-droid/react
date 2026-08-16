@@ -142,7 +142,9 @@ class _ShopScreenState extends State<ShopScreen> {
 
   void _refresh() {
     if (!mounted) return;
-    setState(() => _equippedPackIds = LocalShopState.equippedPackIds());
+    setState(() {
+      _equippedPackIds = LocalShopState.equippedPackIds();
+    });
   }
 
   Future<void> _equip(_ShopPack pack) async {
@@ -241,9 +243,7 @@ class _ShopScreenState extends State<ShopScreen> {
                 ),
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(pad, 8, pad, 12),
-                  sliver: SliverToBoxAdapter(
-                    child: _HeroCard(),
-                  ),
+                  sliver: SliverToBoxAdapter(child: _HeroCard()),
                 ),
                 if (LocalShopState.debugUnlocksEnabled)
                   SliverPadding(
