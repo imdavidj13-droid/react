@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/audio/react_audio.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../daily/presentation/daily_run_screen.dart';
+import '../../dot_sequence/presentation/dot_sequence_screen.dart';
 import '../data/local_player_stats.dart';
 import '../domain/react_run_result.dart';
 import 'react_run_screen.dart';
@@ -37,6 +38,7 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen>
         ReactGameMode.endless => ReactColors.lime,
         ReactGameMode.daily => ReactColors.electricBlueBright,
         ReactGameMode.passIt => ReactColors.purple,
+        ReactGameMode.sequence => ReactColors.electricBlueBright,
       };
 
   @override
@@ -96,12 +98,14 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen>
       return;
     }
 
+    final screen = switch (widget.mode) {
+      ReactGameMode.daily => const DailyRunScreen(),
+      ReactGameMode.sequence => const DotSequenceScreen(),
+      _ => ReactRunScreen(mode: widget.mode),
+    };
+
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => widget.mode == ReactGameMode.daily
-            ? const DailyRunScreen()
-            : ReactRunScreen(mode: widget.mode),
-      ),
+      MaterialPageRoute<void>(builder: (_) => screen),
     );
   }
 
