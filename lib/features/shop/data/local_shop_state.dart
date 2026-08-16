@@ -14,6 +14,7 @@ abstract final class LocalShopState {
   static const monoPackId = 'mono';
   static const arcadeSfxPackId = 'arcade_sfx';
   static const glitchCommandsPackId = 'glitch_commands';
+  static const proShareCardsPackId = 'pro_share_cards';
 
   static const Set<String> _builtInOwnedPacks = {corePackId};
   static const Set<String> _implementedVisualPacks = {
@@ -27,6 +28,9 @@ abstract final class LocalShopState {
   };
   static const Set<String> _implementedCommandStyles = {
     glitchCommandsPackId,
+  };
+  static const Set<String> _implementedShareStyles = {
+    proShareCardsPackId,
   };
 
   static bool get debugUnlocksEnabled => kDebugMode;
@@ -44,6 +48,9 @@ abstract final class LocalShopState {
     if (ReactCosmetics.currentCommandStyle == ReactCommandStyle.glitch) {
       equipped.add(glitchCommandsPackId);
     }
+    if (ReactCosmetics.currentShareStyle == ReactShareStyle.pro) {
+      equipped.add(proShareCardsPackId);
+    }
     return equipped;
   }
 
@@ -55,7 +62,8 @@ abstract final class LocalShopState {
   static bool isImplemented(String packId) =>
       _implementedVisualPacks.contains(packId) ||
       _implementedAudioPacks.contains(packId) ||
-      _implementedCommandStyles.contains(packId);
+      _implementedCommandStyles.contains(packId) ||
+      _implementedShareStyles.contains(packId);
 
   static bool isImplementedVisualPack(String packId) =>
       _implementedVisualPacks.contains(packId);
@@ -65,6 +73,9 @@ abstract final class LocalShopState {
 
   static bool isImplementedCommandStyle(String packId) =>
       _implementedCommandStyles.contains(packId);
+
+  static bool isImplementedShareStyle(String packId) =>
+      _implementedShareStyles.contains(packId);
 
   static Future<void> equip(String packId) async {
     if (!isOwned(packId) || !isImplemented(packId)) return;
@@ -82,6 +93,11 @@ abstract final class LocalShopState {
 
     if (packId == glitchCommandsPackId) {
       await ReactCosmetics.equipCommandStyle(ReactCommandStyle.glitch);
+      return;
+    }
+
+    if (packId == proShareCardsPackId) {
+      await ReactCosmetics.equipShareStyle(ReactShareStyle.pro);
     }
   }
 
@@ -90,4 +106,7 @@ abstract final class LocalShopState {
 
   static Future<void> equipCoreCommandStyle() =>
       ReactCosmetics.equipCommandStyle(ReactCommandStyle.core);
+
+  static Future<void> equipCoreShareStyle() =>
+      ReactCosmetics.equipShareStyle(ReactShareStyle.core);
 }
