@@ -5,7 +5,10 @@ import 'package:flutter/widgets.dart';
 class DotSequenceRound {
   const DotSequenceRound({required this.positions});
 
-  static const double maximumRadius = .62;
+  // Position centres stay deliberately conservative because the rendered dot
+  // itself has size, border and glow and the gameplay layout shifts the field
+  // slightly downward beneath the Sequence heading.
+  static const double maximumRadius = .56;
 
   final List<Offset> positions;
 
@@ -14,7 +17,7 @@ class DotSequenceRound {
   static DotSequenceRound generate(
     Random random, {
     required int count,
-    double minimumSpacing = .34,
+    double minimumSpacing = .32,
   }) {
     assert(count >= 1);
 
@@ -37,7 +40,7 @@ class DotSequenceRound {
     while (positions.length < count) {
       final index = positions.length;
       final angle = (pi * 2 * index) / count;
-      positions.add(Offset(cos(angle) * .52, sin(angle) * .52));
+      positions.add(Offset(cos(angle) * .48, sin(angle) * .48));
     }
 
     return DotSequenceRound(positions: List<Offset>.unmodifiable(positions));
