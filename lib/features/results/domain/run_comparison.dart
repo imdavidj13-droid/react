@@ -23,8 +23,8 @@ class RunComparison {
     if (previous == null || previous.mode != current.mode) return null;
 
     if (current.mode == ReactGameMode.daily) {
-      final currentDay = now ?? DateTime.now();
-      final previousDay = previous.playedAt;
+      final currentDay = current.dailyDate ?? now ?? DateTime.now();
+      final previousDay = previous.dailyDate ?? previous.playedAt;
       final sameDay = currentDay.year == previousDay.year &&
           currentDay.month == previousDay.month &&
           currentDay.day == previousDay.day;
