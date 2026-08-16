@@ -12,7 +12,7 @@ class DotSequenceRound {
   static DotSequenceRound generate(
     Random random, {
     required int count,
-    double minimumSpacing = .24,
+    double minimumSpacing = .38,
   }) {
     assert(count >= 1);
 
