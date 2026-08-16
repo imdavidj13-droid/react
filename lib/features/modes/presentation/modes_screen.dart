@@ -26,7 +26,6 @@ class ModesScreen extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final pad = constraints.maxWidth < 380 ? 16.0 : 20.0;
-
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(pad, 14, pad, 28),
               child: Column(
@@ -78,7 +77,7 @@ class ModesScreen extends StatelessWidget {
                   _ModePanel(
                     title: 'DAILY',
                     subtitle: 'A different rule every day.',
-                    detail: '60 COMMANDS  •  7 ROTATING MODIFIERS',
+                    detail: 'NO COMMAND CAP  •  7 ROTATING MODIFIERS',
                     icon: Icons.calendar_month_rounded,
                     color: ReactColors.lime,
                     badge: 'DAILY RUN',
@@ -116,7 +115,6 @@ class ModesScreen extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   const _Header({required this.onBack});
-
   final VoidCallback onBack;
 
   @override
@@ -133,45 +131,36 @@ class _Header extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
         ),
         const Spacer(),
-        const _ReactLogo(),
+        const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'RE',
+              style: TextStyle(
+                color: ReactColors.textPrimary,
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2.2,
+              ),
+            ),
+            Icon(
+              Icons.change_history_rounded,
+              color: ReactColors.electricBlueBright,
+              size: 27,
+            ),
+            Text(
+              'CT',
+              style: TextStyle(
+                color: ReactColors.textPrimary,
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2.2,
+              ),
+            ),
+          ],
+        ),
         const Spacer(),
         const SizedBox(width: 40),
-      ],
-    );
-  }
-}
-
-class _ReactLogo extends StatelessWidget {
-  const _ReactLogo();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'RE',
-          style: TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 28,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 2.2,
-          ),
-        ),
-        Icon(
-          Icons.change_history_rounded,
-          color: ReactColors.electricBlueBright,
-          size: 27,
-        ),
-        Text(
-          'CT',
-          style: TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 28,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 2.2,
-          ),
-        ),
       ],
     );
   }
@@ -184,7 +173,7 @@ class _ModesHero extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
         borderRadius: BorderRadius.circular(24),
@@ -220,39 +209,17 @@ class _ModesHero extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-          SizedBox(
-            width: 108,
-            height: 108,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: ReactColors.electricBlueBright,
-                      width: 2,
-                    ),
-                  ),
-                ),
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: ReactColors.purple.withValues(alpha: .8),
-                    ),
-                  ),
-                ),
-                const Icon(
-                  Icons.view_in_ar_rounded,
-                  color: ReactColors.electricBlueBright,
-                  size: 39,
-                ),
-              ],
+          Container(
+            width: 96,
+            height: 96,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: ReactColors.electricBlueBright, width: 2),
+            ),
+            child: const Icon(
+              Icons.view_in_ar_rounded,
+              color: ReactColors.electricBlueBright,
+              size: 39,
             ),
           ),
         ],
@@ -295,7 +262,16 @@ class _ModePanel extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _ModeEmblem(icon: icon, color: color),
+            Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF050A13),
+                border: Border.all(color: color.withValues(alpha: .85), width: 2),
+              ),
+              child: Icon(icon, color: color, size: 31),
+            ),
             const SizedBox(width: 15),
             Expanded(
               child: Column(
@@ -327,43 +303,20 @@ class _ModePanel extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 7),
-                      Expanded(
-                        child: Text(
-                          detail,
-                          style: TextStyle(
-                            color: color.withValues(alpha: .9),
-                            fontSize: 7.5,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: .95,
-                          ),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    detail,
+                    style: TextStyle(
+                      color: color.withValues(alpha: .9),
+                      fontSize: 7.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .95,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: color.withValues(alpha: .55)),
-              ),
-              child: Icon(Icons.chevron_right_rounded, color: color, size: 20),
-            ),
+            Icon(Icons.chevron_right_rounded, color: color, size: 24),
           ],
         ),
       ),
@@ -371,47 +324,8 @@ class _ModePanel extends StatelessWidget {
   }
 }
 
-class _ModeEmblem extends StatelessWidget {
-  const _ModeEmblem({required this.icon, required this.color});
-
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 72,
-      height: 72,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF050A13),
-              border: Border.all(color: color.withValues(alpha: .85), width: 2),
-            ),
-          ),
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: color.withValues(alpha: .28)),
-            ),
-          ),
-          Icon(icon, color: color, size: 31),
-        ],
-      ),
-    );
-  }
-}
-
 class _Badge extends StatelessWidget {
   const _Badge({required this.label, required this.color});
-
   final String label;
   final Color color;
 
