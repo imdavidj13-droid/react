@@ -15,6 +15,8 @@ class PersonalRecordsScreen extends StatelessWidget {
           await LocalPlayerStats.dailyBestForModifier(modifier);
     }
 
+    // Sequence clear time is a whole multi-dot round, not a gesture reaction,
+    // so it deliberately does not compete for fastest gesture average.
     final soloAverages = <double>[
       await LocalPlayerStats.averageReactionSecondsFor(ReactGameMode.classic),
       await LocalPlayerStats.averageReactionSecondsFor(ReactGameMode.blitz),
@@ -34,9 +36,11 @@ class PersonalRecordsScreen extends StatelessWidget {
       classic: await LocalPlayerStats.bestFor(ReactGameMode.classic),
       blitz: await LocalPlayerStats.bestFor(ReactGameMode.blitz),
       endless: await LocalPlayerStats.bestFor(ReactGameMode.endless),
+      sequence: await LocalPlayerStats.bestFor(ReactGameMode.sequence),
       todayDaily: await LocalPlayerStats.dailyBestToday(),
       dailyStreak: await LocalPlayerStats.dailyStreak(),
       bestCommandStreak: await LocalPlayerStats.bestCommandStreak(),
+      bestSequenceStreak: await LocalPlayerStats.bestSequenceStreak(),
       fastestAverageReaction: fastestAverageReaction,
       modifierRecords: modifierRecords,
     );
@@ -107,9 +111,11 @@ class _RecordData {
     this.classic = 0,
     this.blitz = 0,
     this.endless = 0,
+    this.sequence = 0,
     this.todayDaily = 0,
     this.dailyStreak = 0,
     this.bestCommandStreak = 0,
+    this.bestSequenceStreak = 0,
     this.fastestAverageReaction = 0,
     this.modifierRecords = const <String, int>{},
   });
@@ -117,9 +123,11 @@ class _RecordData {
   final int classic;
   final int blitz;
   final int endless;
+  final int sequence;
   final int todayDaily;
   final int dailyStreak;
   final int bestCommandStreak;
+  final int bestSequenceStreak;
   final double fastestAverageReaction;
   final Map<String, int> modifierRecords;
 }
@@ -140,10 +148,20 @@ class _RecordGrid extends StatelessWidget {
       _RecordCard('CLASSIC', '${data.classic}', ReactColors.electricBlueBright),
       _RecordCard('BLITZ', '${data.blitz}', ReactColors.coral),
       _RecordCard('ENDLESS', '${data.endless}', ReactColors.lime),
+      _RecordCard('SEQUENCE', '${data.sequence}', ReactColors.electricBlueBright),
       _RecordCard('TODAY DAILY', '${data.todayDaily}', ReactColors.purple),
-      _RecordCard('BEST STREAK', '${data.bestCommandStreak}', ReactColors.lime),
       _RecordCard(
-        'FASTEST AVG',
+        'COMMAND STREAK',
+        '${data.bestCommandStreak}',
+        ReactColors.lime,
+      ),
+      _RecordCard(
+        'SEQUENCE STREAK',
+        '${data.bestSequenceStreak}',
+        ReactColors.electricBlueBright,
+      ),
+      _RecordCard(
+        'FASTEST GESTURE AVG',
         data.fastestAverageReaction == 0
             ? '--'
             : '${data.fastestAverageReaction.toStringAsFixed(2)}s',
@@ -175,23 +193,28 @@ class _RecordCard extends StatelessWidget {
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 25,
-            fontWeight: FontWeight.w900,
+        FittedBox(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 25,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
         const SizedBox(height: 5),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 7.5,
-            fontWeight: FontWeight.w900,
-            letterSpacing: .7,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 7.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .7,
+            ),
           ),
         ),
       ],
