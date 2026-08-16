@@ -94,18 +94,19 @@ class _ShopScreenState extends State<ShopScreen> {
       ],
     ),
     _ShopPack(
-      id: 'glitch_commands',
+      id: LocalShopState.glitchCommandsPackId,
       title: 'GLITCH COMMANDS',
-      subtitle: 'Digital command typography and distortion-style transitions.',
+      subtitle: 'Digital command typography and system-coded instruction labels.',
       category: 'COMMAND STYLE',
       filter: _ShopFilter.styles,
       price: '£0.99',
       accent: ReactColors.electricBlueBright,
       icon: Icons.broken_image_outlined,
+      implemented: true,
       includes: [
         'Glitch command typography',
-        'Digital command transitions',
-        'Matching command accent effects',
+        'System-coded command hints',
+        'Matching digital syntax treatment',
       ],
     ),
     _ShopPack(
@@ -161,12 +162,18 @@ class _ShopScreenState extends State<ShopScreen> {
     _refreshEquipped();
   }
 
+  Future<void> _useCoreCommands() async {
+    await LocalShopState.equipCoreCommandStyle();
+    _refreshEquipped();
+  }
+
   Future<void> _showPackDetails(_ShopPack pack) async {
     final owned = LocalShopState.isOwned(pack.id);
     final equipped = (await LocalShopState.equippedPackIds()).contains(pack.id);
     if (!mounted) return;
 
     final isArcade = pack.id == LocalShopState.arcadeSfxPackId;
+    final isGlitch = pack.id == LocalShopState.glitchCommandsPackId;
     final canEquip = owned && pack.implemented;
 
     await showModalBottomSheet<void>(
@@ -179,14 +186,18 @@ class _ShopScreenState extends State<ShopScreen> {
         equipped: equipped,
         actionLabel: isArcade && equipped
             ? 'USE CORE SFX'
-            : canEquip
-                ? 'EQUIP'
-                : 'COMING SOON',
+            : isGlitch && equipped
+                ? 'USE CORE COMMANDS'
+                : canEquip
+                    ? 'EQUIP'
+                    : 'COMING SOON',
         onAction: isArcade && equipped
             ? _useCoreSfx
-            : canEquip
-                ? () => _equip(pack)
-                : null,
+            : isGlitch && equipped
+                ? _useCoreCommands
+                : canEquip
+                    ? () => _equip(pack)
+                    : null,
       ),
     );
   }
