@@ -325,11 +325,12 @@ class _ModeSelector extends StatelessWidget {
       ReactGameMode.classic,
       ReactGameMode.blitz,
       ReactGameMode.endless,
+      ReactGameMode.sequence,
     ];
     return Row(
       children: [
         for (var index = 0; index < modes.length; index++) ...[
-          if (index > 0) const SizedBox(width: 7),
+          if (index > 0) const SizedBox(width: 6),
           Expanded(
             child: _SelectorButton(
               label: modes[index].label,
@@ -383,9 +384,9 @@ class _SelectorButton extends StatelessWidget {
           label,
           style: TextStyle(
             color: selected ? color : ReactColors.textSecondary,
-            fontSize: compact ? 8.5 : 9.5,
+            fontSize: compact ? 8.2 : 9.5,
             fontWeight: FontWeight.w900,
-            letterSpacing: .9,
+            letterSpacing: .7,
           ),
         ),
       ),
@@ -569,6 +570,7 @@ class _PerformanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _modeColor(mode);
+    final sequence = mode == ReactGameMode.sequence;
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -609,11 +611,16 @@ class _PerformanceCard extends StatelessWidget {
             children: [
               Expanded(child: _Metric(label: 'RUNS', value: '$runs')),
               const _MetricDivider(),
-              Expanded(child: _Metric(label: 'COMMANDS', value: '$commands')),
+              Expanded(
+                child: _Metric(
+                  label: sequence ? 'SEQUENCES' : 'COMMANDS',
+                  value: '$commands',
+                ),
+              ),
               const _MetricDivider(),
               Expanded(
                 child: _Metric(
-                  label: 'AVG',
+                  label: sequence ? 'AVG CLEAR' : 'AVG',
                   value: averageReactionSeconds == 0
                       ? '--'
                       : '${averageReactionSeconds.toStringAsFixed(2)}s',
@@ -669,6 +676,7 @@ class _RecentRunCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _modeColor(entry.mode);
+    final sequence = entry.mode == ReactGameMode.sequence;
     return InkWell(
       onTap: () => _showRunDetail(context, entry),
       borderRadius: BorderRadius.circular(17),
@@ -685,7 +693,7 @@ class _RecentRunCard extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                '${entry.successfulCommands} cleared  •  ${entry.misses} misses  •  ${entry.averageTimeSeconds == 0 ? '--' : '${entry.averageTimeSeconds.toStringAsFixed(2)}s avg'}',
+                '${entry.successfulCommands} ${sequence ? 'sequences' : 'cleared'}  •  ${entry.misses} ${sequence ? 'mistakes' : 'misses'}  •  ${entry.averageTimeSeconds == 0 ? '--' : '${entry.averageTimeSeconds.toStringAsFixed(2)}s avg'}',
                 style: const TextStyle(
                   color: ReactColors.textSecondary,
                   fontSize: 8.5,
@@ -824,6 +832,7 @@ class _MessageCard extends StatelessWidget {
 
 void _showRunDetail(BuildContext context, ReactRunHistoryEntry entry) {
   final color = _modeColor(entry.mode);
+  final sequence = entry.mode == ReactGameMode.sequence;
   showModalBottomSheet<void>(
     context: context,
     backgroundColor: const Color(0xFF07111D),
@@ -863,11 +872,27 @@ void _showRunDetail(BuildContext context, ReactRunHistoryEntry entry) {
               runSpacing: 8,
               children: [
                 _DetailChip('SCORE', '${entry.score}', color),
-                _DetailChip('CLEARS', '${entry.successfulCommands}', ReactColors.electricBlueBright),
-                _DetailChip('MISSES', '${entry.misses}', ReactColors.coral),
-                _DetailChip('STREAK', '${entry.maxStreak}', ReactColors.lime),
+                _DetailChip(
+                  sequence ? 'SEQUENCES' : 'CLEARS',
+                  '${entry.successfulCommands}',
+                  ReactColors.electricBlueBright,
+                ),
+                _DetailChip(
+                  sequence ? 'MISTAKES' : 'MISSES',
+                  '${entry.misses}',
+                  ReactColors.coral,
+                ),
+                _DetailChip(
+                  sequence ? 'SEQ STREAK' : 'STREAK',
+                  '${entry.maxStreak}',
+                  ReactColors.lime,
+                ),
                 if (entry.averageTimeSeconds > 0)
-                  _DetailChip('AVG', '${entry.averageTimeSeconds.toStringAsFixed(2)}s', ReactColors.textPrimary),
+                  _DetailChip(
+                    sequence ? 'AVG CLEAR' : 'AVG',
+                    '${entry.averageTimeSeconds.toStringAsFixed(2)}s',
+                    ReactColors.textPrimary,
+                  ),
                 if (entry.strongestCommand != null)
                   _DetailChip('BEST', entry.strongestCommand!, ReactColors.lime),
                 if (entry.weakestCommand != null)
@@ -917,6 +942,7 @@ Color _modeColor(ReactGameMode mode) => switch (mode) {
   ReactGameMode.endless => ReactColors.lime,
   ReactGameMode.daily => ReactColors.purple,
   ReactGameMode.passIt => const Color(0xFFFFB85A),
+  ReactGameMode.sequence => ReactColors.electricBlueBright,
 };
 
 IconData _modeIcon(ReactGameMode mode) => switch (mode) {
@@ -925,4 +951,5 @@ IconData _modeIcon(ReactGameMode mode) => switch (mode) {
   ReactGameMode.endless => Icons.all_inclusive_rounded,
   ReactGameMode.daily => Icons.calendar_today_rounded,
   ReactGameMode.passIt => Icons.groups_2_rounded,
+  ReactGameMode.sequence => Icons.blur_circular_rounded,
 };
