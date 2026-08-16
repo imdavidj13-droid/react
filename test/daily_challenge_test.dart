@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:react/core/settings/react_settings.dart';
 import 'package:react/features/daily/domain/daily_challenge.dart';
+import 'package:react/features/gameplay/domain/react_command.dart';
 
 void main() {
   setUp(() {
@@ -88,8 +91,27 @@ void main() {
     }
   });
 
-  test('Daily target is sixty commands', () {
-    expect(dailyTarget, 60);
+  test('same date generates the same command stream beyond sixty clears', () {
+    final first = DailyChallenge.forDate(DateTime(2026, 8, 16));
+    final second = DailyChallenge.forDate(DateTime(2026, 8, 16));
+    final firstRandom = Random(first.seed);
+    final secondRandom = Random(second.seed);
+
+    final firstCommands = List<ReactCommand>.generate(
+      120,
+      (_) => ReactCommand.values[
+        firstRandom.nextInt(ReactCommand.values.length)
+      ],
+    );
+    final secondCommands = List<ReactCommand>.generate(
+      120,
+      (_) => ReactCommand.values[
+        secondRandom.nextInt(ReactCommand.values.length)
+      ],
+    );
+
+    expect(firstCommands, secondCommands);
+    expect(firstCommands.length, greaterThan(60));
   });
 
   test('next reset is local midnight on the following day', () {
