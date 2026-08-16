@@ -67,9 +67,12 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: DotSequenceScreen()));
     await tester.pump();
 
-    // The gameplay clock is sampled every 32ms, so cross the 3.2s deadline
-    // far enough to guarantee the periodic tick has observed the expiry.
-    await tester.pump(const Duration(milliseconds: 3300));
+    // Sequence intentionally uses a real Stopwatch so jank cannot extend the
+    // player's reaction window. Widget-test pump time is fake, so cross the
+    // real 3.2-second deadline before pumping the periodic timer callback.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 3250)),
+    );
     await tester.pump(const Duration(milliseconds: 40));
     expect(find.text('TOO SLOW'), findsOneWidget);
 
