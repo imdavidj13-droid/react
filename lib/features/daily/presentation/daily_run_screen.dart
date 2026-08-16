@@ -43,6 +43,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
   Timer? _obscureTimer;
 
   ReactCommand _command = ReactCommand.tap;
+  ReactCommand? _pendingForcedCommand;
   int _score = 0;
   int _misses = 0;
   int _currentStreak = 0;
@@ -59,6 +60,8 @@ class _DailyRunScreenState extends State<DailyRunScreen>
   bool _paused = false;
   bool _obscured = false;
   bool _echoNext = false;
+  bool _pendingNextCommand = false;
+  bool _pendingFinishAfterMiss = false;
   String? _feedback;
 
   ModeTimingRules get _timing => ReactModeTiming.daily;
@@ -126,6 +129,11 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     _commandTimer?.cancel();
     _obscureTimer?.cancel();
     if (!mounted || _finished || _paused) return;
+
+    _nextTimer = null;
+    _pendingNextCommand = false;
+    _pendingFinishAfterMiss = false;
+    _pendingForcedCommand = null;
 
     final next = forced ?? _nextRandomCommand();
     setState(() {
@@ -259,9 +267,16 @@ class _DailyRunScreenState extends State<DailyRunScreen>
 
   void _scheduleNext(int delayMs, {ReactCommand? forced}) {
     _nextTimer?.cancel();
+    _pendingFinishAfterMiss = false;
+    _pendingNextCommand = true;
+    _pendingForcedCommand = forced;
     _nextTimer = Timer(Duration(milliseconds: max(1, delayMs)), () {
       if (!mounted || _finished || _paused) return;
-      _startCommand(forced: forced);
+      final pendingForcedCommand = _pendingForcedCommand;
+      _nextTimer = null;
+      _pendingNextCommand = false;
+      _pendingForcedCommand = null;
+      _startCommand(forced: pendingForcedCommand);
     });
   }
 
@@ -287,8 +302,14 @@ class _DailyRunScreenState extends State<DailyRunScreen>
       _feedback = 'MISS';
     });
     _nextTimer?.cancel();
+    _pendingNextCommand = false;
+    _pendingForcedCommand = null;
+    _pendingFinishAfterMiss = true;
     _nextTimer = Timer(const Duration(milliseconds: 320), () {
-      if (mounted && !_paused) _finish(ReactRunOutcome.missedCommand);
+      if (!mounted || _paused || _finished) return;
+      _nextTimer = null;
+      _pendingFinishAfterMiss = false;
+      _finish(ReactRunOutcome.missedCommand);
     });
   }
 
@@ -300,6 +321,14 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     _game.setIntensity(intensity);
   }
 
+  void _clearPendingTransition() {
+    _nextTimer?.cancel();
+    _nextTimer = null;
+    _pendingForcedCommand = null;
+    _pendingNextCommand = false;
+    _pendingFinishAfterMiss = false;
+  }
+
   void _setPaused(bool value) {
     if (_finished || _paused == value) return;
     if (value) {
@@ -308,6 +337,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
       _commandTimer?.cancel();
       _obscureTimer?.cancel();
       _nextTimer?.cancel();
+      _nextTimer = null;
       _game.pauseEngine();
       setState(() {
         _paused = true;
@@ -322,16 +352,28 @@ class _DailyRunScreenState extends State<DailyRunScreen>
       final remaining = _pausedRemainingMs;
       _pausedRemainingMs = 0;
       _armCommandTimer(remaining);
-    } else {
-      _startCommand();
+      return;
     }
+    if (_pendingFinishAfterMiss) {
+      _pendingFinishAfterMiss = false;
+      _finish(ReactRunOutcome.missedCommand);
+      return;
+    }
+    if (_pendingNextCommand) {
+      final forced = _pendingForcedCommand;
+      _pendingNextCommand = false;
+      _pendingForcedCommand = null;
+      _startCommand(forced: forced);
+      return;
+    }
+    _startCommand();
   }
 
   void _quit() {
     if (_finished || !mounted) return;
     _finished = true;
     _commandTimer?.cancel();
-    _nextTimer?.cancel();
+    _clearPendingTransition();
     _obscureTimer?.cancel();
     _game.pauseEngine();
     Navigator.of(context).pop();
@@ -342,7 +384,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     _finished = true;
     _acceptingInput = false;
     _commandTimer?.cancel();
-    _nextTimer?.cancel();
+    _clearPendingTransition();
     _obscureTimer?.cancel();
 
     Navigator.of(context).pushReplacement(
