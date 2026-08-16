@@ -68,6 +68,24 @@ enum ReactCommandStyle {
   }
 }
 
+enum ReactShareStyle {
+  core,
+  pro;
+
+  String get packId => switch (this) {
+    ReactShareStyle.core => 'core_share_cards',
+    ReactShareStyle.pro => 'pro_share_cards',
+  };
+
+  static ReactShareStyle? fromPackId(String? value) {
+    if (value == null) return null;
+    for (final style in values) {
+      if (style.packId == value) return style;
+    }
+    return null;
+  }
+}
+
 class ReactCosmeticPalette {
   const ReactCosmeticPalette({
     required this.background,
@@ -88,11 +106,13 @@ abstract final class ReactCosmetics {
   static const _equippedThemeKey = 'shop_equipped_theme';
   static const _equippedSoundPackKey = 'shop_equipped_sound_pack';
   static const _equippedCommandStyleKey = 'shop_equipped_command_style';
+  static const _equippedShareStyleKey = 'shop_equipped_share_style';
   static const _legacyEquippedPackKey = 'shop_equipped_pack';
 
   static ReactVisualTheme currentTheme = ReactVisualTheme.core;
   static ReactSoundPack currentSoundPack = ReactSoundPack.core;
   static ReactCommandStyle currentCommandStyle = ReactCommandStyle.core;
+  static ReactShareStyle currentShareStyle = ReactShareStyle.core;
 
   static ReactCosmeticPalette get palette => paletteFor(currentTheme);
 
@@ -110,6 +130,10 @@ abstract final class ReactCosmetics {
           prefs.getString(_equippedCommandStyleKey),
         ) ??
         ReactCommandStyle.core;
+    currentShareStyle = ReactShareStyle.fromPackId(
+          prefs.getString(_equippedShareStyleKey),
+        ) ??
+        ReactShareStyle.core;
   }
 
   static Future<void> equipTheme(ReactVisualTheme theme) async {
@@ -129,6 +153,12 @@ abstract final class ReactCosmetics {
     currentCommandStyle = style;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_equippedCommandStyleKey, style.packId);
+  }
+
+  static Future<void> equipShareStyle(ReactShareStyle style) async {
+    currentShareStyle = style;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_equippedShareStyleKey, style.packId);
   }
 
   static ReactCosmeticPalette paletteFor(ReactVisualTheme theme) => switch (theme) {
