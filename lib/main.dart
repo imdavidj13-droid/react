@@ -25,8 +25,27 @@ Future<void> main() async {
     ),
   );
 
-  await ReactSettings.load();
-  await LocalShopState.load();
-  await ReactAudio.initialize();
+  // Persisted preferences are useful but not required to boot. If a platform
+  // storage plugin is unavailable, the in-memory defaults keep the game usable.
+  try {
+    await ReactSettings.load();
+  } catch (error) {
+    debugPrint('RE△CT settings load failed; using defaults: $error');
+  }
+
+  try {
+    await LocalShopState.load();
+  } catch (error) {
+    debugPrint('RE△CT cosmetics load failed; using defaults: $error');
+  }
+
+  // Audio is optional gameplay polish. A platform audio-session or temporary
+  // file failure must never prevent the app itself from launching.
+  try {
+    await ReactAudio.initialize();
+  } catch (error) {
+    debugPrint('RE△CT audio initialization failed; continuing: $error');
+  }
+
   runApp(const ReactApp());
 }

@@ -14,7 +14,9 @@ List<RunMedal> earnedRunMedals(ReactRunResult result) {
   if (result.successfulCommands > 0 && result.misses == 0) {
     medals.add(RunMedal.perfectRun);
   }
-  if (result.averageTimeSeconds > 0 && result.averageTimeSeconds <= .65) {
+  if (result.mode != ReactGameMode.sequence &&
+      result.averageTimeSeconds > 0 &&
+      result.averageTimeSeconds <= .65) {
     medals.add(RunMedal.lightning);
   }
   if (result.mode == ReactGameMode.endless && result.score >= 25) {

@@ -36,7 +36,29 @@ abstract final class LocalShopState {
   static bool get debugUnlocksEnabled => kDebugMode;
   static bool get debugVisualUnlocksEnabled => kDebugMode;
 
-  static Future<void> load() => ReactCosmetics.load();
+  static Future<void> load() async {
+    await ReactCosmetics.load();
+
+    // Debug builds deliberately expose implemented cosmetics for testing, but
+    // release builds must not inherit a debug-only equipped value from the
+    // same application id. Until verified store entitlements exist, any slot
+    // that is not genuinely owned is restored to its built-in CORE option.
+    if (!isOwned(ReactCosmetics.currentTheme.packId)) {
+      await ReactCosmetics.equipTheme(ReactVisualTheme.core);
+    }
+    if (ReactCosmetics.currentSoundPack != ReactSoundPack.core &&
+        !isOwned(ReactCosmetics.currentSoundPack.packId)) {
+      await ReactCosmetics.equipSoundPack(ReactSoundPack.core);
+    }
+    if (ReactCosmetics.currentCommandStyle != ReactCommandStyle.core &&
+        !isOwned(ReactCosmetics.currentCommandStyle.packId)) {
+      await ReactCosmetics.equipCommandStyle(ReactCommandStyle.core);
+    }
+    if (ReactCosmetics.currentShareStyle != ReactShareStyle.core &&
+        !isOwned(ReactCosmetics.currentShareStyle.packId)) {
+      await ReactCosmetics.equipShareStyle(ReactShareStyle.core);
+    }
+  }
 
   static Future<String> equippedPack() async => ReactCosmetics.currentTheme.packId;
 

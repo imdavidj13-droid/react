@@ -232,6 +232,17 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
     );
   }
 
+  void _quit() {
+    if (_finished || !mounted || _gameOver) return;
+    _finished = true;
+    _accepting = false;
+    _timer?.cancel();
+    _nextTimer?.cancel();
+    _pendingTransition = _SequenceTransition.none;
+    _clock.stop();
+    Navigator.of(context).pop();
+  }
+
   void _setPaused(bool value) {
     if (_finished || _paused == value) return;
 
@@ -270,77 +281,81 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ReactColors.background,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final arenaSize = min(
-              constraints.maxWidth - 28,
-              constraints.maxHeight * .58,
-            ).clamp(290.0, 430.0).toDouble();
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                const _Backdrop(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
-                  child: Column(
-                    children: [
-                      _Header(onPause: () => _setPaused(true)),
-                      const SizedBox(height: 12),
-                      _Hud(score: _score, lives: _lives),
-                      const SizedBox(height: 10),
-                      Expanded(
-                        child: Center(
-                          child: _Arena(
-                            size: arenaSize,
-                            round: _round,
-                            nextIndex: _nextIndex,
-                            progress: _progress,
-                            seconds: _remainingMs / 1000,
-                            enabled: _accepting,
-                            onTap: _tapDot,
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 30,
-                        child: Center(
-                          child: Text(
-                            _gameOver ? 'RUN OVER' : _feedback ?? '',
-                            style: TextStyle(
-                              color: _feedback == 'GOOD' ||
-                                      _feedback == 'SEQUENCE CLEAR'
-                                  ? ReactColors.lime
-                                  : ReactColors.coral,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.3,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && !_finished && !_paused) _setPaused(true);
+      },
+      child: Scaffold(
+        backgroundColor: ReactColors.background,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final arenaSize = min(
+                constraints.maxWidth - 28,
+                constraints.maxHeight * .58,
+              ).clamp(290.0, 430.0).toDouble();
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  const _Backdrop(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+                    child: Column(
+                      children: [
+                        _Header(onPause: () => _setPaused(true)),
+                        const SizedBox(height: 12),
+                        _Hud(score: _score, lives: _lives),
+                        const SizedBox(height: 10),
+                        Expanded(
+                          child: Center(
+                            child: _Arena(
+                              size: arenaSize,
+                              round: _round,
+                              nextIndex: _nextIndex,
+                              progress: _progress,
+                              seconds: _remainingMs / 1000,
+                              enabled: _accepting,
+                              onTap: _tapDot,
                             ),
                           ),
                         ),
-                      ),
-                      _BottomBar(score: _score, dots: _dotCount),
-                    ],
+                        SizedBox(
+                          height: 30,
+                          child: Center(
+                            child: Text(
+                              _gameOver ? 'RUN OVER' : _feedback ?? '',
+                              style: TextStyle(
+                                color: _feedback == 'GOOD' ||
+                                        _feedback == 'SEQUENCE CLEAR'
+                                    ? ReactColors.lime
+                                    : ReactColors.coral,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.3,
+                              ),
+                            ),
+                          ),
+                        ),
+                        _BottomBar(score: _score, dots: _dotCount),
+                      ],
+                    ),
                   ),
-                ),
-                if (_paused)
-                  _Overlay(
-                    title: 'SEQUENCE PAUSED',
-                    subtitle: _gameOver
-                        ? 'THE FINISHED RUN IS FROZEN'
-                        : 'THE CURRENT ROUND IS FROZEN',
-                    primary: _gameOver ? 'SHOW RESULTS' : 'RESUME',
-                    onPrimary: () => _setPaused(false),
-                    secondary: _gameOver ? null : 'QUIT RUN',
-                    onSecondary: _gameOver
-                        ? null
-                        : () => Navigator.of(context).pop(),
-                  ),
-              ],
-            );
-          },
+                  if (_paused)
+                    _Overlay(
+                      title: 'SEQUENCE PAUSED',
+                      subtitle: _gameOver
+                          ? 'THE FINISHED RUN IS FROZEN'
+                          : 'THE CURRENT ROUND IS FROZEN',
+                      primary: _gameOver ? 'SHOW RESULTS' : 'RESUME',
+                      onPrimary: () => _setPaused(false),
+                      secondary: _gameOver ? null : 'QUIT RUN',
+                      onSecondary: _gameOver ? null : _quit,
+                    ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
