@@ -57,6 +57,12 @@ void main() {
         _ => command,
       };
 
+  bool isSwipe(ReactCommand command) =>
+      command == ReactCommand.swipeLeft ||
+      command == ReactCommand.swipeRight ||
+      command == ReactCommand.swipeUp ||
+      command == ReactCommand.swipeDown;
+
   Future<void> performCommand(
     WidgetTester tester,
     ReactCommand command, {
@@ -139,11 +145,17 @@ void main() {
     for (final modifier in DailyModifier.values) {
       await pumpDaily(tester, modifier);
       final command = displayedCommand(tester);
-      await performCommand(
-        tester,
-        command,
-        reverse: modifier == DailyModifier.reverse,
-      );
+      final surface =
+          tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface));
+      final expected = surface.expectedCommand;
+
+      if (modifier == DailyModifier.reverse && isSwipe(command)) {
+        expect(expected, oppositeSwipe(command));
+      } else {
+        expect(expected, command);
+      }
+
+      await performCommand(tester, expected);
 
       expect(
         find.text('1/60'),
@@ -245,10 +257,7 @@ void main() {
     var firstSwipeIndex = -1;
     for (var index = 0; index < 100; index++) {
       final command = ReactCommand.values[random.nextInt(ReactCommand.values.length)];
-      if (command == ReactCommand.swipeLeft ||
-          command == ReactCommand.swipeRight ||
-          command == ReactCommand.swipeUp ||
-          command == ReactCommand.swipeDown) {
+      if (isSwipe(command)) {
         firstSwipeIndex = index;
         break;
       }
@@ -257,19 +266,20 @@ void main() {
 
     for (var index = 0; index <= firstSwipeIndex; index++) {
       final command = displayedCommand(tester);
-      final isSwipe = command == ReactCommand.swipeLeft ||
-          command == ReactCommand.swipeRight ||
-          command == ReactCommand.swipeUp ||
-          command == ReactCommand.swipeDown;
+      final surface =
+          tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface));
+      final expected = surface.expectedCommand;
 
-      if (isSwipe) {
+      if (isSwipe(command)) {
         expect(find.text('DO THE OPPOSITE'), findsOneWidget);
-        await performCommand(tester, command, reverse: true);
+        expect(expected, oppositeSwipe(command));
+        await performCommand(tester, expected);
         expect(find.text('${index + 1}/60'), findsOneWidget);
         break;
       }
 
-      await performCommand(tester, command);
+      expect(expected, command);
+      await performCommand(tester, expected);
       expect(find.text('${index + 1}/60'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 420));
     }
