@@ -333,8 +333,10 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
                         : 'THE CURRENT ROUND IS FROZEN',
                     primary: _gameOver ? 'SHOW RESULTS' : 'RESUME',
                     onPrimary: () => _setPaused(false),
-                    secondary: 'QUIT RUN',
-                    onSecondary: () => Navigator.of(context).pop(),
+                    secondary: _gameOver ? null : 'QUIT RUN',
+                    onSecondary: _gameOver
+                        ? null
+                        : () => Navigator.of(context).pop(),
                   ),
               ],
             );
@@ -443,27 +445,31 @@ class _HudCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         height: 74,
-        padding: const EdgeInsets.symmetric(horizontal: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
         decoration: BoxDecoration(
           color: const Color(0xFF07111D),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFF254766)),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: ReactColors.textSecondary,
-                fontSize: 8,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: ReactColors.textSecondary,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                ),
               ),
-            ),
-            const SizedBox(height: 5),
-            FittedBox(fit: BoxFit.scaleDown, child: child),
-          ],
+              const SizedBox(height: 5),
+              child,
+            ],
+          ),
         ),
       );
 }
@@ -505,33 +511,38 @@ class _Arena extends StatelessWidget {
             child: Container(
               width: 74,
               height: 74,
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: const Color(0xFF07111D),
                 border: Border.all(color: const Color(0xFF315D86), width: 2),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    seconds.clamp(0, 9.99).toStringAsFixed(2),
-                    style: TextStyle(
-                      color: progress < .22
-                          ? ReactColors.coral
-                          : ReactColors.electricBlueBright,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      seconds.clamp(0, 9.99).toStringAsFixed(2),
+                      style: TextStyle(
+                        color: progress < .22
+                            ? ReactColors.coral
+                            : ReactColors.electricBlueBright,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
-                  const Text(
-                    'SEC',
-                    style: TextStyle(
-                      color: ReactColors.textSecondary,
-                      fontSize: 7,
-                      fontWeight: FontWeight.w900,
+                    const Text(
+                      'SEC',
+                      style: TextStyle(
+                        color: ReactColors.textSecondary,
+                        fontSize: 7,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -775,16 +786,16 @@ class _Overlay extends StatelessWidget {
     required this.subtitle,
     required this.primary,
     required this.onPrimary,
-    required this.secondary,
-    required this.onSecondary,
+    this.secondary,
+    this.onSecondary,
   });
 
   final String title;
   final String subtitle;
   final String primary;
   final VoidCallback onPrimary;
-  final String secondary;
-  final VoidCallback onSecondary;
+  final String? secondary;
+  final VoidCallback? onSecondary;
 
   @override
   Widget build(BuildContext context) => ColoredBox(
@@ -835,7 +846,11 @@ class _Overlay extends StatelessWidget {
                     child: Text(primary),
                   ),
                 ),
-                TextButton(onPressed: onSecondary, child: Text(secondary)),
+                if (secondary != null && onSecondary != null)
+                  TextButton(
+                    onPressed: onSecondary,
+                    child: Text(secondary!),
+                  ),
               ],
             ),
           ),
