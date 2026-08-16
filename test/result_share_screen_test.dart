@@ -108,11 +108,10 @@ void main() {
 
     expect(find.text('DAILY CHALLENGE'), findsOneWidget);
     expect(
-      find.text(
-        'DATE UNAVAILABLE  •  60 COMMANDS • ONE MISS ENDS THE ATTEMPT',
-      ),
+      find.text('DATE UNAVAILABLE  •  ONE MISS ENDS THE ATTEMPT'),
       findsOneWidget,
     );
+    expect(find.textContaining('60 COMMANDS'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -140,6 +139,36 @@ void main() {
     expect(find.text('P1 0♥  •  P2 1♥  •  P3 0♥'), findsOneWidget);
     expect(find.text('CLUTCH'), findsOneWidget);
     expect(find.text('NEW PERSONAL BEST'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Sequence share card uses sequence-specific metrics',
+      (tester) async {
+    const result = ReactRunResult(
+      mode: ReactGameMode.sequence,
+      score: 18,
+      successfulCommands: 18,
+      averageTimeSeconds: 1.42,
+      outcome: ReactRunOutcome.missedCommand,
+      misses: 3,
+      maxStreak: 9,
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ResultShareScreen(result: result, newBest: true),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('SEQUENCE'), findsOneWidget);
+    expect(find.text('SEQUENCES CLEARED'), findsOneWidget);
+    expect(find.text('SEQUENCES'), findsOneWidget);
+    expect(find.text('MISTAKES'), findsOneWidget);
+    expect(find.text('AVG CLEAR'), findsOneWidget);
+    expect(find.text('OUT OF LIVES'), findsWidgets);
+    expect(find.text('18 SEQUENCES • 3 MISTAKES'), findsOneWidget);
+    expect(find.text('NEW PERSONAL BEST'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
