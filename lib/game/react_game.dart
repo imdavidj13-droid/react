@@ -4,28 +4,36 @@ import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
+import '../core/cosmetics/react_cosmetics.dart';
 import '../core/settings/react_settings.dart';
 import '../core/theme/react_colors.dart';
 
 class ReactGame extends FlameGame {
   ReactGame();
 
-  Color accent = ReactColors.electricBlueBright;
+  Color modeAccent = ReactColors.electricBlueBright;
   double intensity = .18;
 
   final Random _random = Random();
 
-  bool get effectsEnabled => ReactSettings.visualEffectsEnabled;
-  double get effectiveIntensity => effectsEnabled
-      ? (0.35 + intensity * 0.65).clamp(0.0, 1.0).toDouble()
-      : 0;
+  Color get accent => ReactCosmetics.effectAccentFor(modeAccent);
+  Color get failureAccent => ReactCosmetics.palette.failure;
 
-  bool get isBlitz => accent == ReactColors.coral;
-  bool get isEndless => accent == ReactColors.lime;
-  bool get isPassIt => accent == ReactColors.purple;
+  bool get effectsEnabled => ReactSettings.visualEffectsEnabled;
+  double get effectiveIntensity {
+    if (!effectsEnabled) return 0;
+    final base = (0.35 + intensity * 0.65).clamp(0.0, 1.0).toDouble();
+    return (base * ReactCosmetics.palette.effectIntensityScale)
+        .clamp(0.0, 1.0)
+        .toDouble();
+  }
+
+  bool get isBlitz => modeAccent == ReactColors.coral;
+  bool get isEndless => modeAccent == ReactColors.lime;
+  bool get isPassIt => modeAccent == ReactColors.purple;
 
   @override
-  Color backgroundColor() => ReactColors.background;
+  Color backgroundColor() => ReactCosmetics.palette.background;
 
   @override
   Future<void> onLoad() async {
@@ -36,7 +44,7 @@ class ReactGame extends FlameGame {
   }
 
   void configure({required Color accent, required double intensity}) {
-    this.accent = accent;
+    modeAccent = accent;
     this.intensity = intensity.clamp(0.0, 1.0).toDouble();
   }
 
@@ -83,7 +91,9 @@ class ReactGame extends FlameGame {
       add(
         _PulseRing(
           game: this,
-          color: ReactColors.lime,
+          color: ReactCosmetics.currentTheme == ReactVisualTheme.core
+              ? ReactColors.lime
+              : ReactCosmetics.palette.secondary,
           lifetime: .22,
           maxRadiusFactor: .50,
           strokeWidth: 2.6,
@@ -95,7 +105,9 @@ class ReactGame extends FlameGame {
       add(
         _PulseRing(
           game: this,
-          color: ReactColors.electricBlueBright,
+          color: ReactCosmetics.currentTheme == ReactVisualTheme.core
+              ? ReactColors.electricBlueBright
+              : ReactCosmetics.palette.secondary,
           lifetime: .40,
           maxRadiusFactor: .26,
           strokeWidth: 2.4,
@@ -110,7 +122,7 @@ class ReactGame extends FlameGame {
     add(
       _ReactionBurst(
         game: this,
-        color: ReactColors.coral,
+        color: failureAccent,
         particleCount: isEndless ? 44 : 32,
         speed: isEndless ? 230 : 180,
         outwardBias: isEndless ? 1.4 : 1.2,
@@ -120,7 +132,7 @@ class ReactGame extends FlameGame {
     add(
       _PulseRing(
         game: this,
-        color: ReactColors.coral,
+        color: failureAccent,
         lifetime: isBlitz ? .28 : .46,
         maxRadiusFactor: isEndless ? .58 : .46,
         strokeWidth: isEndless ? 6.5 : 5.5,
@@ -131,7 +143,7 @@ class ReactGame extends FlameGame {
       add(
         _PulseRing(
           game: this,
-          color: ReactColors.coral,
+          color: failureAccent,
           lifetime: .20,
           maxRadiusFactor: .62,
           strokeWidth: 2.8,
@@ -143,7 +155,9 @@ class ReactGame extends FlameGame {
       add(
         _PulseRing(
           game: this,
-          color: ReactColors.purple,
+          color: ReactCosmetics.currentTheme == ReactVisualTheme.core
+              ? ReactColors.purple
+              : ReactCosmetics.palette.primary,
           lifetime: .52,
           maxRadiusFactor: .36,
           strokeWidth: 2.8,
