@@ -736,8 +736,13 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final height = largeText
+        ? (compact ? 112.0 : 120.0)
+        : (compact ? 96.0 : 104.0);
+
     return Container(
-      height: compact ? 96 : 104,
+      height: height,
       padding: EdgeInsets.all(compact ? 11 : 14),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
