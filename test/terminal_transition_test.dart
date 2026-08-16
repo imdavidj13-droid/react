@@ -49,9 +49,13 @@ void main() {
     }
   }
 
-  test('generic run screen rejects Daily because it has a dedicated engine', () {
+  test('generic run screen rejects modes with dedicated engines', () {
     expect(
       () => ReactRunScreen(mode: ReactGameMode.daily),
+      throwsAssertionError,
+    );
+    expect(
+      () => ReactRunScreen(mode: ReactGameMode.sequence),
       throwsAssertionError,
     );
   });
