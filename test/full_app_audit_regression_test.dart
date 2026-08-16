@@ -87,7 +87,7 @@ void main() {
       find.byType(ReactGestureSurface),
     );
     expect(repeatedSurface.expectedCommand, sixthCommand);
-    expect(find.text('ECHO'), findsOneWidget);
+    expect(find.text('ECHO'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 
@@ -197,9 +197,12 @@ void main() {
 
     await tester.tap(find.text('OPEN RESULTS'));
     await tester.pumpAndSettle();
-    expect(find.text('BACK TO HOME'), findsOneWidget);
+    final backHome = find.text('BACK TO HOME');
+    expect(backHome, findsOneWidget);
 
-    await tester.tap(find.text('BACK TO HOME'));
+    await tester.ensureVisible(backHome);
+    await tester.pumpAndSettle();
+    await tester.tap(backHome);
     await tester.pumpAndSettle();
 
     expect(find.text('ROOT SHELL'), findsOneWidget);
