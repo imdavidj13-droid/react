@@ -7,35 +7,55 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     ReactCosmetics.currentTheme = ReactVisualTheme.core;
+    ReactCosmetics.currentSoundPack = ReactSoundPack.core;
     await LocalShopState.load();
   });
 
-  test('core cosmetic is owned and equipped by default', () async {
+  test('core visual style is equipped by default', () async {
     expect(LocalShopState.isOwned(LocalShopState.corePackId), isTrue);
     expect(await LocalShopState.equippedPack(), LocalShopState.corePackId);
+    expect(await LocalShopState.equippedPackIds(), {LocalShopState.corePackId});
   });
 
-  test('implemented visual themes are unlocked in debug builds', () {
-    expect(LocalShopState.debugVisualUnlocksEnabled, isTrue);
+  test('debug build exposes implemented visual and audio cosmetics', () {
     expect(LocalShopState.isOwned(LocalShopState.redlinePackId), isTrue);
     expect(LocalShopState.isOwned(LocalShopState.synthwavePackId), isTrue);
     expect(LocalShopState.isOwned(LocalShopState.monoPackId), isTrue);
-    expect(LocalShopState.isOwned('arcade_sfx'), isFalse);
+    expect(LocalShopState.isOwned(LocalShopState.arcadeSfxPackId), isTrue);
+    expect(LocalShopState.isOwned('glitch_commands'), isFalse);
   });
 
-  test('debug visual theme can be equipped and persisted', () async {
+  test('visual theme and arcade SFX can be equipped together', () async {
+    await LocalShopState.equip(LocalShopState.redlinePackId);
+    await LocalShopState.equip(LocalShopState.arcadeSfxPackId);
+
+    expect(await LocalShopState.equippedPackIds(), {
+      LocalShopState.redlinePackId,
+      LocalShopState.arcadeSfxPackId,
+    });
+    expect(ReactCosmetics.currentTheme, ReactVisualTheme.redline);
+    expect(ReactCosmetics.currentSoundPack, ReactSoundPack.arcade);
+  });
+
+  test('core SFX can be restored without changing visual theme', () async {
+    await LocalShopState.equip(LocalShopState.monoPackId);
+    await LocalShopState.equip(LocalShopState.arcadeSfxPackId);
+    await LocalShopState.equipCoreAudio();
+
+    expect(ReactCosmetics.currentTheme, ReactVisualTheme.mono);
+    expect(ReactCosmetics.currentSoundPack, ReactSoundPack.core);
+    expect(await LocalShopState.equippedPackIds(), {LocalShopState.monoPackId});
+  });
+
+  test('equipped cosmetic slots persist after reload', () async {
     await LocalShopState.equip(LocalShopState.synthwavePackId);
-    expect(await LocalShopState.equippedPack(), LocalShopState.synthwavePackId);
+    await LocalShopState.equip(LocalShopState.arcadeSfxPackId);
 
     ReactCosmetics.currentTheme = ReactVisualTheme.core;
+    ReactCosmetics.currentSoundPack = ReactSoundPack.core;
     await LocalShopState.load();
 
-    expect(await LocalShopState.equippedPack(), LocalShopState.synthwavePackId);
-  });
-
-  test('unimplemented paid cosmetic cannot be equipped locally', () async {
-    await LocalShopState.equip('arcade_sfx');
-
-    expect(await LocalShopState.equippedPack(), LocalShopState.corePackId);
+    expect(ReactCosmetics.currentTheme, ReactVisualTheme.synthwave);
+    expect(ReactCosmetics.currentSoundPack, ReactSoundPack.arcade);
   });
 }
