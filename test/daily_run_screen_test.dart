@@ -36,10 +36,16 @@ void main() {
 
   ReactCommand displayedCommand(WidgetTester tester) {
     for (final command in ReactCommand.values) {
-      if (find.text(command.title).evaluate().isNotEmpty) return command;
+      if (find.byIcon(command.icon).evaluate().isNotEmpty) return command;
     }
     throw StateError('No Daily command is currently displayed.');
   }
+
+  bool isSwipe(ReactCommand command) =>
+      command == ReactCommand.swipeLeft ||
+      command == ReactCommand.swipeRight ||
+      command == ReactCommand.swipeUp ||
+      command == ReactCommand.swipeDown;
 
   Offset swipeDelta(ReactCommand command) => switch (command) {
         ReactCommand.swipeLeft => const Offset(-90, 0),
@@ -57,22 +63,14 @@ void main() {
         _ => command,
       };
 
-  bool isSwipe(ReactCommand command) =>
-      command == ReactCommand.swipeLeft ||
-      command == ReactCommand.swipeRight ||
-      command == ReactCommand.swipeUp ||
-      command == ReactCommand.swipeDown;
-
   Future<void> performCommand(
     WidgetTester tester,
-    ReactCommand command, {
-    bool reverse = false,
-  }) async {
+    ReactCommand command,
+  ) async {
     final target = find.byType(ReactGestureSurface);
     final center = tester.getCenter(target);
-    final performed = reverse ? oppositeSwipe(command) : command;
 
-    switch (performed) {
+    switch (command) {
       case ReactCommand.tap:
         await tester.tap(target);
       case ReactCommand.doubleTap:
@@ -90,7 +88,7 @@ void main() {
             ReactCommand.swipeUp ||
             ReactCommand.swipeDown:
         final gesture = await tester.startGesture(center);
-        await gesture.moveBy(swipeDelta(performed));
+        await gesture.moveBy(swipeDelta(command));
         await gesture.up();
       case ReactCommand.pinch:
         final left = await tester.createGesture(pointer: 11);
@@ -117,11 +115,11 @@ void main() {
   Future<void> clearCurrent(
     WidgetTester tester, {
     required int expectedScore,
-    bool reverse = false,
     Duration nextCommandDelay = const Duration(milliseconds: 420),
   }) async {
-    final command = displayedCommand(tester);
-    await performCommand(tester, command, reverse: reverse);
+    final surface =
+        tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface));
+    await performCommand(tester, surface.expectedCommand);
     expect(find.text('$expectedScore/60'), findsOneWidget);
     await tester.pump(nextCommandDelay);
   }
@@ -202,7 +200,9 @@ void main() {
       isTrue,
     );
 
-    await performCommand(tester, command);
+    final surface =
+        tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface));
+    await performCommand(tester, surface.expectedCommand);
     expect(find.text('1/60'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -236,7 +236,9 @@ void main() {
     }
 
     final sixth = displayedCommand(tester);
-    await performCommand(tester, sixth);
+    final surface =
+        tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface));
+    await performCommand(tester, surface.expectedCommand);
     expect(find.text('6/60'), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 180));
 
@@ -289,9 +291,10 @@ void main() {
   testWidgets('CHAIN arms the next command after its near-zero gap',
       (tester) async {
     await pumpDaily(tester, DailyModifier.chain);
-    final command = displayedCommand(tester);
+    final surface =
+        tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface));
 
-    await performCommand(tester, command);
+    await performCommand(tester, surface.expectedCommand);
     expect(find.text('1/60'), findsOneWidget);
     expect(
       tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
