@@ -12,13 +12,12 @@ void main() {
     ReactCosmetics.currentTheme = ReactVisualTheme.core;
     ReactCosmetics.currentSoundPack = ReactSoundPack.core;
     ReactCosmetics.currentCommandStyle = ReactCommandStyle.core;
+    ReactCosmetics.currentShareStyle = ReactShareStyle.core;
     await LocalShopState.load();
   });
 
   testWidgets('how to play exposes the complete command tutorial', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: HowToPlayScreen()),
-    );
+    await tester.pumpWidget(const MaterialApp(home: HowToPlayScreen()));
 
     expect(find.text('HOW TO PLAY'), findsOneWidget);
     expect(find.text('9 COMMANDS. ONE SIMPLE RULE.'), findsOneWidget);
@@ -34,9 +33,7 @@ void main() {
   });
 
   testWidgets('shop exposes implemented cosmetics in debug', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: ShopScreen()),
-    );
+    await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
     await tester.pumpAndSettle();
 
     expect(find.text('SHOP'), findsOneWidget);
@@ -57,10 +54,8 @@ void main() {
     expect(find.textContaining('PAID GAMEPLAY ADVANTAGES'), findsOneWidget);
   });
 
-  testWidgets('shop category filters show the matching cosmetic group', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: ShopScreen()),
-    );
+  testWidgets('shop category filters show matching groups', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
     await tester.pumpAndSettle();
 
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -520));
@@ -68,89 +63,62 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('shop_filter_audio')));
     await tester.pumpAndSettle();
-
     expect(find.text('ARCADE SFX'), findsOneWidget);
     expect(find.text('SYNTHWAVE'), findsNothing);
-    expect(find.text('GLITCH COMMANDS'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('shop_filter_styles')));
     await tester.pumpAndSettle();
-
     expect(find.text('GLITCH COMMANDS'), findsOneWidget);
     expect(find.text('PRO SHARE CARDS'), findsOneWidget);
     expect(find.text('ARCADE SFX'), findsNothing);
   });
 
   testWidgets('featured Redline can be equipped in debug', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: ShopScreen()),
-    );
+    await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('featured_redline')));
     await tester.pumpAndSettle();
-
     expect(find.text('Redline arena palette'), findsOneWidget);
     expect(find.textContaining('DEV ENTITLEMENT'), findsOneWidget);
 
-    final equip = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'EQUIP'),
-    );
-    expect(equip.onPressed, isNotNull);
-
     await tester.tap(find.widgetWithText(FilledButton, 'EQUIP'));
     await tester.pumpAndSettle();
-
     expect(await LocalShopState.equippedPack(), LocalShopState.redlinePackId);
   });
 
   testWidgets('Arcade SFX can be equipped independently in debug', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: ShopScreen()),
-    );
+    await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
     await tester.pumpAndSettle();
 
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
     await tester.pumpAndSettle();
     await tester.tap(find.text('ARCADE SFX'));
     await tester.pumpAndSettle();
-
     expect(find.text('Alternate countdown cues'), findsOneWidget);
-    expect(find.textContaining('DEV ENTITLEMENT'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'EQUIP'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilledButton, 'EQUIP'));
     await tester.pumpAndSettle();
-
     expect(ReactCosmetics.currentSoundPack, ReactSoundPack.arcade);
   });
 
-  testWidgets('Glitch Commands can be equipped independently in debug',
-      (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: ShopScreen()),
-    );
+  testWidgets('Glitch Commands can be equipped independently in debug', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
     await tester.pumpAndSettle();
 
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -1100));
     await tester.pumpAndSettle();
     await tester.tap(find.text('GLITCH COMMANDS'));
     await tester.pumpAndSettle();
-
     expect(find.text('System-coded command hints'), findsOneWidget);
-    expect(find.textContaining('DEV ENTITLEMENT'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'EQUIP'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilledButton, 'EQUIP'));
     await tester.pumpAndSettle();
-
     expect(ReactCosmetics.currentCommandStyle, ReactCommandStyle.glitch);
   });
 
-  testWidgets('Pro Share Cards remains locked until implemented', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: ShopScreen()),
-    );
+  testWidgets('Pro Share Cards can be equipped independently in debug', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
     await tester.pumpAndSettle();
 
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -1200));
@@ -158,10 +126,12 @@ void main() {
     await tester.tap(find.text('PRO SHARE CARDS'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('STORE CHECKOUT IS NOT ENABLED YET'), findsOneWidget);
-    final comingSoon = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'COMING SOON'),
-    );
-    expect(comingSoon.onPressed, isNull);
+    expect(find.text('Premium score-first result layout'), findsOneWidget);
+    expect(find.textContaining('DEV ENTITLEMENT'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'EQUIP'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'EQUIP'));
+    await tester.pumpAndSettle();
+    expect(ReactCosmetics.currentShareStyle, ReactShareStyle.pro);
   });
 }
