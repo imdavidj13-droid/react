@@ -65,10 +65,17 @@ class _HowToPlayScreenState extends State<HowToPlayScreen> {
       accent: ReactColors.purple,
     ),
     _TutorialStep(
+      icon: Icons.blur_circular_rounded,
+      title: 'SEQUENCE MODE',
+      command: '1 → 2 → 3',
+      description: 'Sequence is a separate dot mode. Tap every numbered dot in order before the timer expires. A wrong dot or timeout costs one of your three lives.',
+      accent: ReactColors.electricBlueBright,
+    ),
+    _TutorialStep(
       icon: Icons.bolt_rounded,
       title: 'THAT\'S IT',
       command: 'REACT FAST',
-      description: 'Follow the command before time runs out. Different modes change the pressure, but the gestures stay the same.',
+      description: 'The reaction modes use the same nine gesture commands. Sequence tests visual order and tapping instead. Every mode gets faster or more demanding as you improve.',
       accent: ReactColors.lime,
     ),
   ];
@@ -130,13 +137,16 @@ class _HowToPlayScreenState extends State<HowToPlayScreen> {
                     const SizedBox(width: 48),
                   const Expanded(
                     child: Center(
-                      child: Text(
-                        'HOW TO PLAY',
-                        style: TextStyle(
-                          color: ReactColors.textPrimary,
-                          fontSize: 25,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.7,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'HOW TO PLAY',
+                          style: TextStyle(
+                            color: ReactColors.textPrimary,
+                            fontSize: 25,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.7,
+                          ),
                         ),
                       ),
                     ),
@@ -152,13 +162,13 @@ class _HowToPlayScreenState extends State<HowToPlayScreen> {
               ),
               SizedBox(height: compact ? 10 : 18),
               const Text(
-                '9 COMMANDS. ONE SIMPLE RULE.',
+                '9 GESTURE COMMANDS • PLUS SEQUENCE MODE',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: ReactColors.textSecondary,
-                  fontSize: 10,
+                  fontSize: 9.5,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.25,
+                  letterSpacing: 1.05,
                 ),
               ),
               SizedBox(height: compact ? 10 : 18),
@@ -254,7 +264,10 @@ class _StepCard extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF040A13),
-              border: Border.all(color: step.accent.withValues(alpha: .7), width: 2),
+              border: Border.all(
+                color: step.accent.withValues(alpha: .7),
+                width: 2,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: step.accent.withValues(alpha: .18),
@@ -262,7 +275,11 @@ class _StepCard extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(step.icon, color: step.accent, size: compact ? 42 : 52),
+            child: Icon(
+              step.icon,
+              color: step.accent,
+              size: compact ? 42 : 52,
+            ),
           ),
           SizedBox(height: compact ? 18 : 26),
           Text(
