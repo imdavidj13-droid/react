@@ -10,6 +10,7 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     ReactCosmetics.currentTheme = ReactVisualTheme.core;
+    ReactCosmetics.currentSoundPack = ReactSoundPack.core;
     await LocalShopState.load();
   });
 
@@ -31,7 +32,7 @@ void main() {
     expect(find.text("LET'S PLAY"), findsOneWidget);
   });
 
-  testWidgets('shop exposes implemented visual themes in debug', (tester) async {
+  testWidgets('shop exposes implemented cosmetics in debug', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: ShopScreen()),
     );
@@ -39,7 +40,7 @@ void main() {
 
     expect(find.text('SHOP'), findsOneWidget);
     expect(find.text('MAKE RE△CT YOURS'), findsOneWidget);
-    expect(find.text('DEV • VISUAL THEMES UNLOCKED'), findsOneWidget);
+    expect(find.text('DEV • IMPLEMENTED COSMETICS UNLOCKED'), findsOneWidget);
     expect(find.text('RE△CT CORE'), findsOneWidget);
     expect(find.text('EQUIPPED'), findsOneWidget);
     expect(find.text('FEATURED'), findsOneWidget);
@@ -102,7 +103,7 @@ void main() {
     expect(await LocalShopState.equippedPack(), LocalShopState.redlinePackId);
   });
 
-  testWidgets('unimplemented paid cosmetic remains locked', (tester) async {
+  testWidgets('Arcade SFX can be equipped independently in debug', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: ShopScreen()),
     );
@@ -111,6 +112,33 @@ void main() {
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
     await tester.pumpAndSettle();
     await tester.tap(find.text('ARCADE SFX'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Alternate countdown cues'), findsOneWidget);
+    expect(find.textContaining('DEV ENTITLEMENT'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'EQUIP'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'EQUIP'));
+    await tester.pumpAndSettle();
+
+    expect(ReactCosmetics.currentSoundPack, ReactSoundPack.arcade);
+    expect(
+      (await LocalShopState.equippedPackIds()).contains(
+        LocalShopState.arcadeSfxPackId,
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets('unimplemented style cosmetic remains locked', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: ShopScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1100));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('GLITCH COMMANDS'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('STORE CHECKOUT IS NOT ENABLED YET'), findsOneWidget);
