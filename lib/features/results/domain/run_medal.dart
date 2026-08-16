@@ -20,8 +20,7 @@ List<RunMedal> earnedRunMedals(ReactRunResult result) {
   if (result.mode == ReactGameMode.endless && result.score >= 25) {
     medals.add(RunMedal.survivor);
   }
-  if (result.mode == ReactGameMode.daily &&
-      result.outcome == ReactRunOutcome.completed) {
+  if (result.mode == ReactGameMode.daily && result.score >= 60) {
     medals.add(RunMedal.dailyMaster);
   }
   if (result.mode == ReactGameMode.passIt &&
