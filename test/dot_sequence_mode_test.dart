@@ -12,7 +12,10 @@ void main() {
 
       expect(round.dotCount, 5);
       for (final position in round.positions) {
-        expect(position.distance, lessThanOrEqualTo(DotSequenceRound.maximumRadius));
+        expect(
+          position.distance,
+          lessThanOrEqualTo(DotSequenceRound.maximumRadius),
+        );
       }
 
       for (var a = 0; a < round.positions.length; a++) {
@@ -64,7 +67,10 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: DotSequenceScreen()));
     await tester.pump();
 
-    await tester.pump(const Duration(milliseconds: 3250));
+    // The gameplay clock is sampled every 32ms, so cross the 3.2s deadline
+    // far enough to guarantee the periodic tick has observed the expiry.
+    await tester.pump(const Duration(milliseconds: 3300));
+    await tester.pump(const Duration(milliseconds: 40));
     expect(find.text('TOO SLOW'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 530));
