@@ -18,24 +18,21 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
     with WidgetsBindingObserver {
   static const _tick = Duration(milliseconds: 32);
 
-  final Random _random = Random();
-  final Stopwatch _clock = Stopwatch();
-
+  final _random = Random();
+  final _clock = Stopwatch();
   Timer? _timer;
-  late DotSequenceRound _round;
+  Timer? _nextTimer;
 
+  late DotSequenceRound _round;
   int _score = 0;
   int _lives = 3;
   int _nextIndex = 0;
-  int _roundDurationMs = 3200;
+  int _durationMs = 3200;
   int _elapsedBeforeArmMs = 0;
-  int _totalRoundTimeMs = 0;
-  int _completedRounds = 0;
-
   double _progress = 1;
+  bool _accepting = false;
   bool _paused = false;
   bool _gameOver = false;
-  bool _acceptingInput = false;
   String? _feedback;
 
   int get _dotCount {
@@ -45,15 +42,10 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
     return 5;
   }
 
-  int get _nextRoundDurationMs => (3200 - (_score * 70)).clamp(1600, 3200);
-
+  int get _nextDurationMs =>
+      (3200 - (_score * 70)).clamp(1600, 3200).toInt();
   int get _elapsedMs => _elapsedBeforeArmMs + _clock.elapsedMilliseconds;
-
-  int get _remainingMs => max(0, _roundDurationMs - _elapsedMs);
-
-  double get _averageSeconds => _completedRounds == 0
-      ? 0
-      : (_totalRoundTimeMs / _completedRounds) / 1000;
+  int get _remainingMs => max(0, _durationMs - _elapsedMs);
 
   @override
   void initState() {
@@ -74,59 +66,53 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
+    _nextTimer?.cancel();
     _clock.stop();
     super.dispose();
   }
 
   void _startRound() {
     if (!mounted || _paused || _gameOver) return;
-
     _timer?.cancel();
+    _nextTimer?.cancel();
     _clock
       ..stop()
       ..reset();
 
-    final count = _dotCount;
-    final duration = _nextRoundDurationMs;
-
     setState(() {
-      _round = DotSequenceRound.generate(_random, count: count);
+      _round = DotSequenceRound.generate(_random, count: _dotCount);
       _nextIndex = 0;
-      _roundDurationMs = duration;
+      _durationMs = _nextDurationMs;
       _elapsedBeforeArmMs = 0;
       _progress = 1;
       _feedback = null;
-      _acceptingInput = true;
+      _accepting = true;
     });
 
     unawaited(ReactAudio.play(ReactSoundCue.command));
-    _armTimer(duration);
+    _armTimer(_durationMs);
   }
 
   void _armTimer(int remainingMs) {
-    final safe = remainingMs.clamp(1, _roundDurationMs);
-    _elapsedBeforeArmMs = _roundDurationMs - safe;
+    final safe = remainingMs.clamp(1, _durationMs).toInt();
+    _elapsedBeforeArmMs = _durationMs - safe;
     _clock
       ..reset()
       ..start();
-
     _timer?.cancel();
     _timer = Timer.periodic(_tick, (_) {
-      if (!mounted || _paused || _gameOver || !_acceptingInput) return;
-
+      if (!mounted || !_accepting || _paused || _gameOver) return;
       final remaining = _remainingMs;
       if (remaining <= 0) {
         _loseLife('TOO SLOW');
         return;
       }
-
-      setState(() => _progress = remaining / _roundDurationMs);
+      setState(() => _progress = remaining / _durationMs);
     });
   }
 
   void _tapDot(int index) {
-    if (!_acceptingInput || _paused || _gameOver) return;
-
+    if (!_accepting || _paused || _gameOver) return;
     if (index != _nextIndex) {
       _loseLife('WRONG ORDER');
       return;
@@ -141,177 +127,154 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
       return;
     }
 
-    _completeRound();
-  }
-
-  void _completeRound() {
-    if (!_acceptingInput) return;
-
     _timer?.cancel();
     _clock.stop();
-    final elapsed = _elapsedMs.clamp(0, _roundDurationMs);
-
     setState(() {
-      _acceptingInput = false;
+      _accepting = false;
       _score += 1;
-      _completedRounds += 1;
-      _totalRoundTimeMs += elapsed;
       _feedback = 'SEQUENCE CLEAR';
       _progress = 0;
     });
-
     unawaited(ReactAudio.play(ReactSoundCue.success));
-    Timer(const Duration(milliseconds: 260), _startRound);
+    _nextTimer = Timer(const Duration(milliseconds: 260), _startRound);
   }
 
   void _loseLife(String reason) {
-    if (!_acceptingInput || _gameOver) return;
-
+    if (!_accepting || _gameOver) return;
     _timer?.cancel();
     _clock.stop();
-    final livesAfter = _lives - 1;
-
+    final remainingLives = _lives - 1;
     setState(() {
-      _acceptingInput = false;
-      _lives = livesAfter;
+      _accepting = false;
+      _lives = remainingLives;
       _feedback = reason;
       _progress = 0;
-      if (livesAfter <= 0) _gameOver = true;
+      _gameOver = remainingLives <= 0;
     });
-
     unawaited(ReactAudio.play(ReactSoundCue.miss));
-
-    if (livesAfter > 0) {
-      Timer(const Duration(milliseconds: 520), _startRound);
+    if (remainingLives > 0) {
+      _nextTimer = Timer(const Duration(milliseconds: 520), _startRound);
     }
   }
 
   void _setPaused(bool value) {
     if (_gameOver || _paused == value) return;
-
     if (value) {
       final remaining = max(1, _remainingMs);
-      _clock.stop();
       _timer?.cancel();
+      _nextTimer?.cancel();
+      _clock.stop();
       setState(() {
         _paused = true;
-        _acceptingInput = false;
-        _elapsedBeforeArmMs = _roundDurationMs - remaining;
+        _accepting = false;
+        _elapsedBeforeArmMs = _durationMs - remaining;
       });
       return;
     }
 
     setState(() {
       _paused = false;
-      _acceptingInput = true;
+      _accepting = true;
     });
-    _armTimer(_roundDurationMs - _elapsedBeforeArmMs);
+    _armTimer(_durationMs - _elapsedBeforeArmMs);
   }
 
   void _restart() {
     _timer?.cancel();
+    _nextTimer?.cancel();
     _clock
       ..stop()
       ..reset();
-
     setState(() {
       _score = 0;
       _lives = 3;
       _nextIndex = 0;
-      _totalRoundTimeMs = 0;
-      _completedRounds = 0;
       _gameOver = false;
       _paused = false;
       _feedback = null;
       _progress = 1;
     });
-
     _startRound();
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: !_paused,
-      child: Scaffold(
-        backgroundColor: ReactColors.background,
-        body: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final arenaSize = min(
-                constraints.maxWidth - 28,
-                constraints.maxHeight * .58,
-              ).clamp(300.0, 430.0).toDouble();
-
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  const _Backdrop(),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
-                    child: Column(
-                      children: [
-                        _Header(onPause: () => _setPaused(true)),
-                        const SizedBox(height: 12),
-                        _Hud(score: _score, lives: _lives),
-                        const SizedBox(height: 12),
-                        Expanded(
-                          child: Center(
-                            child: _SequenceArena(
-                              size: arenaSize,
-                              round: _round,
-                              nextIndex: _nextIndex,
-                              progress: _progress,
-                              remainingSeconds: _remainingMs / 1000,
-                              enabled: _acceptingInput,
-                              onDotTap: _tapDot,
+    return Scaffold(
+      backgroundColor: ReactColors.background,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final arenaSize = min(
+              constraints.maxWidth - 28,
+              constraints.maxHeight * .58,
+            ).clamp(290.0, 430.0).toDouble();
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                const _Backdrop(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+                  child: Column(
+                    children: [
+                      _Header(onPause: () => _setPaused(true)),
+                      const SizedBox(height: 12),
+                      _Hud(score: _score, lives: _lives),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: Center(
+                          child: _Arena(
+                            size: arenaSize,
+                            round: _round,
+                            nextIndex: _nextIndex,
+                            progress: _progress,
+                            seconds: _remainingMs / 1000,
+                            enabled: _accepting,
+                            onTap: _tapDot,
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 30,
+                        child: Center(
+                          child: Text(
+                            _feedback ?? '',
+                            style: TextStyle(
+                              color: _feedback == 'GOOD' ||
+                                      _feedback == 'SEQUENCE CLEAR'
+                                  ? ReactColors.lime
+                                  : ReactColors.coral,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.3,
                             ),
                           ),
                         ),
-                        SizedBox(
-                          height: 38,
-                          child: Center(
-                            child: AnimatedOpacity(
-                              opacity: _feedback == null ? 0 : 1,
-                              duration: const Duration(milliseconds: 100),
-                              child: Text(
-                                _feedback ?? '',
-                                style: TextStyle(
-                                  color: _feedback == 'SEQUENCE CLEAR' ||
-                                          _feedback == 'GOOD'
-                                      ? ReactColors.lime
-                                      : ReactColors.coral,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        _BottomBar(
-                          score: _score,
-                          averageSeconds: _averageSeconds,
-                          dotCount: _dotCount,
-                        ),
-                      ],
-                    ),
+                      ),
+                      _BottomBar(score: _score, dots: _dotCount),
+                    ],
                   ),
-                  if (_paused)
-                    _PauseOverlay(
-                      onResume: () => _setPaused(false),
-                      onQuit: () => Navigator.of(context).pop(),
-                    ),
-                  if (_gameOver)
-                    _GameOverOverlay(
-                      score: _score,
-                      onReplay: _restart,
-                      onQuit: () => Navigator.of(context).pop(),
-                    ),
-                ],
-              );
-            },
-          ),
+                ),
+                if (_paused)
+                  _Overlay(
+                    title: 'SEQUENCE PAUSED',
+                    subtitle: 'THE CURRENT ROUND IS FROZEN',
+                    primary: 'RESUME',
+                    onPrimary: () => _setPaused(false),
+                    secondary: 'QUIT RUN',
+                    onSecondary: () => Navigator.of(context).pop(),
+                  ),
+                if (_gameOver)
+                  _Overlay(
+                    title: 'RUN OVER',
+                    subtitle: 'SEQUENCES CLEARED  $_score',
+                    primary: 'PLAY AGAIN',
+                    onPrimary: _restart,
+                    secondary: 'BACK TO MODES',
+                    onSecondary: () => Navigator.of(context).pop(),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -320,179 +283,164 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
 
 class _Header extends StatelessWidget {
   const _Header({required this.onPause});
-
   final VoidCallback onPause;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: onPause,
-          style: IconButton.styleFrom(
-            backgroundColor: const Color(0xFF07101E),
-            foregroundColor: ReactColors.textPrimary,
-            side: const BorderSide(color: Color(0xFF20547C)),
+  Widget build(BuildContext context) => Row(
+        children: [
+          IconButton(
+            onPressed: onPause,
+            style: IconButton.styleFrom(
+              backgroundColor: const Color(0xFF07101E),
+              foregroundColor: ReactColors.textPrimary,
+              side: const BorderSide(color: Color(0xFF20547C)),
+            ),
+            icon: const Icon(Icons.pause_rounded),
           ),
-          icon: const Icon(Icons.pause_rounded),
-        ),
-        const Spacer(),
-        const Text(
-          'RE△CT',
-          style: TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 27,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 3,
+          const Spacer(),
+          const Text(
+            'RE△CT',
+            style: TextStyle(
+              color: ReactColors.textPrimary,
+              fontSize: 27,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 3,
+            ),
           ),
-        ),
-        const Spacer(),
-        const SizedBox(width: 48),
-      ],
-    );
-  }
+          const Spacer(),
+          const SizedBox(width: 48),
+        ],
+      );
 }
 
 class _Hud extends StatelessWidget {
   const _Hud({required this.score, required this.lives});
-
   final int score;
   final int lives;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _HudCard(
-            label: 'SCORE',
-            child: Text(
-              '$score',
-              style: const TextStyle(
-                color: ReactColors.lime,
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) => Row(
+        children: [
+          Expanded(
+            child: _HudCard(
+              label: 'SCORE',
+              child: Text(
+                '$score',
+                style: const TextStyle(
+                  color: ReactColors.lime,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        const Expanded(
-          child: _HudCard(
-            label: 'MODE',
-            child: Text(
-              'SEQUENCE',
-              style: TextStyle(
-                color: ReactColors.electricBlueBright,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
+          const SizedBox(width: 8),
+          const Expanded(
+            child: _HudCard(
+              label: 'MODE',
+              child: Text(
+                'SEQUENCE',
+                style: TextStyle(
+                  color: ReactColors.electricBlueBright,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _HudCard(
-            label: 'LIVES',
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var i = 0; i < 3; i++)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: Icon(
+          const SizedBox(width: 8),
+          Expanded(
+            child: _HudCard(
+              label: 'LIVES',
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var i = 0; i < 3; i++)
+                    Icon(
                       Icons.favorite_rounded,
-                      size: 20,
+                      size: 19,
                       color: i < lives
                           ? ReactColors.coral
                           : ReactColors.textSecondary.withValues(alpha: .18),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ],
-    );
-  }
+        ],
+      );
 }
 
 class _HudCard extends StatelessWidget {
   const _HudCard({required this.label, required this.child});
-
   final String label;
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 78,
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF254766)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 8,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.2,
+  Widget build(BuildContext context) => Container(
+        height: 74,
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF07111D),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFF254766)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+              ),
             ),
-          ),
-          const SizedBox(height: 5),
-          FittedBox(fit: BoxFit.scaleDown, child: child),
-        ],
-      ),
-    );
-  }
+            const SizedBox(height: 5),
+            FittedBox(fit: BoxFit.scaleDown, child: child),
+          ],
+        ),
+      );
 }
 
-class _SequenceArena extends StatelessWidget {
-  const _SequenceArena({
+class _Arena extends StatelessWidget {
+  const _Arena({
     required this.size,
     required this.round,
     required this.nextIndex,
     required this.progress,
-    required this.remainingSeconds,
+    required this.seconds,
     required this.enabled,
-    required this.onDotTap,
+    required this.onTap,
   });
 
   final double size;
   final DotSequenceRound round;
   final int nextIndex;
   final double progress;
-  final double remainingSeconds;
+  final double seconds;
   final bool enabled;
-  final ValueChanged<int> onDotTap;
+  final ValueChanged<int> onTap;
 
   @override
   Widget build(BuildContext context) {
     final centre = size / 2;
     final placementRadius = size * .39;
-    final dotSize = (size * .16).clamp(50.0, 66.0).toDouble();
-
+    final dotSize = (size * .15).clamp(48.0, 64.0).toDouble();
     return SizedBox.square(
       dimension: size,
       child: Stack(
-        clipBehavior: Clip.none,
         children: [
           Positioned.fill(
-            child: CustomPaint(
-              painter: _ArenaPainter(progress: progress),
-            ),
+            child: CustomPaint(painter: _ArenaPainter(progress)),
           ),
           Positioned(
-            top: 2,
-            left: centre - 39,
+            top: 4,
+            left: centre - 37,
             child: Container(
-              width: 78,
-              height: 78,
+              width: 74,
+              height: 74,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: const Color(0xFF07111D),
@@ -502,12 +450,12 @@ class _SequenceArena extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    remainingSeconds.clamp(0, 9.99).toStringAsFixed(2),
+                    seconds.clamp(0, 9.99).toStringAsFixed(2),
                     style: TextStyle(
                       color: progress < .22
                           ? ReactColors.coral
                           : ReactColors.electricBlueBright,
-                      fontSize: 19,
+                      fontSize: 18,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -515,7 +463,7 @@ class _SequenceArena extends StatelessWidget {
                     'SEC',
                     style: TextStyle(
                       color: ReactColors.textSecondary,
-                      fontSize: 8,
+                      fontSize: 7,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -537,17 +485,16 @@ class _SequenceArena extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 const Text(
                   'DOT SEQUENCE',
                   style: TextStyle(
                     color: ReactColors.textPrimary,
-                    fontSize: 20,
+                    fontSize: 19,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.1,
                   ),
                 ),
-                const SizedBox(height: 3),
                 const Text(
                   'TAP THE DOTS IN ORDER',
                   style: TextStyle(
@@ -564,13 +511,13 @@ class _SequenceArena extends StatelessWidget {
             Positioned(
               left: centre + round.positions[index].dx * placementRadius - dotSize / 2,
               top: centre + round.positions[index].dy * placementRadius - dotSize / 2 + size * .08,
-              child: _SequenceDot(
+              child: _Dot(
                 number: index + 1,
                 size: dotSize,
                 active: index == nextIndex,
                 completed: index < nextIndex,
                 enabled: enabled,
-                onTap: () => onDotTap(index),
+                onTap: () => onTap(index),
               ),
             ),
         ],
@@ -579,8 +526,8 @@ class _SequenceArena extends StatelessWidget {
   }
 }
 
-class _SequenceDot extends StatelessWidget {
-  const _SequenceDot({
+class _Dot extends StatelessWidget {
+  const _Dot({
     required this.number,
     required this.size,
     required this.active,
@@ -601,43 +548,41 @@ class _SequenceDot extends StatelessWidget {
     final accent = active
         ? ReactColors.electricBlueBright
         : completed
-        ? ReactColors.lime
-        : const Color(0xFF2C6A9B);
-
+            ? ReactColors.lime
+            : const Color(0xFF2C6A9B);
     return Semantics(
       button: true,
       label: 'Dot $number',
       child: GestureDetector(
+        key: ValueKey<String>('sequence-dot-$number'),
         onTap: enabled ? onTap : null,
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
+          duration: const Duration(milliseconds: 100),
           width: size,
           height: size,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: completed
-                ? ReactColors.lime.withValues(alpha: .08)
-                : const Color(0xFF06101D),
-            border: Border.all(color: accent, width: active ? 2.6 : 1.6),
+            color: const Color(0xFF06101D),
+            border: Border.all(color: accent, width: active ? 2.6 : 1.5),
             boxShadow: active
                 ? [
                     BoxShadow(
-                      color: ReactColors.electricBlueBright.withValues(alpha: .46),
-                      blurRadius: 18,
+                      color: ReactColors.electricBlueBright.withValues(alpha: .45),
+                      blurRadius: 16,
                       spreadRadius: 2,
                     ),
                   ]
                 : const [],
           ),
-          alignment: Alignment.center,
           child: completed
-              ? const Icon(Icons.check_rounded, color: ReactColors.lime, size: 25)
+              ? const Icon(Icons.check_rounded, color: ReactColors.lime, size: 24)
               : Text(
                   '$number',
                   style: TextStyle(
                     color: accent,
-                    fontSize: size * .42,
+                    fontSize: size * .40,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -648,37 +593,31 @@ class _SequenceDot extends StatelessWidget {
 }
 
 class _ArenaPainter extends CustomPainter {
-  const _ArenaPainter({required this.progress});
-
+  const _ArenaPainter(this.progress);
   final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
     final centre = size.center(Offset.zero);
-    final innerRadius = size.width * .43;
-    final outerRadius = size.width * .475;
-
     final inner = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
       ..color = const Color(0xFF155486);
-    canvas.drawCircle(centre, innerRadius, inner);
+    canvas.drawCircle(centre, size.width * .43, inner);
 
     final track = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 11
+      ..strokeWidth = 10
       ..color = const Color(0xFF102A45);
-    canvas.drawCircle(centre, outerRadius, track);
+    canvas.drawCircle(centre, size.width * .475, track);
 
     final timer = Paint()
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 11
-      ..color = progress < .22
-          ? ReactColors.coral
-          : ReactColors.electricBlueBright;
+      ..strokeWidth = 10
+      ..color = progress < .22 ? ReactColors.coral : ReactColors.electricBlueBright;
     canvas.drawArc(
-      Rect.fromCircle(center: centre, radius: outerRadius),
+      Rect.fromCircle(center: centre, radius: size.width * .475),
       -pi / 2,
       pi * 2 * progress,
       false,
@@ -692,217 +631,147 @@ class _ArenaPainter extends CustomPainter {
 }
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({
-    required this.score,
-    required this.averageSeconds,
-    required this.dotCount,
-  });
-
+  const _BottomBar({required this.score, required this.dots});
   final int score;
-  final double averageSeconds;
-  final int dotCount;
+  final int dots;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF254766)),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.blur_circular_rounded,
-            color: ReactColors.electricBlueBright,
-            size: 22,
-          ),
-          const SizedBox(width: 8),
-          const Text(
-            'SEQUENCE',
-            style: TextStyle(
-              color: ReactColors.electricBlueBright,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
+  Widget build(BuildContext context) => Container(
+        height: 60,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF07111D),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFF254766)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.blur_circular_rounded,
+                color: ReactColors.electricBlueBright, size: 21),
+            const SizedBox(width: 8),
+            const Text(
+              'SEQUENCE',
+              style: TextStyle(
+                color: ReactColors.electricBlueBright,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+              ),
             ),
-          ),
-          const Spacer(),
-          _MiniMetric(label: 'SCORE', value: '$score'),
-          const SizedBox(width: 18),
-          _MiniMetric(label: 'DOTS', value: '$dotCount'),
-          const SizedBox(width: 18),
-          _MiniMetric(
-            label: 'AVG',
-            value: averageSeconds == 0 ? '--' : '${averageSeconds.toStringAsFixed(2)}s',
-          ),
-        ],
-      ),
-    );
-  }
+            const Spacer(),
+            _Metric(label: 'SCORE', value: '$score'),
+            const SizedBox(width: 22),
+            _Metric(label: 'DOTS', value: '$dots'),
+          ],
+        ),
+      );
 }
 
-class _MiniMetric extends StatelessWidget {
-  const _MiniMetric({required this.label, required this.value});
-
+class _Metric extends StatelessWidget {
+  const _Metric({required this.label, required this.value});
   final String label;
   final String value;
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 7,
-            fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) => Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 7,
+              fontWeight: FontWeight.w900,
+            ),
           ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          style: const TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
+          Text(
+            value,
+            style: const TextStyle(
+              color: ReactColors.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+            ),
           ),
-        ),
-      ],
-    );
-  }
+        ],
+      );
 }
 
-class _PauseOverlay extends StatelessWidget {
-  const _PauseOverlay({required this.onResume, required this.onQuit});
-
-  final VoidCallback onResume;
-  final VoidCallback onQuit;
-
-  @override
-  Widget build(BuildContext context) {
-    return _OverlayShell(
-      icon: Icons.pause_circle_outline_rounded,
-      title: 'SEQUENCE PAUSED',
-      subtitle: 'THE CURRENT ROUND IS FROZEN',
-      primaryLabel: 'RESUME',
-      onPrimary: onResume,
-      secondaryLabel: 'QUIT RUN',
-      onSecondary: onQuit,
-    );
-  }
-}
-
-class _GameOverOverlay extends StatelessWidget {
-  const _GameOverOverlay({
-    required this.score,
-    required this.onReplay,
-    required this.onQuit,
-  });
-
-  final int score;
-  final VoidCallback onReplay;
-  final VoidCallback onQuit;
-
-  @override
-  Widget build(BuildContext context) {
-    return _OverlayShell(
-      icon: Icons.blur_circular_rounded,
-      title: 'RUN OVER',
-      subtitle: 'SEQUENCES CLEARED  $score',
-      primaryLabel: 'PLAY AGAIN',
-      onPrimary: onReplay,
-      secondaryLabel: 'BACK TO MODES',
-      onSecondary: onQuit,
-    );
-  }
-}
-
-class _OverlayShell extends StatelessWidget {
-  const _OverlayShell({
-    required this.icon,
+class _Overlay extends StatelessWidget {
+  const _Overlay({
     required this.title,
     required this.subtitle,
-    required this.primaryLabel,
+    required this.primary,
     required this.onPrimary,
-    required this.secondaryLabel,
+    required this.secondary,
     required this.onSecondary,
   });
 
-  final IconData icon;
   final String title;
   final String subtitle;
-  final String primaryLabel;
+  final String primary;
   final VoidCallback onPrimary;
-  final String secondaryLabel;
+  final String secondary;
   final VoidCallback onSecondary;
 
   @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: const Color(0xE8050911),
-      child: Center(
-        child: Container(
-          width: 310,
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: const Color(0xFF07111D),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFF2E587C)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: ReactColors.electricBlueBright, size: 50),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: ReactColors.textPrimary,
-                  fontSize: 23,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.3,
+  Widget build(BuildContext context) => ColoredBox(
+        color: const Color(0xE8050911),
+        child: Center(
+          child: Container(
+            width: 310,
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: const Color(0xFF07111D),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xFF2E587C)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.blur_circular_rounded,
+                    color: ReactColors.electricBlueBright, size: 48),
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 7),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: ReactColors.textSecondary,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .9,
+                const SizedBox(height: 7),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: onPrimary,
-                  child: Text(primaryLabel),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: onPrimary,
+                    child: Text(primary),
+                  ),
                 ),
-              ),
-              TextButton(onPressed: onSecondary, child: Text(secondaryLabel)),
-            ],
+                TextButton(onPressed: onSecondary, child: Text(secondary)),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
 }
 
 class _Backdrop extends StatelessWidget {
   const _Backdrop();
 
   @override
-  Widget build(BuildContext context) {
-    return CustomPaint(painter: _BackdropPainter());
-  }
+  Widget build(BuildContext context) => CustomPaint(painter: _BackdropPainter());
 }
 
 class _BackdropPainter extends CustomPainter {
@@ -923,7 +792,6 @@ class _BackdropPainter extends CustomPainter {
       Offset(.88, .91),
       Offset(.11, .88),
     ];
-
     for (final point in points) {
       canvas.drawCircle(
         Offset(point.dx * size.width, point.dy * size.height),
