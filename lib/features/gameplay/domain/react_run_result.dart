@@ -1,7 +1,7 @@
 import 'react_command.dart';
 import 'react_command_performance.dart';
 
-enum ReactGameMode { classic, blitz, endless, daily, passIt }
+enum ReactGameMode { classic, blitz, endless, daily, passIt, sequence }
 
 extension ReactGameModeUi on ReactGameMode {
   String get label => switch (this) {
@@ -10,6 +10,7 @@ extension ReactGameModeUi on ReactGameMode {
     ReactGameMode.endless => 'ENDLESS',
     ReactGameMode.daily => 'DAILY',
     ReactGameMode.passIt => 'PASS IT',
+    ReactGameMode.sequence => 'SEQUENCE',
   };
 }
 
@@ -42,8 +43,9 @@ class ReactRunResult {
   final ReactRunOutcome outcome;
   final int misses;
 
-  /// Longest uninterrupted sequence of successful commands in this run.
-  /// Older/tests results can safely omit it and receive 0.
+  /// Longest uninterrupted sequence of successful clears in this run.
+  /// For gesture modes this is the command streak. For Sequence this is the
+  /// number of sequence rounds cleared between mistakes.
   final int maxStreak;
 
   final ReactCommand? failedCommand;
@@ -65,6 +67,8 @@ class ReactRunResult {
   /// each other before Results persistence runs.
   final bool isDailyDevRun;
 
+  /// Gesture-level analytics only. Sequence intentionally leaves this empty:
+  /// numbered dots are not one of the nine React gesture commands.
   final Map<ReactCommand, ReactCommandPerformance> commandPerformance;
 
   String get outcomeLabel => switch (outcome) {
