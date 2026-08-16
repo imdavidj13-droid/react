@@ -81,6 +81,35 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Sequence freezes a completed-round transition while backgrounded',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: DotSequenceScreen()));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey<String>('sequence-dot-1')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey<String>('sequence-dot-2')));
+    await tester.pump();
+    expect(find.text('SEQUENCE CLEAR'), findsOneWidget);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+    expect(find.text('SEQUENCE PAUSED'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('SEQUENCE PAUSED'), findsOneWidget);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(find.text('SEQUENCE PAUSED'), findsOneWidget);
+
+    await tester.tap(find.text('RESUME'));
+    await tester.pump();
+    expect(find.text('1/2'), findsOneWidget);
+    expect(find.text('SEQUENCE CLEAR'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Sequence fits a compact phone', (tester) async {
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;
