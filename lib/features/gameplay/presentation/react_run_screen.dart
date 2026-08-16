@@ -19,8 +19,8 @@ import 'react_run_launch_screen.dart';
 class ReactRunScreen extends StatefulWidget {
   const ReactRunScreen({required this.mode, super.key})
       : assert(
-          mode != ReactGameMode.daily,
-          'Daily mode must use DailyRunScreen.',
+          mode != ReactGameMode.daily && mode != ReactGameMode.sequence,
+          'Daily and Sequence use dedicated run screens.',
         );
 
   final ReactGameMode mode;
@@ -87,6 +87,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     ReactGameMode.endless => ReactModeTiming.endless,
     ReactGameMode.daily => throw StateError('Daily uses DailyRunScreen.'),
     ReactGameMode.passIt => ReactModeTiming.passIt,
+    ReactGameMode.sequence => throw StateError('Sequence uses DotSequenceScreen.'),
   };
 
   int get _timingScore =>
@@ -383,6 +384,9 @@ class _ReactRunScreenState extends State<ReactRunScreen>
           livesAfter: livesAfter,
         );
         return;
+
+      case ReactGameMode.sequence:
+        throw StateError('Sequence uses DotSequenceScreen.');
     }
   }
 
@@ -407,6 +411,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       ReactGameMode.endless => (.24 + _score * .035).clamp(.24, 1.0),
       ReactGameMode.daily => throw StateError('Daily uses DailyRunScreen.'),
       ReactGameMode.passIt => .30,
+      ReactGameMode.sequence => throw StateError('Sequence uses DotSequenceScreen.'),
     };
     _game.setIntensity(intensity.toDouble());
   }
@@ -598,6 +603,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
       ReactGameMode.endless => ReactRunLaunchScreen(mode: widget.mode),
       ReactGameMode.passIt => const ReactRunScreen(mode: ReactGameMode.passIt),
       ReactGameMode.daily => null,
+      ReactGameMode.sequence => const ReactRunLaunchScreen(mode: ReactGameMode.sequence),
     };
     if (screen == null) return;
 
@@ -668,6 +674,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     ReactGameMode.endless => 'PACE',
     ReactGameMode.daily => throw StateError('Daily uses DailyRunScreen.'),
     ReactGameMode.passIt => 'PLAYER',
+    ReactGameMode.sequence => throw StateError('Sequence uses DotSequenceScreen.'),
   };
 
   String get _statusValue => switch (widget.mode) {
@@ -677,6 +684,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
     ReactGameMode.daily => throw StateError('Daily uses DailyRunScreen.'),
     ReactGameMode.passIt =>
       'P${_currentPlayer + 1}  ${_playerLives[_currentPlayer]}♥',
+    ReactGameMode.sequence => throw StateError('Sequence uses DotSequenceScreen.'),
   };
 
   @override
@@ -798,6 +806,7 @@ Color _modeColor(ReactGameMode mode) => switch (mode) {
   ReactGameMode.endless => ReactColors.lime,
   ReactGameMode.daily => throw StateError('Daily uses DailyRunScreen.'),
   ReactGameMode.passIt => ReactColors.purple,
+  ReactGameMode.sequence => throw StateError('Sequence uses DotSequenceScreen.'),
 };
 
 double _initialFlameIntensity(ReactGameMode mode) => switch (mode) {
@@ -806,6 +815,7 @@ double _initialFlameIntensity(ReactGameMode mode) => switch (mode) {
   ReactGameMode.endless => .24,
   ReactGameMode.daily => throw StateError('Daily uses DailyRunScreen.'),
   ReactGameMode.passIt => .30,
+  ReactGameMode.sequence => throw StateError('Sequence uses DotSequenceScreen.'),
 };
 
 class _Header extends StatelessWidget {
