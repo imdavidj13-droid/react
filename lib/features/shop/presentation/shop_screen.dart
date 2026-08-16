@@ -20,7 +20,6 @@ class _ShopScreenState extends State<ShopScreen> {
     price: 'OWNED',
     accent: ReactColors.electricBlueBright,
     icon: Icons.bolt_rounded,
-    implemented: true,
     includes: [
       'Original electric-blue arena',
       'Core gameplay effects and command style',
@@ -38,7 +37,6 @@ class _ShopScreenState extends State<ShopScreen> {
       price: '£1.99',
       accent: ReactColors.coral,
       icon: Icons.local_fire_department_rounded,
-      implemented: true,
       includes: [
         'Redline arena palette',
         'Matching timer and success effects',
@@ -54,7 +52,6 @@ class _ShopScreenState extends State<ShopScreen> {
       price: '£1.99',
       accent: ReactColors.purple,
       icon: Icons.waves_rounded,
-      implemented: true,
       includes: [
         'Purple-blue neon arena',
         'Retro gameplay effects',
@@ -70,7 +67,6 @@ class _ShopScreenState extends State<ShopScreen> {
       price: '£0.99',
       accent: ReactColors.textPrimary,
       icon: Icons.contrast_rounded,
-      implemented: true,
       includes: [
         'Monochrome arena palette',
         'Reduced effect intensity',
@@ -86,7 +82,6 @@ class _ShopScreenState extends State<ShopScreen> {
       price: '£0.99',
       accent: ReactColors.lime,
       icon: Icons.graphic_eq_rounded,
-      implemented: true,
       includes: [
         'Alternate countdown cues',
         'Arcade success and miss sounds',
@@ -102,7 +97,6 @@ class _ShopScreenState extends State<ShopScreen> {
       price: '£0.99',
       accent: ReactColors.electricBlueBright,
       icon: Icons.broken_image_outlined,
-      implemented: true,
       includes: [
         'Glitch command typography',
         'System-coded command hints',
@@ -110,35 +104,34 @@ class _ShopScreenState extends State<ShopScreen> {
       ],
     ),
     _ShopPack(
-      id: 'pro_share_cards',
+      id: LocalShopState.proShareCardsPackId,
       title: 'PRO SHARE CARDS',
-      subtitle: 'Premium result-card layouts for sharing scores and Daily runs.',
+      subtitle: 'Premium score-first layouts for sharing runs and Daily scores.',
       category: 'SHARE STYLE',
       filter: _ShopFilter.styles,
       price: '£0.99',
       accent: ReactColors.purple,
       icon: Icons.ios_share_rounded,
       includes: [
-        'Premium Classic result layout',
-        'Premium Daily result layout',
-        'Additional score-card treatments',
+        'Premium score-first result layout',
+        'Dedicated Daily rule treatment',
+        'Competitive metrics and premium framing',
       ],
     ),
   ];
 
   static const _featuredPackId = LocalShopState.redlinePackId;
-
   late Future<Set<String>> _equippedPackIds;
   _ShopFilter _filter = _ShopFilter.all;
 
-  _ShopPack get _featuredPack =>
+  _ShopPack get _featured =>
       _packs.firstWhere((pack) => pack.id == _featuredPackId);
 
   List<_ShopPack> get _visiblePacks {
-    if (_filter == _ShopFilter.all) {
-      return _packs.where((pack) => pack.id != _featuredPackId).toList();
-    }
-    return _packs.where((pack) => pack.filter == _filter).toList();
+    final source = _filter == _ShopFilter.all
+        ? _packs.where((pack) => pack.id != _featuredPackId)
+        : _packs.where((pack) => pack.filter == _filter);
+    return source.toList(growable: false);
   }
 
   @override
@@ -147,57 +140,59 @@ class _ShopScreenState extends State<ShopScreen> {
     _equippedPackIds = LocalShopState.equippedPackIds();
   }
 
-  void _refreshEquipped() {
+  void _refresh() {
     if (!mounted) return;
     setState(() => _equippedPackIds = LocalShopState.equippedPackIds());
   }
 
   Future<void> _equip(_ShopPack pack) async {
     await LocalShopState.equip(pack.id);
-    _refreshEquipped();
+    _refresh();
   }
 
-  Future<void> _useCoreSfx() async {
-    await LocalShopState.equipCoreAudio();
-    _refreshEquipped();
+  Future<void> _restoreSlot(_ShopPack pack) async {
+    if (pack.id == LocalShopState.arcadeSfxPackId) {
+      await LocalShopState.equipCoreAudio();
+    } else if (pack.id == LocalShopState.glitchCommandsPackId) {
+      await LocalShopState.equipCoreCommandStyle();
+    } else if (pack.id == LocalShopState.proShareCardsPackId) {
+      await LocalShopState.equipCoreShareStyle();
+    } else {
+      await LocalShopState.equip(LocalShopState.corePackId);
+    }
+    _refresh();
   }
 
-  Future<void> _useCoreCommands() async {
-    await LocalShopState.equipCoreCommandStyle();
-    _refreshEquipped();
+  String _restoreLabel(_ShopPack pack) {
+    if (pack.id == LocalShopState.arcadeSfxPackId) return 'USE CORE SFX';
+    if (pack.id == LocalShopState.glitchCommandsPackId) {
+      return 'USE CORE COMMANDS';
+    }
+    if (pack.id == LocalShopState.proShareCardsPackId) {
+      return 'USE CORE SHARE CARD';
+    }
+    return 'USE RE△CT CORE';
   }
 
-  Future<void> _showPackDetails(_ShopPack pack) async {
-    final owned = LocalShopState.isOwned(pack.id);
+  Future<void> _showPack(_ShopPack pack) async {
     final equipped = (await LocalShopState.equippedPackIds()).contains(pack.id);
+    final owned = LocalShopState.isOwned(pack.id);
     if (!mounted) return;
-
-    final isArcade = pack.id == LocalShopState.arcadeSfxPackId;
-    final isGlitch = pack.id == LocalShopState.glitchCommandsPackId;
-    final canEquip = owned && pack.implemented;
 
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _PackDetailsSheet(
+      builder: (context) => _PackSheet(
         pack: pack,
         owned: owned,
         equipped: equipped,
-        actionLabel: isArcade && equipped
-            ? 'USE CORE SFX'
-            : isGlitch && equipped
-                ? 'USE CORE COMMANDS'
-                : canEquip
-                    ? 'EQUIP'
-                    : 'COMING SOON',
-        onAction: isArcade && equipped
-            ? _useCoreSfx
-            : isGlitch && equipped
-                ? _useCoreCommands
-                : canEquip
-                    ? () => _equip(pack)
-                    : null,
+        actionLabel: equipped ? _restoreLabel(pack) : owned ? 'EQUIP' : 'COMING SOON',
+        onAction: !owned
+            ? null
+            : equipped
+                ? () => _restoreSlot(pack)
+                : () => _equip(pack),
       ),
     );
   }
@@ -214,24 +209,46 @@ class _ShopScreenState extends State<ShopScreen> {
           future: _equippedPackIds,
           builder: (context, snapshot) {
             final equipped = snapshot.data ?? {LocalShopState.corePackId};
-            final visiblePacks = _visiblePacks;
-
             return CustomScrollView(
               slivers: [
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(pad, 12, pad, 10),
                   sliver: SliverToBoxAdapter(
-                    child: _Header(onBack: () => Navigator.of(context).pop()),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: IconButton.styleFrom(
+                            backgroundColor: ReactColors.panel,
+                            foregroundColor: ReactColors.textPrimary,
+                            side: const BorderSide(color: ReactColors.border),
+                          ),
+                          icon: const Icon(Icons.arrow_back_rounded),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'SHOP',
+                          style: TextStyle(
+                            color: ReactColors.textPrimary,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.8,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(pad, 8, pad, 12),
-                  sliver: const SliverToBoxAdapter(child: _ShopHero()),
+                  sliver: SliverToBoxAdapter(
+                    child: _HeroCard(),
+                  ),
                 ),
                 if (LocalShopState.debugUnlocksEnabled)
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(pad, 0, pad, 16),
-                    sliver: const SliverToBoxAdapter(child: _DevUnlockCard()),
+                    sliver: const SliverToBoxAdapter(child: _DevCard()),
                   ),
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: pad),
@@ -244,7 +261,7 @@ class _ShopScreenState extends State<ShopScreen> {
                       pack: _corePack,
                       owned: true,
                       equipped: equipped.contains(_corePack.id),
-                      onTap: () => _showPackDetails(_corePack),
+                      onTap: () => _showPack(_corePack),
                     ),
                   ),
                 ),
@@ -256,12 +273,12 @@ class _ShopScreenState extends State<ShopScreen> {
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(pad, 10, pad, 18),
                     sliver: SliverToBoxAdapter(
-                      child: _FeaturedPackCard(
+                      child: _FeaturedCard(
                         key: const ValueKey('featured_redline'),
-                        pack: _featuredPack,
-                        owned: LocalShopState.isOwned(_featuredPack.id),
-                        equipped: equipped.contains(_featuredPack.id),
-                        onTap: () => _showPackDetails(_featuredPack),
+                        pack: _featured,
+                        owned: LocalShopState.isOwned(_featured.id),
+                        equipped: equipped.contains(_featured.id),
+                        onTap: () => _showPack(_featured),
                       ),
                     ),
                   ),
@@ -269,7 +286,7 @@ class _ShopScreenState extends State<ShopScreen> {
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(pad, 0, pad, 12),
                   sliver: SliverToBoxAdapter(
-                    child: _ShopFilters(
+                    child: _Filters(
                       selected: _filter,
                       onSelected: (filter) => setState(() => _filter = filter),
                     ),
@@ -281,28 +298,22 @@ class _ShopScreenState extends State<ShopScreen> {
                     child: _SectionLabel('COSMETIC COLLECTION'),
                   ),
                 ),
-                if (visiblePacks.isEmpty)
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(pad, 16, pad, 20),
-                    sliver: const SliverToBoxAdapter(child: _EmptyFilterCard()),
-                  )
-                else
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(pad, 10, pad, 20),
-                    sliver: SliverList.separated(
-                      itemCount: visiblePacks.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final pack = visiblePacks[index];
-                        return _PackCard(
-                          pack: pack,
-                          owned: LocalShopState.isOwned(pack.id),
-                          equipped: equipped.contains(pack.id),
-                          onTap: () => _showPackDetails(pack),
-                        );
-                      },
-                    ),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(pad, 10, pad, 20),
+                  sliver: SliverList.separated(
+                    itemCount: _visiblePacks.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final pack = _visiblePacks[index];
+                      return _PackCard(
+                        pack: pack,
+                        owned: LocalShopState.isOwned(pack.id),
+                        equipped: equipped.contains(pack.id),
+                        onTap: () => _showPack(pack),
+                      );
+                    },
                   ),
+                ),
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(pad, 0, pad, 28),
                   sliver: const SliverToBoxAdapter(child: _FairPlayCard()),
@@ -316,42 +327,7 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({required this.onBack});
-
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: onBack,
-          style: IconButton.styleFrom(
-            backgroundColor: ReactColors.panel,
-            foregroundColor: ReactColors.textPrimary,
-            side: const BorderSide(color: ReactColors.border),
-          ),
-          icon: const Icon(Icons.arrow_back_rounded),
-        ),
-        const SizedBox(width: 12),
-        const Text(
-          'SHOP',
-          style: TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 24,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.8,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ShopHero extends StatelessWidget {
-  const _ShopHero();
-
+class _HeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -360,12 +336,6 @@ class _ShopHero extends StatelessWidget {
         color: ReactColors.panel,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: ReactColors.electricBlue.withValues(alpha: .45)),
-        boxShadow: [
-          BoxShadow(
-            color: ReactColors.electricBlue.withValues(alpha: .08),
-            blurRadius: 24,
-          ),
-        ],
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -387,7 +357,6 @@ class _ShopHero extends StatelessWidget {
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 1,
-              height: 1.45,
             ),
           ),
         ],
@@ -396,8 +365,8 @@ class _ShopHero extends StatelessWidget {
   }
 }
 
-class _DevUnlockCard extends StatelessWidget {
-  const _DevUnlockCard();
+class _DevCard extends StatelessWidget {
+  const _DevCard();
 
   @override
   Widget build(BuildContext context) {
@@ -431,21 +400,18 @@ class _DevUnlockCard extends StatelessWidget {
 
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.text);
-
   final String text;
 
   @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        color: ReactColors.textSecondary,
-        fontSize: 10,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 1.5,
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Text(
+        text,
+        style: const TextStyle(
+          color: ReactColors.textSecondary,
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.5,
+        ),
+      );
 }
 
 class _PackCard extends StatelessWidget {
@@ -505,28 +471,13 @@ class _PackCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 9),
-                    Row(
-                      children: [
-                        _StatusPill(
-                          label: equipped ? 'EQUIPPED' : owned ? 'OWNED' : 'LOCKED',
-                          color: equipped
-                              ? ReactColors.lime
-                              : owned
-                                  ? pack.accent
-                                  : ReactColors.textSecondary,
-                        ),
-                        if (!owned) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            pack.price,
-                            style: const TextStyle(
-                              color: ReactColors.textSecondary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ],
+                    _StatusPill(
+                      label: equipped ? 'EQUIPPED' : owned ? 'OWNED' : 'LOCKED',
+                      color: equipped
+                          ? ReactColors.lime
+                          : owned
+                              ? pack.accent
+                              : ReactColors.textSecondary,
                     ),
                   ],
                 ),
@@ -540,8 +491,8 @@ class _PackCard extends StatelessWidget {
   }
 }
 
-class _FeaturedPackCard extends StatelessWidget {
-  const _FeaturedPackCard({
+class _FeaturedCard extends StatelessWidget {
+  const _FeaturedCard({
     required this.pack,
     required this.owned,
     required this.equipped,
@@ -567,9 +518,6 @@ class _FeaturedPackCard extends StatelessWidget {
             color: const Color(0xFF170B10),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: pack.accent.withValues(alpha: .65)),
-            boxShadow: [
-              BoxShadow(color: pack.accent.withValues(alpha: .10), blurRadius: 24),
-            ],
           ),
           child: Row(
             children: [
@@ -606,17 +554,6 @@ class _FeaturedPackCard extends StatelessWidget {
                               ? pack.accent
                               : ReactColors.textSecondary,
                     ),
-                    if (!owned) ...[
-                      const SizedBox(height: 7),
-                      Text(
-                        pack.price,
-                        style: const TextStyle(
-                          color: ReactColors.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -631,7 +568,6 @@ class _FeaturedPackCard extends StatelessWidget {
 
 class _PackIcon extends StatelessWidget {
   const _PackIcon({required this.pack, this.large = false});
-
   final _ShopPack pack;
   final bool large;
 
@@ -653,35 +589,31 @@ class _PackIcon extends StatelessWidget {
 
 class _StatusPill extends StatelessWidget {
   const _StatusPill({required this.label, required this.color});
-
   final String label;
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: .38)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 9,
-          fontWeight: FontWeight.w900,
-          letterSpacing: .8,
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .10),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: .38)),
         ),
-      ),
-    );
-  }
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .8,
+          ),
+        ),
+      );
 }
 
-class _ShopFilters extends StatelessWidget {
-  const _ShopFilters({required this.selected, required this.onSelected});
-
+class _Filters extends StatelessWidget {
+  const _Filters({required this.selected, required this.onSelected});
   final _ShopFilter selected;
   final ValueChanged<_ShopFilter> onSelected;
 
@@ -718,8 +650,8 @@ class _ShopFilters extends StatelessWidget {
   }
 }
 
-class _PackDetailsSheet extends StatelessWidget {
-  const _PackDetailsSheet({
+class _PackSheet extends StatelessWidget {
+  const _PackSheet({
     required this.pack,
     required this.owned,
     required this.equipped,
@@ -800,8 +732,8 @@ class _PackDetailsSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 18),
-            ...pack.includes.map(
-              (item) => Padding(
+            for (final item in pack.includes)
+              Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
                   children: [
@@ -820,8 +752,7 @@ class _PackDetailsSheet extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             if (!owned)
               const Text(
                 'PREVIEW ONLY • STORE CHECKOUT IS NOT ENABLED YET.',
@@ -880,66 +811,39 @@ class _FairPlayCard extends StatelessWidget {
   const _FairPlayCard();
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: ReactColors.lime.withValues(alpha: .06),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: ReactColors.lime.withValues(alpha: .30)),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'FAIR PLAY PROMISE',
-            style: TextStyle(
-              color: ReactColors.lime,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.1,
-            ),
-          ),
-          SizedBox(height: 7),
-          Text(
-            'NO EXTRA LIVES, SCORE BOOSTS, FASTER RETRIES OR PAID GAMEPLAY ADVANTAGES.',
-            style: TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              height: 1.45,
-              letterSpacing: .6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyFilterCard extends StatelessWidget {
-  const _EmptyFilterCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: ReactColors.panel,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: ReactColors.border),
-      ),
-      child: const Text(
-        'NO COSMETICS IN THIS CATEGORY YET.',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: ReactColors.textSecondary,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: ReactColors.lime.withValues(alpha: .06),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: ReactColors.lime.withValues(alpha: .30)),
         ),
-      ),
-    );
-  }
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'FAIR PLAY PROMISE',
+              style: TextStyle(
+                color: ReactColors.lime,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.1,
+              ),
+            ),
+            SizedBox(height: 7),
+            Text(
+              'NO EXTRA LIVES, SCORE BOOSTS, FASTER RETRIES OR PAID GAMEPLAY ADVANTAGES.',
+              style: TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                height: 1.45,
+                letterSpacing: .6,
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 enum _ShopFilter {
@@ -964,7 +868,6 @@ class _ShopPack {
     required this.accent,
     required this.icon,
     required this.includes,
-    this.implemented = false,
   });
 
   final String id;
@@ -976,5 +879,4 @@ class _ShopPack {
   final Color accent;
   final IconData icon;
   final List<String> includes;
-  final bool implemented;
 }
