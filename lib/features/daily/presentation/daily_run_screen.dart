@@ -16,8 +16,6 @@ import '../../modes/domain/mode_timing_rules.dart';
 import '../../results/presentation/results_screen.dart';
 import '../domain/daily_challenge.dart';
 
-enum _DailyPendingTransition { none, nextCommand, finish }
-
 class DailyRunScreen extends StatefulWidget {
   const DailyRunScreen({super.key});
 
@@ -37,7 +35,6 @@ class _DailyRunScreenState extends State<DailyRunScreen>
   late final bool _isDailyDevRun;
 
   final Stopwatch _commandClock = Stopwatch();
-  final Stopwatch _transitionClock = Stopwatch();
   final RunCommandPerformanceTracker _commandTracker =
       RunCommandPerformanceTracker();
 
@@ -46,21 +43,15 @@ class _DailyRunScreenState extends State<DailyRunScreen>
   Timer? _obscureTimer;
 
   ReactCommand _command = ReactCommand.tap;
-  ReactCommand? _pendingForcedCommand;
-  ReactRunOutcome? _pendingFinishOutcome;
-  _DailyPendingTransition _pendingTransition = _DailyPendingTransition.none;
-
   int _score = 0;
   int _misses = 0;
   int _currentStreak = 0;
   int _maxStreak = 0;
   int _totalResponseMs = 0;
   int _surgeRemaining = 0;
-  int _pausedRemainingMs = 0;
-  int _elapsedBeforeArmMs = 0;
-  int _pendingTransitionDurationMs = 0;
-  int _pendingTransitionRemainingMs = 0;
   int _commandSerial = 0;
+  int _elapsedBeforeArmMs = 0;
+  int _pausedRemainingMs = 0;
 
   double _progress = 1;
   bool _acceptingInput = false;
@@ -68,11 +59,9 @@ class _DailyRunScreenState extends State<DailyRunScreen>
   bool _paused = false;
   bool _obscured = false;
   bool _echoNext = false;
-  bool _pausedHadCommand = false;
   String? _feedback;
 
   ModeTimingRules get _timing => ReactModeTiming.daily;
-
   bool get _isLightsOut => _modifier == DailyModifier.lightsOut;
   bool get _isSurge => _modifier == DailyModifier.surge;
   bool get _isNoClock => _modifier == DailyModifier.noClock;
@@ -80,7 +69,6 @@ class _DailyRunScreenState extends State<DailyRunScreen>
   bool get _isReverse => _modifier == DailyModifier.reverse;
   bool get _isChain => _modifier == DailyModifier.chain;
   bool get _isRedline => _modifier == DailyModifier.redline;
-
   bool get _surgeCommand => _isSurge && _surgeRemaining > 0;
   bool get _redlineCommand => _isRedline && (_score + 1) % 10 == 0;
 
@@ -95,9 +83,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
 
   int get _commandElapsedMs =>
       _elapsedBeforeArmMs + _commandClock.elapsedMilliseconds;
-
   int get _commandRemainingMs => max(0, _commandDurationMs - _commandElapsedMs);
-
   double get _averageTimeSeconds =>
       _score == 0 ? 0 : (_totalResponseMs / _score) / 1000;
 
@@ -125,7 +111,6 @@ class _DailyRunScreenState extends State<DailyRunScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _commandClock.stop();
-    _transitionClock.stop();
     _commandTimer?.cancel();
     _nextTimer?.cancel();
     _obscureTimer?.cancel();
@@ -137,97 +122,12 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     return values[_random.nextInt(values.length)];
   }
 
-  void _clearPendingTransition() {
-    _nextTimer?.cancel();
-    _nextTimer = null;
-    _transitionClock
-      ..stop()
-      ..reset();
-    _pendingTransition = _DailyPendingTransition.none;
-    _pendingForcedCommand = null;
-    _pendingFinishOutcome = null;
-    _pendingTransitionDurationMs = 0;
-    _pendingTransitionRemainingMs = 0;
-  }
-
-  void _armPendingTransition(int durationMs) {
-    final safe = max(1, durationMs);
-    _pendingTransitionDurationMs = safe;
-    _pendingTransitionRemainingMs = safe;
-    _transitionClock
-      ..reset()
-      ..start();
-    _nextTimer?.cancel();
-    _nextTimer = Timer(Duration(milliseconds: safe), _runPendingTransition);
-  }
-
-  void _scheduleNextCommand(int delayMs, {ReactCommand? forced}) {
-    _nextTimer?.cancel();
-    _pendingTransition = _DailyPendingTransition.nextCommand;
-    _pendingForcedCommand = forced;
-    _pendingFinishOutcome = null;
-    _armPendingTransition(delayMs);
-  }
-
-  void _scheduleFinish(int delayMs, ReactRunOutcome outcome) {
-    _nextTimer?.cancel();
-    _pendingTransition = _DailyPendingTransition.finish;
-    _pendingForcedCommand = null;
-    _pendingFinishOutcome = outcome;
-    _armPendingTransition(delayMs);
-  }
-
-  void _runPendingTransition() {
-    if (!mounted || _finished) {
-      _clearPendingTransition();
-      return;
-    }
-    if (_paused) return;
-
-    final transition = _pendingTransition;
-    final forced = _pendingForcedCommand;
-    final outcome = _pendingFinishOutcome;
-    _clearPendingTransition();
-
-    switch (transition) {
-      case _DailyPendingTransition.none:
-        return;
-      case _DailyPendingTransition.nextCommand:
-        _startCommand(forced: forced);
-        return;
-      case _DailyPendingTransition.finish:
-        if (outcome != null) _finish(outcome);
-        return;
-    }
-  }
-
-  void _pausePendingTransition() {
-    if (_pendingTransition == _DailyPendingTransition.none) return;
-    _pendingTransitionRemainingMs = max(
-      1,
-      _pendingTransitionDurationMs - _transitionClock.elapsedMilliseconds,
-    );
-    _nextTimer?.cancel();
-    _transitionClock.stop();
-  }
-
-  void _resumePendingTransition() {
-    if (_pendingTransition == _DailyPendingTransition.none) return;
-    _armPendingTransition(_pendingTransitionRemainingMs);
-  }
-
   void _startCommand({ReactCommand? forced}) {
     _commandTimer?.cancel();
     _obscureTimer?.cancel();
     if (!mounted || _finished || _paused) return;
 
-    if (_score >= dailyTarget) {
-      _finish(ReactRunOutcome.completed);
-      return;
-    }
-
     final next = forced ?? _nextRandomCommand();
-
     setState(() {
       _command = next;
       _commandSerial += 1;
@@ -236,31 +136,15 @@ class _DailyRunScreenState extends State<DailyRunScreen>
       _feedback = _redlineCommand
           ? 'REDLINE'
           : _surgeCommand
-          ? 'SURGE'
-          : forced != null && _isEcho
-          ? 'ECHO'
-          : null;
+              ? 'SURGE'
+              : forced != null && _isEcho
+                  ? 'ECHO'
+                  : null;
     });
 
     _syncFlameIntensity();
     unawaited(ReactAudio.play(ReactSoundCue.command));
     _armCommandTimer(_commandDurationMs);
-  }
-
-  void _armLightsOutTimer(int elapsedMs) {
-    _obscureTimer?.cancel();
-    if (!_isLightsOut || _obscured) return;
-
-    final remaining = _lightsOutVisibleMs - elapsedMs;
-    if (remaining <= 0) {
-      if (mounted && !_obscured) setState(() => _obscured = true);
-      return;
-    }
-
-    _obscureTimer = Timer(Duration(milliseconds: remaining), () {
-      if (!mounted || _finished || _paused || !_acceptingInput) return;
-      setState(() => _obscured = true);
-    });
   }
 
   void _armCommandTimer(int remainingMs) {
@@ -275,7 +159,6 @@ class _DailyRunScreenState extends State<DailyRunScreen>
       _progress = safe / full;
       _acceptingInput = true;
     });
-
     _armLightsOutTimer(_elapsedBeforeArmMs);
 
     _commandTimer?.cancel();
@@ -292,6 +175,20 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     });
   }
 
+  void _armLightsOutTimer(int elapsedMs) {
+    _obscureTimer?.cancel();
+    if (!_isLightsOut || _obscured) return;
+    final remaining = _lightsOutVisibleMs - elapsedMs;
+    if (remaining <= 0) {
+      if (mounted) setState(() => _obscured = true);
+      return;
+    }
+    _obscureTimer = Timer(Duration(milliseconds: remaining), () {
+      if (!mounted || _finished || _paused || !_acceptingInput) return;
+      setState(() => _obscured = true);
+    });
+  }
+
   ReactCommand _expectedPerformedCommand() {
     if (!_isReverse) return _command;
     return switch (_command) {
@@ -305,13 +202,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
 
   void _handleCommand(ReactCommand performed) {
     if (!_acceptingInput || _finished || _paused) return;
-
-    if (_commandRemainingMs <= 0) {
-      _miss();
-      return;
-    }
-
-    if (performed != _expectedPerformedCommand()) {
+    if (_commandRemainingMs <= 0 || performed != _expectedPerformedCommand()) {
       _miss();
       return;
     }
@@ -340,40 +231,38 @@ class _DailyRunScreenState extends State<DailyRunScreen>
       if (_isSurge) {
         if (wasSurge) {
           _surgeRemaining = max(0, _surgeRemaining - 1);
-        } else if (_score % 5 == 0 && _score < dailyTarget) {
+        } else if (_score % 5 == 0) {
           _surgeRemaining = 3;
         }
       }
-
-      if (_isEcho && _score % 6 == 0 && _score < dailyTarget) {
-        _echoNext = true;
-      }
+      if (_isEcho && _score % 6 == 0) _echoNext = true;
 
       _feedback = responseMs <= 650
           ? '+1  PERFECT'
           : responseMs <= 1150
-          ? '+1  GREAT'
-          : '+1  GOOD';
+              ? '+1  GREAT'
+              : '+1  GOOD';
     });
 
     unawaited(ReactAudio.play(ReactSoundCue.success));
     _game.triggerSuccess();
 
-    if (_score >= dailyTarget) {
-      setState(() => _feedback = 'DAILY COMPLETE');
-      _scheduleFinish(260, ReactRunOutcome.completed);
-      return;
-    }
-
     if (_echoNext) {
       _echoNext = false;
-      _scheduleNextCommand(150, forced: completedCommand);
+      _scheduleNext(150, forced: completedCommand);
       return;
     }
-
-    _scheduleNextCommand(
+    _scheduleNext(
       _successDelayMs(wasSurge: wasSurge, wasRedline: wasRedline),
     );
+  }
+
+  void _scheduleNext(int delayMs, {ReactCommand? forced}) {
+    _nextTimer?.cancel();
+    _nextTimer = Timer(Duration(milliseconds: max(1, delayMs)), () {
+      if (!mounted || _finished || _paused) return;
+      _startCommand(forced: forced);
+    });
   }
 
   int _successDelayMs({required bool wasSurge, required bool wasRedline}) {
@@ -397,7 +286,10 @@ class _DailyRunScreenState extends State<DailyRunScreen>
       _misses += 1;
       _feedback = 'MISS';
     });
-    _scheduleFinish(320, ReactRunOutcome.missedCommand);
+    _nextTimer?.cancel();
+    _nextTimer = Timer(const Duration(milliseconds: 320), () {
+      if (mounted && !_paused) _finish(ReactRunOutcome.missedCommand);
+    });
   }
 
   void _syncFlameIntensity() {
@@ -410,14 +302,12 @@ class _DailyRunScreenState extends State<DailyRunScreen>
 
   void _setPaused(bool value) {
     if (_finished || _paused == value) return;
-
     if (value) {
-      _pausedHadCommand = _acceptingInput;
-      _pausedRemainingMs = _pausedHadCommand ? max(1, _commandRemainingMs) : 0;
+      _pausedRemainingMs = _acceptingInput ? max(1, _commandRemainingMs) : 0;
       _commandClock.stop();
       _commandTimer?.cancel();
       _obscureTimer?.cancel();
-      _pausePendingTransition();
+      _nextTimer?.cancel();
       _game.pauseEngine();
       setState(() {
         _paused = true;
@@ -428,31 +318,21 @@ class _DailyRunScreenState extends State<DailyRunScreen>
 
     _game.resumeEngine();
     setState(() => _paused = false);
-
-    if (_pausedHadCommand && _pausedRemainingMs > 0) {
+    if (_pausedRemainingMs > 0) {
       final remaining = _pausedRemainingMs;
-      _pausedHadCommand = false;
       _pausedRemainingMs = 0;
       _armCommandTimer(remaining);
-      return;
+    } else {
+      _startCommand();
     }
-
-    if (_pendingTransition != _DailyPendingTransition.none) {
-      _resumePendingTransition();
-      return;
-    }
-
-    _startCommand();
   }
 
   void _quit() {
     if (_finished || !mounted) return;
     _finished = true;
-    _acceptingInput = false;
-    _commandClock.stop();
     _commandTimer?.cancel();
+    _nextTimer?.cancel();
     _obscureTimer?.cancel();
-    _clearPendingTransition();
     _game.pauseEngine();
     Navigator.of(context).pop();
   }
@@ -461,14 +341,9 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     if (_finished || !mounted) return;
     _finished = true;
     _acceptingInput = false;
-    _commandClock.stop();
     _commandTimer?.cancel();
+    _nextTimer?.cancel();
     _obscureTimer?.cancel();
-    _clearPendingTransition();
-
-    if (outcome == ReactRunOutcome.completed) {
-      unawaited(ReactAudio.play(ReactSoundCue.completed));
-    }
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
@@ -481,9 +356,8 @@ class _DailyRunScreenState extends State<DailyRunScreen>
             outcome: outcome,
             misses: _misses,
             maxStreak: _maxStreak,
-            failedCommand: outcome == ReactRunOutcome.missedCommand
-                ? _command
-                : null,
+            failedCommand:
+                outcome == ReactRunOutcome.missedCommand ? _command : null,
             dailyDate: _challenge.date,
             dailyModifierLabel: _modifier.label,
             dailyModifierRule: _modifier.shortRule,
@@ -513,8 +387,7 @@ class _DailyRunScreenState extends State<DailyRunScreen>
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop || _finished || _paused) return;
-        _setPaused(true);
+        if (!didPop && !_finished && !_paused) _setPaused(true);
       },
       child: Scaffold(
         backgroundColor: ReactColors.background,
@@ -568,10 +441,8 @@ class _DailyRunScreenState extends State<DailyRunScreen>
                               child: Text(
                                 _feedback ?? '',
                                 style: TextStyle(
-                                  color: _feedback == 'DAILY COMPLETE'
-                                      ? ReactColors.lime
-                                      : _feedback == 'MISS' ||
-                                            _feedback == 'REDLINE'
+                                  color: _feedback == 'MISS' ||
+                                          _feedback == 'REDLINE'
                                       ? ReactColors.coral
                                       : ReactColors.electricBlueBright,
                                   fontSize: 15,
@@ -664,11 +535,11 @@ class _DailyHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Expanded(
+            const Expanded(
               child: _HudCard(
-                label: 'STEP',
-                value: '$score/$dailyTarget',
-                color: ReactColors.purple,
+                label: 'MISS LIMIT',
+                value: '1',
+                color: ReactColors.coral,
                 compact: true,
               ),
             ),
@@ -768,11 +639,7 @@ class _DailyArena extends StatelessWidget {
           if (!hideClock)
             CustomPaint(
               size: Size.square(size),
-              painter: _DailyRingPainter(
-                progress: progress,
-                accent: accent,
-                hideClock: hideClock,
-              ),
+              painter: _DailyRingPainter(progress: progress, accent: accent),
             ),
           Container(
             width: size * .69,
@@ -866,34 +733,20 @@ class _DailyArena extends StatelessWidget {
 }
 
 class _DailyRingPainter extends CustomPainter {
-  const _DailyRingPainter({
-    required this.progress,
-    required this.accent,
-    required this.hideClock,
-  });
+  const _DailyRingPainter({required this.progress, required this.accent});
 
   final double progress;
   final Color accent;
-  final bool hideClock;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final radius = size.width * .44;
-    final base = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 9
-      ..color = const Color(0xFF122038);
-    canvas.drawCircle(center, radius, base);
-
-    if (hideClock) return;
-
-    final timerRadius = radius + 14;
     final track = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12
       ..color = const Color(0xFF10243D);
-    canvas.drawCircle(center, timerRadius, track);
+    canvas.drawCircle(center, radius + 14, track);
 
     final timer = Paint()
       ..style = PaintingStyle.stroke
@@ -901,7 +754,7 @@ class _DailyRingPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..color = progress < .18 ? ReactColors.coral : accent;
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: timerRadius),
+      Rect.fromCircle(center: center, radius: radius + 14),
       -pi / 2,
       pi * 2 * progress,
       false,
@@ -911,9 +764,7 @@ class _DailyRingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DailyRingPainter oldDelegate) =>
-      oldDelegate.progress != progress ||
-      oldDelegate.accent != accent ||
-      oldDelegate.hideClock != hideClock;
+      oldDelegate.progress != progress || oldDelegate.accent != accent;
 }
 
 class _DailyBottomBar extends StatelessWidget {
@@ -954,7 +805,7 @@ class _DailyBottomBar extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            '$score / $dailyTarget',
+            '$score CLEARS',
             style: const TextStyle(
               color: ReactColors.lime,
               fontSize: 15,
