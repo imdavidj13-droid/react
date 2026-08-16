@@ -160,9 +160,9 @@ class _HowToPlayScreenState extends State<HowToPlayScreen> {
                     const SizedBox(width: 48),
                 ],
               ),
-              SizedBox(height: compact ? 10 : 18),
+              SizedBox(height: compact ? 8 : 14),
               const Text(
-                '9 GESTURE COMMANDS • PLUS SEQUENCE MODE',
+                '9 COMMANDS. ONE SIMPLE RULE.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: ReactColors.textSecondary,
@@ -171,7 +171,18 @@ class _HowToPlayScreenState extends State<HowToPlayScreen> {
                   letterSpacing: 1.05,
                 ),
               ),
-              SizedBox(height: compact ? 10 : 18),
+              const SizedBox(height: 4),
+              const Text(
+                'PLUS SEQUENCE MODE',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: ReactColors.electricBlueBright,
+                  fontSize: 7.5,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                ),
+              ),
+              SizedBox(height: compact ? 8 : 14),
               Expanded(
                 child: PageView.builder(
                   controller: _controller,
