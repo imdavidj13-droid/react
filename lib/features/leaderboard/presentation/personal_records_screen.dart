@@ -161,7 +161,7 @@ class _RecordGrid extends StatelessWidget {
         ReactColors.electricBlueBright,
       ),
       _RecordCard(
-        'FASTEST GESTURE AVG',
+        'FASTEST AVG',
         data.fastestAverageReaction == 0
             ? '--'
             : '${data.fastestAverageReaction.toStringAsFixed(2)}s',
