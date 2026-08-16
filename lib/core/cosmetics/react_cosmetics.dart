@@ -1,0 +1,123 @@
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../theme/react_colors.dart';
+
+enum ReactVisualTheme {
+  core,
+  redline,
+  synthwave,
+  mono;
+
+  String get packId => switch (this) {
+    ReactVisualTheme.core => 'core',
+    ReactVisualTheme.redline => 'redline',
+    ReactVisualTheme.synthwave => 'synthwave',
+    ReactVisualTheme.mono => 'mono',
+  };
+
+  String get label => switch (this) {
+    ReactVisualTheme.core => 'RE△CT CORE',
+    ReactVisualTheme.redline => 'REDLINE',
+    ReactVisualTheme.synthwave => 'SYNTHWAVE',
+    ReactVisualTheme.mono => 'MONO',
+  };
+
+  static ReactVisualTheme? fromPackId(String? value) {
+    if (value == null) return null;
+    for (final theme in values) {
+      if (theme.packId == value) return theme;
+    }
+    return null;
+  }
+}
+
+class ReactCosmeticPalette {
+  const ReactCosmeticPalette({
+    required this.background,
+    required this.primary,
+    required this.secondary,
+    required this.failure,
+    required this.effectIntensityScale,
+  });
+
+  final Color background;
+  final Color primary;
+  final Color secondary;
+  final Color failure;
+  final double effectIntensityScale;
+}
+
+/// Runtime cosmetic selection used by gameplay presentation.
+///
+/// Ownership is intentionally handled by the Shop layer. This class only knows
+/// which visual theme is equipped and how that theme should look.
+abstract final class ReactCosmetics {
+  static const _equippedThemeKey = 'shop_equipped_theme';
+  static const _legacyEquippedPackKey = 'shop_equipped_pack';
+
+  static ReactVisualTheme currentTheme = ReactVisualTheme.core;
+
+  static ReactCosmeticPalette get palette => paletteFor(currentTheme);
+
+  static Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_equippedThemeKey) ??
+        prefs.getString(_legacyEquippedPackKey);
+    currentTheme = ReactVisualTheme.fromPackId(saved) ?? ReactVisualTheme.core;
+  }
+
+  static Future<void> equipTheme(ReactVisualTheme theme) async {
+    currentTheme = theme;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_equippedThemeKey, theme.packId);
+    // Keep the old key in sync while older code/tests transition to slots.
+    await prefs.setString(_legacyEquippedPackKey, theme.packId);
+  }
+
+  static ReactCosmeticPalette paletteFor(ReactVisualTheme theme) => switch (theme) {
+    ReactVisualTheme.core => const ReactCosmeticPalette(
+        background: ReactColors.background,
+        primary: ReactColors.electricBlueBright,
+        secondary: ReactColors.lime,
+        failure: ReactColors.coral,
+        effectIntensityScale: 1,
+      ),
+    ReactVisualTheme.redline => const ReactCosmeticPalette(
+        background: Color(0xFF100507),
+        primary: Color(0xFFFF4D5A),
+        secondary: Color(0xFFFF9B45),
+        failure: Color(0xFFFF2738),
+        effectIntensityScale: 1.12,
+      ),
+    ReactVisualTheme.synthwave => const ReactCosmeticPalette(
+        background: Color(0xFF09051A),
+        primary: Color(0xFFA66CFF),
+        secondary: Color(0xFF47D7FF),
+        failure: Color(0xFFFF557E),
+        effectIntensityScale: 1.05,
+      ),
+    ReactVisualTheme.mono => const ReactCosmeticPalette(
+        background: Color(0xFF030303),
+        primary: Color(0xFFF4F4F4),
+        secondary: Color(0xFF9A9A9A),
+        failure: Color(0xFFD8D8D8),
+        effectIntensityScale: .58,
+      ),
+  };
+
+  /// Keeps the gameplay mode identity while allowing cosmetic packs to own the
+  /// visible Flame colour language.
+  static Color effectAccentFor(Color modeAccent) {
+    if (currentTheme == ReactVisualTheme.core) return modeAccent;
+    final current = palette;
+
+    if (modeAccent == ReactColors.coral) return current.failure;
+    if (modeAccent == ReactColors.lime) return current.secondary;
+    if (modeAccent == ReactColors.purple &&
+        currentTheme == ReactVisualTheme.synthwave) {
+      return current.primary;
+    }
+    return current.primary;
+  }
+}
