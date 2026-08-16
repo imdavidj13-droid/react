@@ -4,8 +4,9 @@ import '../../../core/theme/react_colors.dart';
 import '../../blitz/presentation/blitz_screen.dart';
 import '../../classic/presentation/classic_screen.dart';
 import '../../daily/presentation/daily_screen.dart';
-import '../../dot_sequence/presentation/dot_sequence_screen.dart';
 import '../../endless/presentation/endless_screen.dart';
+import '../../gameplay/domain/react_run_result.dart';
+import '../../gameplay/presentation/react_run_launch_screen.dart';
 import '../../leaderboard/presentation/leaderboard_screen.dart';
 import '../../pass_it/presentation/pass_it_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
@@ -72,7 +73,9 @@ class ModesScreen extends StatelessWidget {
                     icon: Icons.blur_circular_rounded,
                     color: ReactColors.electricBlueBright,
                     badge: 'NEW MODE',
-                    onTap: () => open(const DotSequenceScreen()),
+                    onTap: () => open(
+                      const ReactRunLaunchScreen(mode: ReactGameMode.sequence),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   _ModePanel(
