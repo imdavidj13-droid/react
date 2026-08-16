@@ -38,6 +38,9 @@ class LeaderboardSubmissionEligibility {
             (result.dailyModifierLabel?.trim().isNotEmpty ?? false);
       case ReactGameMode.passIt:
         return false;
+      case ReactGameMode.sequence:
+        return result.outcome == ReactRunOutcome.missedCommand &&
+            result.misses == 3;
     }
   }
 
