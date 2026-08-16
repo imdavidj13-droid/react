@@ -5,6 +5,8 @@ import 'package:flutter/widgets.dart';
 class DotSequenceRound {
   const DotSequenceRound({required this.positions});
 
+  static const double maximumRadius = .62;
+
   final List<Offset> positions;
 
   int get dotCount => positions.length;
@@ -12,7 +14,7 @@ class DotSequenceRound {
   static DotSequenceRound generate(
     Random random, {
     required int count,
-    double minimumSpacing = .38,
+    double minimumSpacing = .34,
   }) {
     assert(count >= 1);
 
@@ -23,7 +25,7 @@ class DotSequenceRound {
       attempts += 1;
 
       final angle = random.nextDouble() * pi * 2;
-      final radius = sqrt(random.nextDouble()) * .72;
+      final radius = sqrt(random.nextDouble()) * maximumRadius;
       final candidate = Offset(cos(angle) * radius, sin(angle) * radius);
 
       final clear = positions.every(
@@ -35,7 +37,7 @@ class DotSequenceRound {
     while (positions.length < count) {
       final index = positions.length;
       final angle = (pi * 2 * index) / count;
-      positions.add(Offset(cos(angle) * .58, sin(angle) * .58));
+      positions.add(Offset(cos(angle) * .52, sin(angle) * .52));
     }
 
     return DotSequenceRound(positions: List<Offset>.unmodifiable(positions));
