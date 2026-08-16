@@ -56,6 +56,33 @@ void main() {
     );
   });
 
+  test('Sequence requires a finished three-life run', () {
+    const valid = ReactRunResult(
+      mode: ReactGameMode.sequence,
+      score: 18,
+      successfulCommands: 18,
+      averageTimeSeconds: 1.42,
+      outcome: ReactRunOutcome.missedCommand,
+      misses: 3,
+      maxStreak: 9,
+    );
+    expect(LeaderboardSubmissionEligibility.isEligibleResult(valid), isTrue);
+
+    const stillAlive = ReactRunResult(
+      mode: ReactGameMode.sequence,
+      score: 18,
+      successfulCommands: 18,
+      averageTimeSeconds: 1.42,
+      outcome: ReactRunOutcome.missedCommand,
+      misses: 2,
+      maxStreak: 9,
+    );
+    expect(
+      LeaderboardSubmissionEligibility.isEligibleResult(stillAlive),
+      isFalse,
+    );
+  });
+
   test('Daily requires frozen challenge identity', () {
     const missingMetadata = ReactRunResult(
       mode: ReactGameMode.daily,
@@ -112,6 +139,29 @@ void main() {
       pending.single.clientSubmissionId,
     ]);
     expect(await LocalLeaderboardSubmissionStore.pending(), isEmpty);
+  });
+
+  test('Sequence result can enter the same pending leaderboard queue', () async {
+    const result = ReactRunResult(
+      mode: ReactGameMode.sequence,
+      score: 22,
+      successfulCommands: 22,
+      averageTimeSeconds: 1.31,
+      outcome: ReactRunOutcome.missedCommand,
+      misses: 3,
+      maxStreak: 11,
+    );
+
+    final submission = await LocalLeaderboardSubmissionStore.enqueueResult(
+      result,
+      completedAt: DateTime.utc(2026, 8, 14, 10),
+    );
+
+    expect(submission, isNotNull);
+    final pending = await LocalLeaderboardSubmissionStore.pending();
+    expect(pending, hasLength(1));
+    expect(pending.single.mode, ReactGameMode.sequence);
+    expect(pending.single.score, 22);
   });
 
   test('Daily dev run identity is frozen on the result and never queued', () async {
