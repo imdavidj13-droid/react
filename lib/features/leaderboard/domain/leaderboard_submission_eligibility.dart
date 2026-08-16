@@ -24,16 +24,19 @@ class LeaderboardSubmissionEligibility {
 
     switch (result.mode) {
       case ReactGameMode.classic:
-        return result.outcome == ReactRunOutcome.missedCommand;
+        return result.outcome == ReactRunOutcome.missedCommand &&
+            result.misses == 3;
       case ReactGameMode.blitz:
         return result.outcome == ReactRunOutcome.timeUp;
       case ReactGameMode.endless:
-        return result.outcome == ReactRunOutcome.missedCommand;
+        return result.outcome == ReactRunOutcome.missedCommand &&
+            result.misses == 1;
       case ReactGameMode.daily:
-        if (result.outcome != ReactRunOutcome.completed &&
-            result.outcome != ReactRunOutcome.missedCommand) {
-          return false;
-        }
+        final validTerminalShape =
+            (result.outcome == ReactRunOutcome.missedCommand &&
+                result.misses == 1) ||
+            (result.outcome == ReactRunOutcome.completed && result.misses == 0);
+        if (!validTerminalShape) return false;
         return result.dailyDate != null &&
             (result.dailyModifierLabel?.trim().isNotEmpty ?? false);
       case ReactGameMode.passIt:
