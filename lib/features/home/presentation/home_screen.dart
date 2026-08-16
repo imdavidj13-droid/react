@@ -139,6 +139,7 @@ class _HomeStats {
     this.classicBest = 0,
     this.blitzBest = 0,
     this.endlessBest = 0,
+    this.sequenceBest = 0,
     this.dailyStreak = 0,
     this.runsPlayed = 0,
     this.dailyPlayedToday = false,
@@ -147,6 +148,7 @@ class _HomeStats {
   final int classicBest;
   final int blitzBest;
   final int endlessBest;
+  final int sequenceBest;
   final int dailyStreak;
   final int runsPlayed;
   final bool dailyPlayedToday;
@@ -156,6 +158,7 @@ class _HomeStats {
       LocalPlayerStats.bestFor(ReactGameMode.classic),
       LocalPlayerStats.bestFor(ReactGameMode.blitz),
       LocalPlayerStats.bestFor(ReactGameMode.endless),
+      LocalPlayerStats.bestFor(ReactGameMode.sequence),
       LocalPlayerStats.dailyStreak(),
       LocalPlayerStats.runsPlayed(),
       LocalPlayerStats.hasPlayedDailyToday(),
@@ -164,9 +167,10 @@ class _HomeStats {
       classicBest: values[0] as int,
       blitzBest: values[1] as int,
       endlessBest: values[2] as int,
-      dailyStreak: values[3] as int,
-      runsPlayed: values[4] as int,
-      dailyPlayedToday: values[5] as bool,
+      sequenceBest: values[3] as int,
+      dailyStreak: values[4] as int,
+      runsPlayed: values[5] as int,
+      dailyPlayedToday: values[6] as bool,
     );
   }
 }
@@ -379,7 +383,7 @@ class _RecordStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: const Color(0xCC07111D),
         borderRadius: BorderRadius.circular(16),
@@ -405,9 +409,17 @@ class _RecordStrip extends StatelessWidget {
           const _RecordDivider(),
           Expanded(
             child: _RecordMetric(
+              label: 'SEQUENCE',
+              value: '${stats.sequenceBest}',
+              color: ReactColors.electricBlueBright,
+            ),
+          ),
+          const _RecordDivider(),
+          Expanded(
+            child: _RecordMetric(
               label: 'RUNS',
               value: '${stats.runsPlayed}',
-              color: ReactColors.electricBlueBright,
+              color: ReactColors.textPrimary,
             ),
           ),
         ],
@@ -431,23 +443,27 @@ class _RecordMetric extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 17,
-            fontWeight: FontWeight.w900,
-            height: 1,
+        FittedBox(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              height: 1,
+            ),
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 7.5,
-            fontWeight: FontWeight.w900,
-            letterSpacing: .9,
+        FittedBox(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 7,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .7,
+            ),
           ),
         ),
       ],
@@ -463,7 +479,7 @@ class _RecordDivider extends StatelessWidget {
     return Container(
       width: 1,
       height: 28,
-      margin: const EdgeInsets.symmetric(horizontal: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 4),
       color: const Color(0xFF1D3048),
     );
   }
