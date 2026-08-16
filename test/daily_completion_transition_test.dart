@@ -20,13 +20,6 @@ void main() {
     ReactSettings.dailyDevRunActive = false;
   });
 
-  ReactCommand displayedCommand(WidgetTester tester) {
-    for (final command in ReactCommand.values) {
-      if (find.text(command.title).evaluate().isNotEmpty) return command;
-    }
-    throw StateError('No Daily command is currently displayed.');
-  }
-
   Offset swipeDelta(ReactCommand command) => switch (command) {
         ReactCommand.swipeLeft => const Offset(-90, 0),
         ReactCommand.swipeRight => const Offset(90, 0),
@@ -84,38 +77,29 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('Daily 60/60 completion has a pause-safe completion beat',
+  testWidgets('Daily continues beyond sixty clears until the first miss',
       (tester) async {
     await tester.pumpWidget(const MaterialApp(home: DailyRunScreen()));
     await tester.pump(const Duration(milliseconds: 50));
 
-    for (var score = 1; score <= 60; score++) {
-      await performCommand(tester, displayedCommand(tester));
-      expect(find.text('$score/60'), findsOneWidget);
-      if (score < 60) {
-        await tester.pump(const Duration(milliseconds: 90));
-      }
+    for (var score = 1; score <= 61; score++) {
+      final surface =
+          tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface));
+      await performCommand(tester, surface.expectedCommand);
+      expect(find.text('$score CLEARS'), findsOneWidget);
+      expect(find.byType(ResultsScreen), findsNothing);
+      await tester.pump(const Duration(milliseconds: 90));
     }
 
-    expect(find.text('DAILY COMPLETE'), findsOneWidget);
-    expect(find.byType(ResultsScreen), findsNothing);
+    final surface =
+        tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface));
+    final wrong = surface.expectedCommand == ReactCommand.swipeLeft
+        ? ReactCommand.swipeRight
+        : ReactCommand.swipeLeft;
+    await performCommand(tester, wrong);
+    expect(find.text('MISS'), findsOneWidget);
 
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-    await tester.pump();
-    expect(find.text('DAILY PAUSED'), findsOneWidget);
-
-    await tester.pump(const Duration(seconds: 2));
-    expect(find.byType(ResultsScreen), findsNothing);
-
-    // Foregrounding intentionally leaves the run paused. Explicit Resume must
-    // restore the remaining terminal-transition duration before navigating.
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pump();
-    expect(find.text('DAILY PAUSED'), findsOneWidget);
-    await tester.tap(find.text('RESUME'));
-    await tester.pump();
-
-    await tester.pump(const Duration(milliseconds: 261));
+    await tester.pump(const Duration(milliseconds: 321));
     await tester.pumpAndSettle();
 
     expect(find.byType(ResultsScreen), findsOneWidget);
