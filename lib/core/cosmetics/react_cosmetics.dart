@@ -32,6 +32,24 @@ enum ReactVisualTheme {
   }
 }
 
+enum ReactSoundPack {
+  core,
+  arcade;
+
+  String get packId => switch (this) {
+    ReactSoundPack.core => 'core_audio',
+    ReactSoundPack.arcade => 'arcade_sfx',
+  };
+
+  static ReactSoundPack? fromPackId(String? value) {
+    if (value == null) return null;
+    for (final pack in values) {
+      if (pack.packId == value) return pack;
+    }
+    return null;
+  }
+}
+
 class ReactCosmeticPalette {
   const ReactCosmeticPalette({
     required this.background,
@@ -48,23 +66,31 @@ class ReactCosmeticPalette {
   final double effectIntensityScale;
 }
 
-/// Runtime cosmetic selection used by gameplay presentation.
+/// Runtime cosmetic selections used by gameplay presentation.
 ///
-/// Ownership is intentionally handled by the Shop layer. This class only knows
-/// which visual theme is equipped and how that theme should look.
+/// Ownership is intentionally handled by the Shop layer. Visual themes and
+/// sound packs use separate persisted slots so players can mix cosmetics.
 abstract final class ReactCosmetics {
   static const _equippedThemeKey = 'shop_equipped_theme';
   static const _legacyEquippedPackKey = 'shop_equipped_pack';
+  static const _equippedSoundPackKey = 'shop_equipped_sound_pack';
 
   static ReactVisualTheme currentTheme = ReactVisualTheme.core;
+  static ReactSoundPack currentSoundPack = ReactSoundPack.core;
 
   static ReactCosmeticPalette get palette => paletteFor(currentTheme);
 
   static Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString(_equippedThemeKey) ??
+    final savedTheme = prefs.getString(_equippedThemeKey) ??
         prefs.getString(_legacyEquippedPackKey);
-    currentTheme = ReactVisualTheme.fromPackId(saved) ?? ReactVisualTheme.core;
+    currentTheme =
+        ReactVisualTheme.fromPackId(savedTheme) ?? ReactVisualTheme.core;
+
+    currentSoundPack = ReactSoundPack.fromPackId(
+          prefs.getString(_equippedSoundPackKey),
+        ) ??
+        ReactSoundPack.core;
   }
 
   static Future<void> equipTheme(ReactVisualTheme theme) async {
@@ -73,6 +99,12 @@ abstract final class ReactCosmetics {
     await prefs.setString(_equippedThemeKey, theme.packId);
     // Keep the old key in sync while older code/tests transition to slots.
     await prefs.setString(_legacyEquippedPackKey, theme.packId);
+  }
+
+  static Future<void> equipSoundPack(ReactSoundPack pack) async {
+    currentSoundPack = pack;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_equippedSoundPackKey, pack.packId);
   }
 
   static ReactCosmeticPalette paletteFor(ReactVisualTheme theme) => switch (theme) {
