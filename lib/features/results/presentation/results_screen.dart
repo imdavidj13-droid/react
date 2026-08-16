@@ -8,7 +8,6 @@ import '../../gameplay/domain/react_command.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import '../../gameplay/presentation/react_run_launch_screen.dart';
 import '../../gameplay/presentation/react_run_screen.dart';
-import '../../home/presentation/home_screen.dart';
 import '../../leaderboard/data/local_leaderboard_submission_store.dart';
 import '../domain/run_comparison.dart';
 import '../domain/run_medal.dart';
@@ -99,10 +98,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   Future<void> _backHome() async {
     await _recordFuture;
     if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
-      (route) => false,
-    );
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   Future<void> _backToDevTester() async {
