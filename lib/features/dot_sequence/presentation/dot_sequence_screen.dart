@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/audio/react_audio.dart';
 import '../../../core/theme/react_colors.dart';
+import '../../gameplay/domain/react_run_result.dart';
+import '../../results/presentation/results_screen.dart';
 import '../domain/dot_sequence_round.dart';
 
 class DotSequenceScreen extends StatefulWidget {
@@ -26,6 +28,10 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
   late DotSequenceRound _round;
   int _score = 0;
   int _lives = 3;
+  int _misses = 0;
+  int _currentStreak = 0;
+  int _maxStreak = 0;
+  int _totalClearMs = 0;
   int _nextIndex = 0;
   int _durationMs = 3200;
   int _elapsedBeforeArmMs = 0;
@@ -33,6 +39,7 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
   bool _accepting = false;
   bool _paused = false;
   bool _gameOver = false;
+  bool _finished = false;
   String? _feedback;
 
   int get _dotCount {
@@ -46,6 +53,8 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
       (3200 - (_score * 70)).clamp(1600, 3200).toInt();
   int get _elapsedMs => _elapsedBeforeArmMs + _clock.elapsedMilliseconds;
   int get _remainingMs => max(0, _durationMs - _elapsedMs);
+  double get _averageClearSeconds =>
+      _score == 0 ? 0 : (_totalClearMs / _score) / 1000;
 
   @override
   void initState() {
@@ -57,7 +66,10 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed && !_paused && !_gameOver) {
+    if (state != AppLifecycleState.resumed &&
+        !_paused &&
+        !_gameOver &&
+        !_finished) {
       _setPaused(true);
     }
   }
@@ -72,7 +84,7 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
   }
 
   void _startRound() {
-    if (!mounted || _paused || _gameOver) return;
+    if (!mounted || _paused || _gameOver || _finished) return;
     _timer?.cancel();
     _nextTimer?.cancel();
     _clock
@@ -101,7 +113,7 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
       ..start();
     _timer?.cancel();
     _timer = Timer.periodic(_tick, (_) {
-      if (!mounted || !_accepting || _paused || _gameOver) return;
+      if (!mounted || !_accepting || _paused || _gameOver || _finished) return;
       final remaining = _remainingMs;
       if (remaining <= 0) {
         _loseLife('TOO SLOW');
@@ -112,7 +124,7 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
   }
 
   void _tapDot(int index) {
-    if (!_accepting || _paused || _gameOver) return;
+    if (!_accepting || _paused || _gameOver || _finished) return;
     if (index != _nextIndex) {
       _loseLife('WRONG ORDER');
       return;
@@ -129,9 +141,13 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
 
     _timer?.cancel();
     _clock.stop();
+    final clearMs = _elapsedMs.clamp(0, _durationMs).toInt();
     setState(() {
       _accepting = false;
       _score += 1;
+      _currentStreak += 1;
+      _maxStreak = max(_maxStreak, _currentStreak);
+      _totalClearMs += clearMs;
       _feedback = 'SEQUENCE CLEAR';
       _progress = 0;
     });
@@ -140,25 +156,54 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
   }
 
   void _loseLife(String reason) {
-    if (!_accepting || _gameOver) return;
+    if (!_accepting || _gameOver || _finished) return;
     _timer?.cancel();
     _clock.stop();
     final remainingLives = _lives - 1;
     setState(() {
       _accepting = false;
       _lives = remainingLives;
+      _misses += 1;
+      _currentStreak = 0;
       _feedback = reason;
       _progress = 0;
       _gameOver = remainingLives <= 0;
     });
     unawaited(ReactAudio.play(ReactSoundCue.miss));
+
     if (remainingLives > 0) {
       _nextTimer = Timer(const Duration(milliseconds: 520), _startRound);
+    } else {
+      _nextTimer = Timer(const Duration(milliseconds: 520), _finishRun);
     }
   }
 
+  void _finishRun() {
+    if (!mounted || _finished) return;
+    _finished = true;
+    _timer?.cancel();
+    _nextTimer?.cancel();
+    _clock.stop();
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => ResultsScreen(
+          result: ReactRunResult(
+            mode: ReactGameMode.sequence,
+            score: _score,
+            successfulCommands: _score,
+            averageTimeSeconds: _averageClearSeconds,
+            outcome: ReactRunOutcome.missedCommand,
+            misses: _misses,
+            maxStreak: _maxStreak,
+          ),
+        ),
+      ),
+    );
+  }
+
   void _setPaused(bool value) {
-    if (_gameOver || _paused == value) return;
+    if (_gameOver || _finished || _paused == value) return;
     if (value) {
       final remaining = max(1, _remainingMs);
       _timer?.cancel();
@@ -177,24 +222,6 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
       _accepting = true;
     });
     _armTimer(_durationMs - _elapsedBeforeArmMs);
-  }
-
-  void _restart() {
-    _timer?.cancel();
-    _nextTimer?.cancel();
-    _clock
-      ..stop()
-      ..reset();
-    setState(() {
-      _score = 0;
-      _lives = 3;
-      _nextIndex = 0;
-      _gameOver = false;
-      _paused = false;
-      _feedback = null;
-      _progress = 1;
-    });
-    _startRound();
   }
 
   @override
@@ -237,7 +264,7 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
                         height: 30,
                         child: Center(
                           child: Text(
-                            _feedback ?? '',
+                            _gameOver ? 'RUN OVER' : _feedback ?? '',
                             style: TextStyle(
                               color: _feedback == 'GOOD' ||
                                       _feedback == 'SEQUENCE CLEAR'
@@ -261,15 +288,6 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
                     primary: 'RESUME',
                     onPrimary: () => _setPaused(false),
                     secondary: 'QUIT RUN',
-                    onSecondary: () => Navigator.of(context).pop(),
-                  ),
-                if (_gameOver)
-                  _Overlay(
-                    title: 'RUN OVER',
-                    subtitle: 'SEQUENCES CLEARED  $_score',
-                    primary: 'PLAY AGAIN',
-                    onPrimary: _restart,
-                    secondary: 'BACK TO MODES',
                     onSecondary: () => Navigator.of(context).pop(),
                   ),
               ],
@@ -646,8 +664,11 @@ class _BottomBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.blur_circular_rounded,
-                color: ReactColors.electricBlueBright, size: 21),
+            const Icon(
+              Icons.blur_circular_rounded,
+              color: ReactColors.electricBlueBright,
+              size: 21,
+            ),
             const SizedBox(width: 8),
             const Text(
               'SEQUENCE',
@@ -728,8 +749,11 @@ class _Overlay extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.blur_circular_rounded,
-                    color: ReactColors.electricBlueBright, size: 48),
+                const Icon(
+                  Icons.blur_circular_rounded,
+                  color: ReactColors.electricBlueBright,
+                  size: 48,
+                ),
                 const SizedBox(height: 12),
                 Text(
                   title,
