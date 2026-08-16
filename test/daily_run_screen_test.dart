@@ -26,7 +26,11 @@ void main() {
     DailyModifier modifier,
   ) async {
     ReactSettings.dailyDevModifier = modifier.name;
-    await tester.pumpWidget(const MaterialApp(home: DailyRunScreen()));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: DailyRunScreen(key: ValueKey<String>(modifier.name)),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 50));
   }
 
@@ -181,8 +185,10 @@ void main() {
     );
     expect(opacityFinder, findsOneWidget);
     expect(tester.widget<AnimatedOpacity>(opacityFinder).opacity, 0);
-    expect(tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
-        isTrue);
+    expect(
+      tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
+      isTrue,
+    );
 
     await performCommand(tester, command);
     expect(find.text('1/60'), findsOneWidget);
@@ -203,8 +209,10 @@ void main() {
     );
 
     expect(find.text('SURGE'), findsWidgets);
-    expect(tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
-        isTrue);
+    expect(
+      tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
+      isTrue,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -222,8 +230,10 @@ void main() {
 
     expect(find.text('ECHO'), findsWidgets);
     expect(displayedCommand(tester), sixth);
-    expect(tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
-        isTrue);
+    expect(
+      tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
+      isTrue,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -273,12 +283,16 @@ void main() {
 
     await performCommand(tester, command);
     expect(find.text('1/60'), findsOneWidget);
-    expect(tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
-        isFalse);
+    expect(
+      tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
+      isFalse,
+    );
 
     await tester.pump(const Duration(milliseconds: 90));
-    expect(tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
-        isTrue);
+    expect(
+      tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
+      isTrue,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -291,8 +305,10 @@ void main() {
     }
 
     expect(find.text('REDLINE'), findsWidgets);
-    expect(tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
-        isTrue);
+    expect(
+      tester.widget<ReactGestureSurface>(find.byType(ReactGestureSurface)).enabled,
+      isTrue,
+    );
     expect(tester.takeException(), isNull);
   });
 }
