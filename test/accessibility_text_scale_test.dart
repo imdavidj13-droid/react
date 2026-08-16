@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:react/features/daily/presentation/daily_screen.dart';
+import 'package:react/features/dot_sequence/presentation/dot_sequence_screen.dart';
 import 'package:react/features/gameplay/domain/react_run_result.dart';
 import 'package:react/features/home/presentation/home_screen.dart';
 import 'package:react/features/leaderboard/presentation/leaderboard_screen.dart';
@@ -52,6 +53,12 @@ void main() {
       (tester) async {
     await pumpLargeText(tester, const DailyScreen());
     expect(find.text('DAILY RUN'), findsOneWidget);
+  });
+
+  testWidgets('Sequence tolerates 150 percent text on a compact phone',
+      (tester) async {
+    await pumpLargeText(tester, const DotSequenceScreen());
+    expect(find.text('DOT SEQUENCE'), findsOneWidget);
   });
 
   testWidgets('Leaderboard tolerates 150 percent text on a compact phone',
