@@ -5,7 +5,9 @@ import 'package:react/features/daily/domain/daily_challenge.dart';
 import 'package:react/features/daily/presentation/daily_run_screen.dart';
 import 'package:react/features/dot_sequence/presentation/dot_sequence_screen.dart';
 import 'package:react/features/gameplay/domain/react_command.dart';
+import 'package:react/features/gameplay/domain/react_run_result.dart';
 import 'package:react/features/gameplay/presentation/react_gesture_surface.dart';
+import 'package:react/features/results/presentation/results_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -117,6 +119,53 @@ void main() {
     expect(find.text('SEQUENCE PAUSED'), findsOneWidget);
     expect(find.text('DOT SEQUENCE'), findsOneWidget);
     expect(find.text('OPEN SEQUENCE'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Results back home preserves the existing root shell',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Column(
+              children: [
+                const Text('ROOT SHELL'),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ResultsScreen(
+                        result: ReactRunResult(
+                          mode: ReactGameMode.classic,
+                          score: 1,
+                          successfulCommands: 1,
+                          averageTimeSeconds: .8,
+                          outcome: ReactRunOutcome.missedCommand,
+                          misses: 1,
+                          maxStreak: 1,
+                          failedCommand: ReactCommand.tap,
+                        ),
+                      ),
+                    ),
+                  ),
+                  child: const Text('OPEN RESULTS'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('OPEN RESULTS'));
+    await tester.pumpAndSettle();
+    expect(find.text('BACK TO HOME'), findsOneWidget);
+
+    await tester.tap(find.text('BACK TO HOME'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ROOT SHELL'), findsOneWidget);
+    expect(find.text('BACK TO HOME'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }
