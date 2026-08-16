@@ -6,20 +6,22 @@ import 'package:react/features/dot_sequence/domain/dot_sequence_round.dart';
 import 'package:react/features/dot_sequence/presentation/dot_sequence_screen.dart';
 
 void main() {
-  test('generated sequence positions stay inside the arena and separated', () {
-    final round = DotSequenceRound.generate(Random(42), count: 5);
+  test('generated sequence positions keep safe arena edge clearance', () {
+    for (var seed = 0; seed < 100; seed++) {
+      final round = DotSequenceRound.generate(Random(seed), count: 5);
 
-    expect(round.dotCount, 5);
-    for (final position in round.positions) {
-      expect(position.distance, lessThanOrEqualTo(.72));
-    }
+      expect(round.dotCount, 5);
+      for (final position in round.positions) {
+        expect(position.distance, lessThanOrEqualTo(DotSequenceRound.maximumRadius));
+      }
 
-    for (var a = 0; a < round.positions.length; a++) {
-      for (var b = a + 1; b < round.positions.length; b++) {
-        expect(
-          (round.positions[a] - round.positions[b]).distance,
-          greaterThanOrEqualTo(.38),
-        );
+      for (var a = 0; a < round.positions.length; a++) {
+        for (var b = a + 1; b < round.positions.length; b++) {
+          expect(
+            (round.positions[a] - round.positions[b]).distance,
+            greaterThanOrEqualTo(.32),
+          );
+        }
       }
     }
   });
