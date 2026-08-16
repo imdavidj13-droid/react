@@ -124,15 +124,17 @@ void main() {
     }
 
     expect(find.text('RUN OVER'), findsOneWidget);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+
+    // Use the screen's explicit pause control here. Background-transition
+    // behavior is covered separately above; this test is specifically about
+    // the finished-run overlay contract once all three lives are gone.
+    await tester.tap(find.byIcon(Icons.pause_rounded));
     await tester.pump();
 
     expect(find.text('SEQUENCE PAUSED'), findsOneWidget);
     expect(find.text('SHOW RESULTS'), findsOneWidget);
     expect(find.text('QUIT RUN'), findsNothing);
 
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pump();
     await tester.tap(find.text('SHOW RESULTS'));
     await tester.pumpAndSettle();
 
