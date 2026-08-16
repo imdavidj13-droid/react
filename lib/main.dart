@@ -27,6 +27,12 @@ Future<void> main() async {
 
   await ReactSettings.load();
   await LocalShopState.load();
-  await ReactAudio.initialize();
+
+  // Audio is optional gameplay polish. A platform audio-session or temporary
+  // file failure must never prevent the app itself from launching.
+  try {
+    await ReactAudio.initialize();
+  } catch (_) {}
+
   runApp(const ReactApp());
 }
