@@ -303,7 +303,7 @@ class _ProShareCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                _Badge(label: 'PRO', color: ReactColors.purple),
+                const _Badge(label: 'PRO', color: ReactColors.purple),
                 const SizedBox(width: 6),
                 _Badge(label: result.mode.label, color: color),
               ],
