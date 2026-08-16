@@ -2,8 +2,6 @@ import 'dart:math';
 
 import '../../../core/settings/react_settings.dart';
 
-const int dailyTarget = 60;
-
 enum DailyModifier {
   lightsOut,
   surge,
