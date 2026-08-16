@@ -28,6 +28,12 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    expect(find.text('SEQUENCE MODE'), findsOneWidget);
+    expect(find.text('1 → 2 → 3'), findsOneWidget);
+
+    await tester.tap(find.text('NEXT'));
+    await tester.pumpAndSettle();
+
     expect(find.text('REACT FAST'), findsOneWidget);
     expect(find.text("LET'S PLAY"), findsOneWidget);
   });
