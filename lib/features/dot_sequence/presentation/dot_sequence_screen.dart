@@ -9,6 +9,8 @@ import '../../gameplay/domain/react_run_result.dart';
 import '../../results/presentation/results_screen.dart';
 import '../domain/dot_sequence_round.dart';
 
+enum _SequenceTransition { none, nextRound, results }
+
 class DotSequenceScreen extends StatefulWidget {
   const DotSequenceScreen({super.key});
 
@@ -40,6 +42,7 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
   bool _paused = false;
   bool _gameOver = false;
   bool _finished = false;
+  _SequenceTransition _pendingTransition = _SequenceTransition.none;
   String? _feedback;
 
   int get _dotCount {
@@ -66,10 +69,7 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed &&
-        !_paused &&
-        !_gameOver &&
-        !_finished) {
+    if (state != AppLifecycleState.resumed && !_paused && !_finished) {
       _setPaused(true);
     }
   }
@@ -87,6 +87,7 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
     if (!mounted || _paused || _gameOver || _finished) return;
     _timer?.cancel();
     _nextTimer?.cancel();
+    _pendingTransition = _SequenceTransition.none;
     _clock
       ..stop()
       ..reset();
@@ -106,6 +107,7 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
   }
 
   void _armTimer(int remainingMs) {
+    if (_paused || _finished || _gameOver) return;
     final safe = remainingMs.clamp(1, _durationMs).toInt();
     _elapsedBeforeArmMs = _durationMs - safe;
     _clock
@@ -152,7 +154,10 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
       _progress = 0;
     });
     unawaited(ReactAudio.play(ReactSoundCue.success));
-    _nextTimer = Timer(const Duration(milliseconds: 260), _startRound);
+    _scheduleTransition(
+      const Duration(milliseconds: 260),
+      _SequenceTransition.nextRound,
+    );
   }
 
   void _loseLife(String reason) {
@@ -171,18 +176,43 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
     });
     unawaited(ReactAudio.play(ReactSoundCue.miss));
 
-    if (remainingLives > 0) {
-      _nextTimer = Timer(const Duration(milliseconds: 520), _startRound);
-    } else {
-      _nextTimer = Timer(const Duration(milliseconds: 520), _finishRun);
+    _scheduleTransition(
+      const Duration(milliseconds: 520),
+      remainingLives > 0
+          ? _SequenceTransition.nextRound
+          : _SequenceTransition.results,
+    );
+  }
+
+  void _scheduleTransition(Duration delay, _SequenceTransition transition) {
+    _nextTimer?.cancel();
+    _pendingTransition = transition;
+    _nextTimer = Timer(delay, _runPendingTransition);
+  }
+
+  void _runPendingTransition() {
+    if (!mounted || _paused || _finished) return;
+    final transition = _pendingTransition;
+    _pendingTransition = _SequenceTransition.none;
+    _nextTimer = null;
+    switch (transition) {
+      case _SequenceTransition.none:
+        return;
+      case _SequenceTransition.nextRound:
+        _startRound();
+        return;
+      case _SequenceTransition.results:
+        _finishRun();
+        return;
     }
   }
 
   void _finishRun() {
-    if (!mounted || _finished) return;
+    if (!mounted || _finished || _paused) return;
     _finished = true;
     _timer?.cancel();
     _nextTimer?.cancel();
+    _pendingTransition = _SequenceTransition.none;
     _clock.stop();
 
     Navigator.of(context).pushReplacement(
@@ -203,24 +233,38 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
   }
 
   void _setPaused(bool value) {
-    if (_gameOver || _finished || _paused == value) return;
+    if (_finished || _paused == value) return;
+
     if (value) {
-      final remaining = max(1, _remainingMs);
+      final hadActiveRound = _accepting && !_gameOver;
+      final remaining = hadActiveRound ? max(1, _remainingMs) : 0;
       _timer?.cancel();
       _nextTimer?.cancel();
       _clock.stop();
       setState(() {
         _paused = true;
         _accepting = false;
-        _elapsedBeforeArmMs = _durationMs - remaining;
+        if (hadActiveRound) {
+          _elapsedBeforeArmMs = _durationMs - remaining;
+        }
       });
       return;
     }
 
-    setState(() {
-      _paused = false;
-      _accepting = true;
-    });
+    final transition = _pendingTransition;
+    setState(() => _paused = false);
+
+    if (transition != _SequenceTransition.none) {
+      _runPendingTransition();
+      return;
+    }
+
+    if (_gameOver) {
+      _finishRun();
+      return;
+    }
+
+    setState(() => _accepting = true);
     _armTimer(_durationMs - _elapsedBeforeArmMs);
   }
 
@@ -284,8 +328,10 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
                 if (_paused)
                   _Overlay(
                     title: 'SEQUENCE PAUSED',
-                    subtitle: 'THE CURRENT ROUND IS FROZEN',
-                    primary: 'RESUME',
+                    subtitle: _gameOver
+                        ? 'THE FINISHED RUN IS FROZEN'
+                        : 'THE CURRENT ROUND IS FROZEN',
+                    primary: _gameOver ? 'SHOW RESULTS' : 'RESUME',
                     onPrimary: () => _setPaused(false),
                     secondary: 'QUIT RUN',
                     onSecondary: () => Navigator.of(context).pop(),
@@ -527,8 +573,12 @@ class _Arena extends StatelessWidget {
           ),
           for (var index = 0; index < round.positions.length; index++)
             Positioned(
-              left: centre + round.positions[index].dx * placementRadius - dotSize / 2,
-              top: centre + round.positions[index].dy * placementRadius - dotSize / 2 + size * .08,
+              left:
+                  centre + round.positions[index].dx * placementRadius - dotSize / 2,
+              top: centre +
+                  round.positions[index].dy * placementRadius -
+                  dotSize / 2 +
+                  size * .08,
               child: _Dot(
                 number: index + 1,
                 size: dotSize,
@@ -633,7 +683,9 @@ class _ArenaPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 10
-      ..color = progress < .22 ? ReactColors.coral : ReactColors.electricBlueBright;
+      ..color = progress < .22
+          ? ReactColors.coral
+          : ReactColors.electricBlueBright;
     canvas.drawArc(
       Rect.fromCircle(center: centre, radius: size.width * .475),
       -pi / 2,
