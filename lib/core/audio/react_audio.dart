@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 
+import '../cosmetics/react_cosmetics.dart';
 import '../settings/react_settings.dart';
 import 'react_audio_storage.dart';
 
@@ -20,11 +21,10 @@ enum ReactSoundCue {
 
 /// Central sound-effect controller for RE△CT.
 ///
-/// The temporary SFX are generated as small PCM WAV clips. On native
+/// Both built-in sound packs are generated as PCM WAV clips. On native
 /// platforms those clips are persisted to temporary files and played with
-/// [DeviceFileSource], which is substantially more reliable than feeding raw
-/// in-memory bytes to the platform player. Non-IO platforms retain a bytes
-/// fallback so the app can still compile and run there.
+/// [DeviceFileSource]. The equipped sound pack is selected independently from
+/// the visual theme, so players can mix cosmetics.
 abstract final class ReactAudio {
   static const int _sampleRate = 22050;
   static const int _playerCount = 6;
@@ -33,8 +33,13 @@ abstract final class ReactAudio {
     _playerCount,
     (_) => AudioPlayer(),
   );
-  static final Map<ReactSoundCue, Uint8List> _clips = _buildClips();
-  static final Map<ReactSoundCue, String?> _nativeClipPaths = {};
+
+  static final Map<ReactSoundPack, Map<ReactSoundCue, Uint8List>> _clipSets = {
+    ReactSoundPack.core: _buildCoreClips(),
+    ReactSoundPack.arcade: _buildArcadeClips(),
+  };
+
+  static final Map<ReactSoundPack, Map<ReactSoundCue, String?>> _nativeClipPaths = {};
 
   static int _nextPlayer = 0;
   static bool _initialized = false;
@@ -61,11 +66,15 @@ abstract final class ReactAudio {
       ),
     );
 
-    for (final entry in _clips.entries) {
-      _nativeClipPaths[entry.key] = await persistReactAudioClip(
-        'react_${entry.key.name}',
-        entry.value,
-      );
+    for (final packEntry in _clipSets.entries) {
+      final paths = <ReactSoundCue, String?>{};
+      for (final cueEntry in packEntry.value.entries) {
+        paths[cueEntry.key] = await persistReactAudioClip(
+          'react_${packEntry.key.name}_${cueEntry.key.name}',
+          cueEntry.value,
+        );
+      }
+      _nativeClipPaths[packEntry.key] = paths;
     }
 
     for (final player in _players) {
@@ -87,13 +96,15 @@ abstract final class ReactAudio {
       return;
     }
 
-    final bytes = _clips[cue];
+    final pack = ReactCosmetics.currentSoundPack;
+    final bytes = _clipSets[pack]?[cue] ?? _clipSets[ReactSoundPack.core]?[cue];
     if (bytes == null) return;
 
     final player = _players[_nextPlayer];
     _nextPlayer = (_nextPlayer + 1) % _players.length;
 
-    final nativePath = _nativeClipPaths[cue];
+    final nativePath =
+        _nativeClipPaths[pack]?[cue] ?? _nativeClipPaths[ReactSoundPack.core]?[cue];
 
     try {
       await player.stop();
@@ -109,8 +120,6 @@ abstract final class ReactAudio {
         );
       }
     } catch (_) {
-      // Keep a final bytes fallback for platforms/player backends that reject
-      // the native file source. Sound failure must never interrupt a run.
       try {
         await player.stop();
         await player.play(
@@ -133,7 +142,7 @@ abstract final class ReactAudio {
     ReactSoundCue.completed => .90,
   };
 
-  static Map<ReactSoundCue, Uint8List> _buildClips() => {
+  static Map<ReactSoundCue, Uint8List> _buildCoreClips() => {
     ReactSoundCue.countdownTick: _wav([
       const _Tone(920, 70, .58),
     ]),
@@ -171,6 +180,59 @@ abstract final class ReactAudio {
       const _Tone(720, 60, .56),
       const _Tone(980, 70, .64),
       const _Tone(1320, 110, .75),
+    ]),
+  };
+
+  /// Brighter, more stepped cues inspired by compact arcade bleeps. The pack
+  /// remains intentionally short and non-musical so it does not alter timing.
+  static Map<ReactSoundCue, Uint8List> _buildArcadeClips() => {
+    ReactSoundCue.countdownTick: _wav([
+      const _Tone(1280, 34, .60),
+      const _Tone(960, 34, .48),
+    ]),
+    ReactSoundCue.countdownGo: _wav([
+      const _Tone(880, 38, .52),
+      const _Tone(1320, 42, .62),
+      const _Tone(1760, 78, .72),
+    ]),
+    ReactSoundCue.command: _wav([
+      const _Tone(1540, 24, .38),
+      const _Tone(1180, 24, .28),
+    ]),
+    ReactSoundCue.success: _wav([
+      const _Tone(1040, 34, .48),
+      const _Tone(1320, 36, .58),
+      const _Tone(1760, 62, .72),
+    ]),
+    ReactSoundCue.miss: _wav([
+      const _Tone(520, 46, .68),
+      const _Tone(390, 52, .74),
+      const _Tone(260, 82, .78),
+    ]),
+    ReactSoundCue.lifeLost: _wav([
+      const _Tone(620, 46, .68),
+      const _Tone(465, 52, .72),
+      const _Tone(310, 58, .78),
+      const _Tone(155, 92, .84),
+    ]),
+    ReactSoundCue.blitzWarning: _wav([
+      const _Tone(1480, 42, .72),
+      const _Tone(0, 38, 0),
+      const _Tone(1480, 42, .72),
+      const _Tone(0, 38, 0),
+      const _Tone(1760, 55, .78),
+    ]),
+    ReactSoundCue.handoff: _wav([
+      const _Tone(780, 34, .46),
+      const _Tone(1040, 34, .52),
+      const _Tone(1320, 34, .60),
+      const _Tone(1560, 50, .68),
+    ]),
+    ReactSoundCue.completed: _wav([
+      const _Tone(880, 40, .48),
+      const _Tone(1175, 42, .56),
+      const _Tone(1480, 44, .64),
+      const _Tone(1975, 92, .76),
     ]),
   };
 
