@@ -4,6 +4,7 @@ import '../../../core/theme/react_colors.dart';
 import '../../blitz/presentation/blitz_screen.dart';
 import '../../classic/presentation/classic_screen.dart';
 import '../../daily/presentation/daily_screen.dart';
+import '../../dot_sequence/presentation/dot_sequence_screen.dart';
 import '../../endless/presentation/endless_screen.dart';
 import '../../leaderboard/presentation/leaderboard_screen.dart';
 import '../../pass_it/presentation/pass_it_screen.dart';
@@ -62,6 +63,16 @@ class ModesScreen extends StatelessWidget {
                     color: ReactColors.lime,
                     badge: 'NO LIMIT',
                     onTap: () => open(const EndlessScreen()),
+                  ),
+                  const SizedBox(height: 12),
+                  _ModePanel(
+                    title: 'SEQUENCE',
+                    subtitle: 'Tap numbered dots in the exact order.',
+                    detail: '2–5 DOTS  •  RANDOM POSITIONS  •  3 LIVES',
+                    icon: Icons.blur_circular_rounded,
+                    color: ReactColors.electricBlueBright,
+                    badge: 'NEW MODE',
+                    onTap: () => open(const DotSequenceScreen()),
                   ),
                   const SizedBox(height: 12),
                   _ModePanel(
