@@ -38,6 +38,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     ReactGameMode.endless => ReactColors.lime,
     ReactGameMode.daily => ReactColors.electricBlueBright,
     ReactGameMode.passIt => ReactColors.purple,
+    ReactGameMode.sequence => ReactColors.electricBlueBright,
   };
 
   @override
@@ -289,7 +290,11 @@ class _ScoreHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPassIt = result.mode == ReactGameMode.passIt;
+    final icon = switch (result.mode) {
+      ReactGameMode.passIt => Icons.groups_2_rounded,
+      ReactGameMode.sequence => Icons.blur_circular_rounded,
+      _ => Icons.bolt_rounded,
+    };
 
     return Column(
       children: [
@@ -301,11 +306,7 @@ class _ScoreHero extends StatelessWidget {
             color: const Color(0xFF0A101D),
             border: Border.all(color: color.withValues(alpha: .62)),
           ),
-          child: Icon(
-            isPassIt ? Icons.groups_2_rounded : Icons.bolt_rounded,
-            color: color,
-            size: 34,
-          ),
+          child: Icon(icon, color: color, size: 34),
         ),
         const SizedBox(height: 18),
         Text(
@@ -315,6 +316,7 @@ class _ScoreHero extends StatelessWidget {
             ReactGameMode.endless => 'COMMANDS SURVIVED',
             ReactGameMode.daily => 'DAILY SCORE',
             ReactGameMode.passIt => 'MATCH COMMANDS',
+            ReactGameMode.sequence => 'SEQUENCES CLEARED',
           },
           style: const TextStyle(
             color: ReactColors.textSecondary,
@@ -381,6 +383,7 @@ class _StatsStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sequence = result.mode == ReactGameMode.sequence;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18),
       decoration: BoxDecoration(
@@ -392,7 +395,7 @@ class _StatsStrip extends StatelessWidget {
         children: [
           Expanded(
             child: _ResultStat(
-              label: 'CLEARS',
+              label: sequence ? 'SEQUENCES' : 'CLEARS',
               value: '${result.successfulCommands}',
               color: ReactColors.electricBlueBright,
             ),
@@ -400,7 +403,7 @@ class _StatsStrip extends StatelessWidget {
           const _StatDivider(),
           Expanded(
             child: _ResultStat(
-              label: 'MISSES',
+              label: sequence ? 'MISTAKES' : 'MISSES',
               value: '${result.misses}',
               color: ReactColors.coral,
             ),
@@ -408,7 +411,7 @@ class _StatsStrip extends StatelessWidget {
           const _StatDivider(),
           Expanded(
             child: _ResultStat(
-              label: 'AVG TIME',
+              label: sequence ? 'AVG CLEAR' : 'AVG TIME',
               value: result.averageTimeSeconds == 0
                   ? '--'
                   : '${result.averageTimeSeconds.toStringAsFixed(2)}s',
@@ -493,31 +496,38 @@ class _OutcomeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = switch (result.outcome) {
-      ReactRunOutcome.missedCommand => 'MISSED COMMAND',
-      ReactRunOutcome.timeUp => 'CLOCK EXPIRED',
-      ReactRunOutcome.completed => 'CHALLENGE COMPLETE',
-      ReactRunOutcome.winner => 'MATCH WINNER',
-      ReactRunOutcome.quit => 'RUN ENDED',
-    };
+    final isSequence = result.mode == ReactGameMode.sequence;
+    final title = isSequence
+        ? 'OUT OF LIVES'
+        : switch (result.outcome) {
+            ReactRunOutcome.missedCommand => 'MISSED COMMAND',
+            ReactRunOutcome.timeUp => 'CLOCK EXPIRED',
+            ReactRunOutcome.completed => 'CHALLENGE COMPLETE',
+            ReactRunOutcome.winner => 'MATCH WINNER',
+            ReactRunOutcome.quit => 'RUN ENDED',
+          };
 
-    final value = switch (result.outcome) {
-      ReactRunOutcome.missedCommand => result.failedCommand?.title ?? 'MISS',
-      ReactRunOutcome.timeUp => '60 SECONDS COMPLETE',
-      ReactRunOutcome.completed =>
-        '${result.successfulCommands} COMMANDS CLEARED',
-      ReactRunOutcome.winner => 'PLAYER ${result.winnerPlayer ?? '-'}',
-      ReactRunOutcome.quit => result.mode.label,
-    };
+    final value = isSequence
+        ? '${result.successfulCommands} SEQUENCES CLEARED'
+        : switch (result.outcome) {
+            ReactRunOutcome.missedCommand => result.failedCommand?.title ?? 'MISS',
+            ReactRunOutcome.timeUp => '60 SECONDS COMPLETE',
+            ReactRunOutcome.completed =>
+              '${result.successfulCommands} COMMANDS CLEARED',
+            ReactRunOutcome.winner => 'PLAYER ${result.winnerPlayer ?? '-'}',
+            ReactRunOutcome.quit => result.mode.label,
+          };
 
-    final icon = switch (result.outcome) {
-      ReactRunOutcome.missedCommand =>
-        result.failedCommand?.icon ?? Icons.close_rounded,
-      ReactRunOutcome.timeUp => Icons.timer_rounded,
-      ReactRunOutcome.completed => Icons.emoji_events_rounded,
-      ReactRunOutcome.winner => Icons.emoji_events_rounded,
-      ReactRunOutcome.quit => Icons.stop_circle_outlined,
-    };
+    final icon = isSequence
+        ? Icons.blur_circular_rounded
+        : switch (result.outcome) {
+            ReactRunOutcome.missedCommand =>
+              result.failedCommand?.icon ?? Icons.close_rounded,
+            ReactRunOutcome.timeUp => Icons.timer_rounded,
+            ReactRunOutcome.completed => Icons.emoji_events_rounded,
+            ReactRunOutcome.winner => Icons.emoji_events_rounded,
+            ReactRunOutcome.quit => Icons.stop_circle_outlined,
+          };
 
     return Container(
       width: double.infinity,
@@ -774,7 +784,9 @@ class _RunHighlights extends StatelessWidget {
           if (result.maxStreak > 0)
             _HighlightChip(
               icon: Icons.local_fire_department_rounded,
-              label: 'STREAK ${result.maxStreak}',
+              label: result.mode == ReactGameMode.sequence
+                  ? 'SEQUENCE STREAK ${result.maxStreak}'
+                  : 'STREAK ${result.maxStreak}',
               color: ReactColors.coral,
             ),
           for (final medal in medals)
