@@ -110,6 +110,37 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('finished Sequence run cannot be discarded from paused state',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: DotSequenceScreen()));
+    await tester.pump();
+
+    for (var miss = 0; miss < 3; miss++) {
+      await tester.tap(find.byKey(const ValueKey<String>('sequence-dot-2')));
+      await tester.pump();
+      if (miss < 2) {
+        await tester.pump(const Duration(milliseconds: 530));
+      }
+    }
+
+    expect(find.text('RUN OVER'), findsOneWidget);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+
+    expect(find.text('SEQUENCE PAUSED'), findsOneWidget);
+    expect(find.text('SHOW RESULTS'), findsOneWidget);
+    expect(find.text('QUIT RUN'), findsNothing);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    await tester.tap(find.text('SHOW RESULTS'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('SEQUENCES CLEARED'), findsOneWidget);
+    expect(find.text('OUT OF LIVES'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Sequence fits a compact phone', (tester) async {
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;
