@@ -114,7 +114,7 @@ void main() {
     expect(find.text('YOUR PERFORMANCE'), findsOneWidget);
   });
 
-  testWidgets('Results fits and scrolls on a 320x640 screen', (tester) async {
+  testWidgets('Results fits on a 320x640 screen without scrolling', (tester) async {
     const result = ReactRunResult(
       mode: ReactGameMode.classic,
       score: 12,
@@ -130,10 +130,9 @@ void main() {
       const Size(320, 640),
     );
 
-    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -500));
-    await tester.pumpAndSettle();
-
-    expect(tester.takeException(), isNull);
+    expect(find.byType(SingleChildScrollView), findsNothing);
     expect(find.text('PLAY AGAIN'), findsOneWidget);
+    expect(find.text('BACK TO HOME'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
