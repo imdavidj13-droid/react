@@ -37,10 +37,15 @@ class DotSequenceRound {
       if (clear) positions.add(candidate);
     }
 
-    while (positions.length < count) {
-      final index = positions.length;
-      final angle = (pi * 2 * index) / count;
-      positions.add(Offset(cos(angle) * .48, sin(angle) * .48));
+    if (positions.length < count) {
+      positions
+        ..clear()
+        ..addAll(
+          List<Offset>.generate(count, (index) {
+            final angle = -pi / 2 + (pi * 2 * index) / count;
+            return Offset(cos(angle) * .48, sin(angle) * .48);
+          }),
+        );
     }
 
     return DotSequenceRound(positions: List<Offset>.unmodifiable(positions));
