@@ -383,7 +383,7 @@ class _ProRunProfile extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                newBest ? 'PERSONAL BEST' : '${medalCount} MEDALS',
+                newBest ? 'PERSONAL BEST' : '$medalCount MEDALS',
                 style: TextStyle(
                   color: newBest ? ReactColors.lime : color,
                   fontSize: 6.2,
