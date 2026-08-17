@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'app/react_app.dart';
 import 'core/audio/react_audio.dart';
+import 'core/backend/react_supabase.dart';
 import 'core/settings/react_settings.dart';
 import 'features/shop/data/local_shop_state.dart';
 
@@ -37,6 +38,15 @@ Future<void> main() async {
     await LocalShopState.load();
   } catch (error) {
     debugPrint('RE△CT cosmetics load failed; using defaults: $error');
+  }
+
+  // Online services must never gate local gameplay. Supabase is initialized
+  // best-effort and an existing auth session is reused automatically.
+  try {
+    await ReactSupabase.initialize();
+    await ReactSupabase.ensurePlayerSession();
+  } catch (error) {
+    debugPrint('RE△CT Supabase initialization failed; continuing offline: $error');
   }
 
   // Audio is optional gameplay polish. A platform audio-session or temporary
