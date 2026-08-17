@@ -102,6 +102,7 @@ class ModesScreen extends StatelessWidget {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final compact = constraints.maxWidth < 360;
             final pad = constraints.maxWidth < 380 ? 16.0 : 20.0;
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(pad, 14, pad, 28),
@@ -115,11 +116,11 @@ class ModesScreen extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: modes.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
-                      childAspectRatio: .86,
+                      childAspectRatio: compact ? .64 : .76,
                     ),
                     itemBuilder: (context, index) => _ModePanel(data: modes[index]),
                   ),
@@ -278,7 +279,7 @@ class _ModePanel extends StatelessWidget {
       onTap: data.onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
+        padding: const EdgeInsets.fromLTRB(11, 11, 11, 10),
         decoration: BoxDecoration(
           color: const Color(0xFF07111D),
           borderRadius: BorderRadius.circular(20),
@@ -291,8 +292,8 @@ class _ModePanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 46,
-                  height: 46,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: const Color(0xFF050A13),
@@ -301,10 +302,15 @@ class _ModePanel extends StatelessWidget {
                       width: 1.6,
                     ),
                   ),
-                  child: Icon(data.icon, color: data.color, size: 23),
+                  child: Icon(data.icon, color: data.color, size: 21),
                 ),
-                const Spacer(),
-                _Badge(label: data.badge, color: data.color),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: _Badge(label: data.badge, color: data.color),
+                  ),
+                ),
               ],
             ),
             const Spacer(),
@@ -333,7 +339,7 @@ class _ModePanel extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 7),
             Text(
               data.detail,
               maxLines: 2,
@@ -346,10 +352,10 @@ class _ModePanel extends StatelessWidget {
                 letterSpacing: .7,
               ),
             ),
-            const SizedBox(height: 7),
+            const SizedBox(height: 5),
             Align(
               alignment: Alignment.bottomRight,
-              child: Icon(Icons.chevron_right_rounded, color: data.color, size: 22),
+              child: Icon(Icons.chevron_right_rounded, color: data.color, size: 20),
             ),
           ],
         ),
@@ -366,8 +372,8 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 78),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      constraints: const BoxConstraints(maxWidth: 64),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(20),
