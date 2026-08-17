@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -5,6 +7,7 @@ import 'app/react_app.dart';
 import 'core/audio/react_audio.dart';
 import 'core/backend/react_supabase.dart';
 import 'core/settings/react_settings.dart';
+import 'features/leaderboard/data/remote_leaderboard_submission_sync.dart';
 import 'features/shop/data/local_shop_state.dart';
 
 Future<void> main() async {
@@ -40,11 +43,12 @@ Future<void> main() async {
     debugPrint('RE△CT cosmetics load failed; using defaults: $error');
   }
 
-  // Online services must never gate local gameplay. Supabase is initialized
-  // best-effort and an existing auth session is reused automatically.
+  // Supabase initialization restores any persisted session but does not get to
+  // gate local play. Network auth and queue sync happen after the first frame.
+  var supabaseReady = false;
   try {
     await ReactSupabase.initialize();
-    await ReactSupabase.ensurePlayerSession();
+    supabaseReady = true;
   } catch (error) {
     debugPrint('RE△CT Supabase initialization failed; continuing offline: $error');
   }
@@ -58,4 +62,13 @@ Future<void> main() async {
   }
 
   runApp(const ReactApp());
+
+  if (supabaseReady) {
+    unawaited(_startOnlineServices());
+  }
+}
+
+Future<void> _startOnlineServices() async {
+  await ReactSupabase.ensurePlayerSession();
+  await RemoteLeaderboardSubmissionSync.flushPending();
 }
