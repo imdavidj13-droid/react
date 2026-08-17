@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../../core/audio/react_audio.dart';
+import '../../../core/cosmetics/react_cosmetics.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import '../../results/presentation/results_screen.dart';
@@ -281,13 +282,14 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
 
   @override
   Widget build(BuildContext context) {
+    final palette = ReactCosmetics.palette;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop && !_finished && !_paused) _setPaused(true);
       },
       child: Scaffold(
-        backgroundColor: ReactColors.background,
+        backgroundColor: palette.background,
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -328,8 +330,8 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
                               style: TextStyle(
                                 color: _feedback == 'GOOD' ||
                                         _feedback == 'SEQUENCE CLEAR'
-                                    ? ReactColors.lime
-                                    : ReactColors.coral,
+                                    ? palette.secondary
+                                    : palette.failure,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1.3,
@@ -367,31 +369,34 @@ class _Header extends StatelessWidget {
   final VoidCallback onPause;
 
   @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          IconButton(
-            onPressed: onPause,
-            style: IconButton.styleFrom(
-              backgroundColor: const Color(0xFF07101E),
-              foregroundColor: ReactColors.textPrimary,
-              side: const BorderSide(color: Color(0xFF20547C)),
-            ),
-            icon: const Icon(Icons.pause_rounded),
+  Widget build(BuildContext context) {
+    final palette = ReactCosmetics.palette;
+    return Row(
+      children: [
+        IconButton(
+          onPressed: onPause,
+          style: IconButton.styleFrom(
+            backgroundColor: _themePanelColor(),
+            foregroundColor: ReactColors.textPrimary,
+            side: BorderSide(color: _themeBorderColor()),
           ),
-          const Spacer(),
-          const Text(
-            'RE△CT',
-            style: TextStyle(
-              color: ReactColors.textPrimary,
-              fontSize: 27,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 3,
-            ),
+          icon: const Icon(Icons.pause_rounded),
+        ),
+        const Spacer(),
+        const Text(
+          'RE△CT',
+          style: TextStyle(
+            color: ReactColors.textPrimary,
+            fontSize: 27,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 3,
           ),
-          const Spacer(),
-          const SizedBox(width: 48),
-        ],
-      );
+        ),
+        const Spacer(),
+        SizedBox(width: 48, child: Icon(Icons.circle, color: palette.primary, size: 0)),
+      ],
+    );
+  }
 }
 
 class _Hud extends StatelessWidget {
@@ -400,56 +405,59 @@ class _Hud extends StatelessWidget {
   final int lives;
 
   @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          Expanded(
-            child: _HudCard(
-              label: 'SCORE',
-              child: Text(
-                '$score',
-                style: const TextStyle(
-                  color: ReactColors.lime,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                ),
+  Widget build(BuildContext context) {
+    final palette = ReactCosmetics.palette;
+    return Row(
+      children: [
+        Expanded(
+          child: _HudCard(
+            label: 'SCORE',
+            child: Text(
+              '$score',
+              style: TextStyle(
+                color: palette.secondary,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: _HudCard(
-              label: 'MODE',
-              child: Text(
-                'SEQUENCE',
-                style: TextStyle(
-                  color: ReactColors.electricBlueBright,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _HudCard(
+            label: 'MODE',
+            child: Text(
+              'SEQUENCE',
+              style: TextStyle(
+                color: palette.primary,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _HudCard(
-              label: 'LIVES',
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var i = 0; i < 3; i++)
-                    Icon(
-                      Icons.favorite_rounded,
-                      size: 19,
-                      color: i < lives
-                          ? ReactColors.coral
-                          : ReactColors.textSecondary.withValues(alpha: .18),
-                    ),
-                ],
-              ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _HudCard(
+            label: 'LIVES',
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var i = 0; i < 3; i++)
+                  Icon(
+                    Icons.favorite_rounded,
+                    size: 19,
+                    color: i < lives
+                        ? palette.failure
+                        : ReactColors.textSecondary.withValues(alpha: .18),
+                  ),
+              ],
             ),
           ),
-        ],
-      );
+        ),
+      ],
+    );
+  }
 }
 
 class _HudCard extends StatelessWidget {
@@ -462,9 +470,9 @@ class _HudCard extends StatelessWidget {
         height: 74,
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFF07111D),
+          color: _themePanelColor(),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFF254766)),
+          border: Border.all(color: _themeBorderColor()),
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
@@ -472,6 +480,10 @@ class _HudCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const Text(
+                ' ',
+                style: TextStyle(fontSize: 0),
+              ),
               Text(
                 label,
                 style: const TextStyle(
@@ -510,9 +522,12 @@ class _Arena extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = ReactCosmetics.palette;
     final centre = size / 2;
-    final placementRadius = size * .39;
-    final dotSize = (size * .15).clamp(48.0, 64.0).toDouble();
+    final fieldCentreY = centre + size * .065;
+    final placementRadius = size * .30;
+    final dotSize = (size * .135).clamp(44.0, 58.0).toDouble();
+
     return SizedBox.square(
       dimension: size,
       child: Stack(
@@ -520,8 +535,19 @@ class _Arena extends StatelessWidget {
           Positioned.fill(
             child: CustomPaint(painter: _ArenaPainter(progress)),
           ),
+          Center(
+            child: Container(
+              width: size * .69,
+              height: size * .69,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _themeArenaSurfaceColor(),
+                border: Border.all(color: _themeInnerBorderColor(), width: 1.5),
+              ),
+            ),
+          ),
           Positioned(
-            top: 4,
+            top: size * .018,
             left: centre - 37,
             child: Container(
               width: 74,
@@ -529,8 +555,8 @@ class _Arena extends StatelessWidget {
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF07111D),
-                border: Border.all(color: const Color(0xFF315D86), width: 2),
+                color: _themePanelColor(),
+                border: Border.all(color: _themeBorderColor(), width: 2),
               ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -541,9 +567,7 @@ class _Arena extends StatelessWidget {
                     Text(
                       seconds.clamp(0, 9.99).toStringAsFixed(2),
                       style: TextStyle(
-                        color: progress < .22
-                            ? ReactColors.coral
-                            : ReactColors.electricBlueBright,
+                        color: progress < .22 ? palette.failure : palette.primary,
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                       ),
@@ -562,36 +586,39 @@ class _Arena extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: size * .19,
-            left: 0,
-            right: 0,
+            top: size * .235,
+            left: size * .16,
+            right: size * .16,
             child: Column(
               children: [
                 Text(
                   '${min(nextIndex + 1, round.dotCount)}/${round.dotCount}',
                   style: const TextStyle(
                     color: ReactColors.textPrimary,
-                    fontSize: 17,
+                    fontSize: 15,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 3),
                 const Text(
                   'DOT SEQUENCE',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: ReactColors.textPrimary,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-                const Text(
-                  'TAP THE DOTS IN ORDER',
-                  style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 8,
+                    fontSize: 17,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'TAP THE DOTS IN ORDER',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 7,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .8,
                   ),
                 ),
               ],
@@ -599,12 +626,12 @@ class _Arena extends StatelessWidget {
           ),
           for (var index = 0; index < round.positions.length; index++)
             Positioned(
-              left:
-                  centre + round.positions[index].dx * placementRadius - dotSize / 2,
-              top: centre +
+              left: centre +
+                  round.positions[index].dx * placementRadius -
+                  dotSize / 2,
+              top: fieldCentreY +
                   round.positions[index].dy * placementRadius -
-                  dotSize / 2 +
-                  size * .08,
+                  dotSize / 2,
               child: _Dot(
                 number: index + 1,
                 size: dotSize,
@@ -639,11 +666,12 @@ class _Dot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = ReactCosmetics.palette;
     final accent = active
-        ? ReactColors.electricBlueBright
+        ? palette.primary
         : completed
-            ? ReactColors.lime
-            : const Color(0xFF2C6A9B);
+            ? palette.secondary
+            : palette.primary.withValues(alpha: .48);
     return Semantics(
       button: true,
       label: 'Dot $number',
@@ -658,20 +686,20 @@ class _Dot extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF06101D),
+            color: _themeDotSurfaceColor(),
             border: Border.all(color: accent, width: active ? 2.6 : 1.5),
             boxShadow: active
                 ? [
                     BoxShadow(
-                      color: ReactColors.electricBlueBright.withValues(alpha: .45),
-                      blurRadius: 16,
-                      spreadRadius: 2,
+                      color: palette.primary.withValues(alpha: .38),
+                      blurRadius: 14,
+                      spreadRadius: 1.5,
                     ),
                   ]
                 : const [],
           ),
           child: completed
-              ? const Icon(Icons.check_rounded, color: ReactColors.lime, size: 24)
+              ? Icon(Icons.check_rounded, color: palette.secondary, size: 22)
               : Text(
                   '$number',
                   style: TextStyle(
@@ -692,28 +720,59 @@ class _ArenaPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final palette = ReactCosmetics.palette;
     final centre = size.center(Offset.zero);
-    final inner = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..color = const Color(0xFF155486);
-    canvas.drawCircle(centre, size.width * .43, inner);
+    final radius = size.width * .44;
 
+    final base = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 9
+      ..color = _themeRingBaseColor();
+    canvas.drawCircle(centre, radius, base);
+
+    final deco = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round;
+    deco.color = palette.primary.withValues(alpha: .72);
+    canvas.drawArc(
+      Rect.fromCircle(center: centre, radius: radius),
+      .8,
+      1.45,
+      false,
+      deco,
+    );
+    deco.color = palette.secondary.withValues(alpha: .72);
+    canvas.drawArc(
+      Rect.fromCircle(center: centre, radius: radius),
+      3.0,
+      1.25,
+      false,
+      deco,
+    );
+    deco.color = palette.failure.withValues(alpha: .72);
+    canvas.drawArc(
+      Rect.fromCircle(center: centre, radius: radius),
+      4.75,
+      1.1,
+      false,
+      deco,
+    );
+
+    final timerRadius = radius + 14;
     final track = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..color = const Color(0xFF102A45);
-    canvas.drawCircle(centre, size.width * .475, track);
+      ..strokeWidth = 12
+      ..color = _themeTimerTrackColor();
+    canvas.drawCircle(centre, timerRadius, track);
 
     final timer = Paint()
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 10
-      ..color = progress < .22
-          ? ReactColors.coral
-          : ReactColors.electricBlueBright;
+      ..strokeWidth = 12
+      ..color = progress < .22 ? palette.failure : palette.primary;
     canvas.drawArc(
-      Rect.fromCircle(center: centre, radius: size.width * .475),
+      Rect.fromCircle(center: centre, radius: timerRadius),
       -pi / 2,
       pi * 2 * progress,
       false,
@@ -723,7 +782,8 @@ class _ArenaPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ArenaPainter oldDelegate) =>
-      oldDelegate.progress != progress;
+      oldDelegate.progress != progress ||
+      ReactCosmetics.currentTheme != ReactVisualTheme.core;
 }
 
 class _BottomBar extends StatelessWidget {
@@ -732,38 +792,37 @@ class _BottomBar extends StatelessWidget {
   final int dots;
 
   @override
-  Widget build(BuildContext context) => Container(
-        height: 60,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF07111D),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFF254766)),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.blur_circular_rounded,
-              color: ReactColors.electricBlueBright,
-              size: 21,
+  Widget build(BuildContext context) {
+    final palette = ReactCosmetics.palette;
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: _themePanelColor(),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _themeBorderColor()),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.blur_circular_rounded, color: palette.primary, size: 21),
+          const SizedBox(width: 8),
+          Text(
+            'SEQUENCE',
+            style: TextStyle(
+              color: palette.primary,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
             ),
-            const SizedBox(width: 8),
-            const Text(
-              'SEQUENCE',
-              style: TextStyle(
-                color: ReactColors.electricBlueBright,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1,
-              ),
-            ),
-            const Spacer(),
-            _Metric(label: 'SCORE', value: '$score'),
-            const SizedBox(width: 22),
-            _Metric(label: 'DOTS', value: '$dots'),
-          ],
-        ),
-      );
+          ),
+          const Spacer(),
+          _Metric(label: 'SCORE', value: '$score'),
+          const SizedBox(width: 22),
+          _Metric(label: 'DOTS', value: '$dots'),
+        ],
+      ),
+    );
+  }
 }
 
 class _Metric extends StatelessWidget {
@@ -813,64 +872,67 @@ class _Overlay extends StatelessWidget {
   final VoidCallback? onSecondary;
 
   @override
-  Widget build(BuildContext context) => ColoredBox(
-        color: const Color(0xE8050911),
-        child: Center(
-          child: Container(
-            width: 310,
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              color: const Color(0xFF07111D),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFF2E587C)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.blur_circular_rounded,
-                  color: ReactColors.electricBlueBright,
-                  size: 48,
+  Widget build(BuildContext context) {
+    final palette = ReactCosmetics.palette;
+    return ColoredBox(
+      color: const Color(0xE8050911),
+      child: Center(
+        child: Container(
+          width: 310,
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: _themePanelColor(),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: _themeBorderColor()),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.blur_circular_rounded,
+                color: palette.primary,
+                size: 48,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: ReactColors.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
-                  ),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: ReactColors.textSecondary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
                 ),
-                const SizedBox(height: 7),
-                Text(
-                  subtitle,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                  ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: onPrimary,
+                  child: Text(primary),
                 ),
-                const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: onPrimary,
-                    child: Text(primary),
-                  ),
+              ),
+              if (secondary != null && onSecondary != null)
+                TextButton(
+                  onPressed: onSecondary,
+                  child: Text(secondary!),
                 ),
-                if (secondary != null && onSecondary != null)
-                  TextButton(
-                    onPressed: onSecondary,
-                    child: Text(secondary!),
-                  ),
-              ],
-            ),
+            ],
           ),
         ),
-      );
+      ),
+    );
+  }
 }
 
 class _Backdrop extends StatelessWidget {
@@ -883,7 +945,8 @@ class _Backdrop extends StatelessWidget {
 class _BackdropPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = const Color(0xFF0D3555);
+    final palette = ReactCosmetics.palette;
+    final paint = Paint()..color = palette.primary.withValues(alpha: .17);
     const points = <Offset>[
       Offset(.08, .18),
       Offset(.23, .09),
@@ -908,5 +971,43 @@ class _BackdropPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) =>
+      ReactCosmetics.currentTheme != ReactVisualTheme.core;
 }
+
+Color _themePanelColor() => switch (ReactCosmetics.currentTheme) {
+      ReactVisualTheme.core => const Color(0xFF07111D),
+      ReactVisualTheme.redline => const Color(0xFF14080B),
+      ReactVisualTheme.synthwave => const Color(0xFF0D0920),
+      ReactVisualTheme.mono => const Color(0xFF0A0A0A),
+    };
+
+Color _themeArenaSurfaceColor() => switch (ReactCosmetics.currentTheme) {
+      ReactVisualTheme.core => const Color(0xFF050A13),
+      ReactVisualTheme.redline => const Color(0xFF100609),
+      ReactVisualTheme.synthwave => const Color(0xFF090718),
+      ReactVisualTheme.mono => const Color(0xFF050505),
+    };
+
+Color _themeDotSurfaceColor() => switch (ReactCosmetics.currentTheme) {
+      ReactVisualTheme.core => const Color(0xFF06101D),
+      ReactVisualTheme.redline => const Color(0xFF16090C),
+      ReactVisualTheme.synthwave => const Color(0xFF100B24),
+      ReactVisualTheme.mono => const Color(0xFF0C0C0C),
+    };
+
+Color _themeBorderColor() => ReactCosmetics.currentTheme == ReactVisualTheme.core
+    ? const Color(0xFF254766)
+    : ReactCosmetics.palette.primary.withValues(alpha: .38);
+
+Color _themeInnerBorderColor() => ReactCosmetics.currentTheme == ReactVisualTheme.core
+    ? const Color(0xFF153B65)
+    : ReactCosmetics.palette.primary.withValues(alpha: .44);
+
+Color _themeRingBaseColor() => ReactCosmetics.currentTheme == ReactVisualTheme.core
+    ? const Color(0xFF122038)
+    : ReactCosmetics.palette.primary.withValues(alpha: .16);
+
+Color _themeTimerTrackColor() => ReactCosmetics.currentTheme == ReactVisualTheme.core
+    ? const Color(0xFF10243D)
+    : ReactCosmetics.palette.primary.withValues(alpha: .20);
