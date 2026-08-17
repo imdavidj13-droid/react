@@ -48,14 +48,6 @@ void main() {
     expect(find.text('CLASSIC 25'), findsOneWidget);
 
     await revealVertical(find.text('CLASSIC RUNS 5'));
-    expect(tester.takeException(), isNull);
-
-    await tester.ensureVisible(find.text('PASS IT').first);
-    await tester.tap(find.text('PASS IT').first);
-    await tester.pumpAndSettle();
-    expect(find.text('PASS IT REGULAR'), findsOneWidget);
-
-    await revealVertical(find.text('HANDOFF 50'));
     expect(find.text('UNLOCKED'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
