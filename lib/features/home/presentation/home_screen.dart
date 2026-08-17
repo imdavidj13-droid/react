@@ -51,78 +51,96 @@ class _HomeScreenState extends State<HomeScreen> {
             return LayoutBuilder(
               builder: (context, constraints) {
                 final compact = constraints.maxHeight < 780;
+                final veryCompact = constraints.maxHeight < 700;
                 final pad = constraints.maxWidth < 380 ? 18.0 : 22.0;
-                final dialSize = constraints.maxWidth.clamp(270.0, 330.0).toDouble();
+                final maxDial = constraints.maxWidth.clamp(270.0, 330.0).toDouble();
+                final dialCap = veryCompact
+                    ? 236.0
+                    : compact
+                    ? 270.0
+                    : maxDial;
 
-                return SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(pad, 10, pad, 20),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight - 30),
-                    child: Column(
-                      children: [
-                        _TopSection(
-                          onProfile: () => _open(context, const SettingsScreen()),
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(pad, 8, pad, 12),
+                  child: Column(
+                    children: [
+                      _TopSection(
+                        onProfile: () => _open(context, const SettingsScreen()),
+                      ),
+                      SizedBox(height: compact ? 10 : 14),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(child: _BestScore(score: stats.classicBest)),
+                          const SizedBox(width: 14),
+                          _Streak(days: stats.dailyStreak),
+                        ],
+                      ),
+                      SizedBox(height: compact ? 8 : 12),
+                      _RecordStrip(stats: stats),
+                      SizedBox(height: compact ? 2 : 6),
+                      Expanded(
+                        child: Center(
+                          child: LayoutBuilder(
+                            builder: (context, dialConstraints) {
+                              final available = math.min(
+                                dialConstraints.maxWidth,
+                                dialConstraints.maxHeight,
+                              );
+                              final dialSize = available
+                                  .clamp(190.0, dialCap)
+                                  .toDouble();
+                              return _PlayDial(
+                                size: dialSize,
+                                onTap: () => _open(context, const ClassicScreen()),
+                              );
+                            },
+                          ),
                         ),
-                        SizedBox(height: compact ? 14 : 18),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(child: _BestScore(score: stats.classicBest)),
-                            const SizedBox(width: 14),
-                            _Streak(days: stats.dailyStreak),
-                          ],
-                        ),
-                        SizedBox(height: compact ? 10 : 14),
-                        _RecordStrip(stats: stats),
-                        SizedBox(height: compact ? 4 : 8),
-                        _PlayDial(
-                          size: dialSize,
-                          onTap: () => _open(context, const ClassicScreen()),
-                        ),
-                        SizedBox(height: compact ? 8 : 12),
-                        _PlayButton(
-                          onTap: () => _open(context, const ClassicScreen()),
-                        ),
-                        SizedBox(height: compact ? 12 : 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _NavTile(
-                                icon: Icons.view_in_ar_rounded,
-                                label: 'MODES',
-                                color: const Color(0xFF27D8F6),
-                                onTap: () => _open(context, const ModesScreen()),
+                      ),
+                      SizedBox(height: compact ? 4 : 8),
+                      _PlayButton(
+                        onTap: () => _open(context, const ClassicScreen()),
+                      ),
+                      SizedBox(height: compact ? 8 : 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _NavTile(
+                              icon: Icons.view_in_ar_rounded,
+                              label: 'MODES',
+                              color: const Color(0xFF27D8F6),
+                              onTap: () => _open(context, const ModesScreen()),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _NavTile(
+                              icon: Icons.calendar_month_rounded,
+                              label: 'DAILY',
+                              color: ReactColors.lime,
+                              status: stats.dailyPlayedToday ? 'PLAY AGAIN' : 'READY',
+                              statusColor: stats.dailyPlayedToday
+                                  ? ReactColors.lime
+                                  : ReactColors.electricBlueBright,
+                              onTap: () => _open(context, const DailyScreen()),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _NavTile(
+                              icon: Icons.leaderboard_rounded,
+                              label: 'SCORES',
+                              color: ReactColors.purple,
+                              onTap: () => _open(
+                                context,
+                                const LeaderboardScreen(),
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _NavTile(
-                                icon: Icons.calendar_month_rounded,
-                                label: 'DAILY',
-                                color: ReactColors.lime,
-                                status: stats.dailyPlayedToday ? 'PLAY AGAIN' : 'READY',
-                                statusColor: stats.dailyPlayedToday
-                                    ? ReactColors.lime
-                                    : ReactColors.electricBlueBright,
-                                onTap: () => _open(context, const DailyScreen()),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _NavTile(
-                                icon: Icons.leaderboard_rounded,
-                                label: 'SCORES',
-                                color: ReactColors.purple,
-                                onTap: () => _open(
-                                  context,
-                                  const LeaderboardScreen(),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 );
               },
@@ -511,10 +529,10 @@ class _PlayDial extends StatelessWidget {
                   width: 2.5,
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.play_arrow_rounded,
-                color: Color(0xFF39D8FF),
-                size: 74,
+                color: const Color(0xFF39D8FF),
+                size: (size * .22).clamp(52.0, 74.0).toDouble(),
               ),
             ),
           ),
@@ -581,10 +599,10 @@ class _PlayButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 64,
+        height: 60,
         width: double.infinity,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
+          borderRadius: BorderRadius.circular(30),
           gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -636,7 +654,7 @@ class _NavTile extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(18),
       child: Container(
-        height: 84,
+        height: 80,
         decoration: BoxDecoration(
           color: const Color(0xCC07111D),
           borderRadius: BorderRadius.circular(18),
