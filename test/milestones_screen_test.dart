@@ -29,6 +29,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    Future<void> revealVertical(Finder target) async {
+      for (var i = 0; i < 8 && target.evaluate().isEmpty; i++) {
+        await tester.drag(find.byType(ListView).first, const Offset(0, -320));
+        await tester.pumpAndSettle();
+      }
+      expect(target, findsOneWidget);
+    }
+
     expect(find.text('MILESTONES'), findsOneWidget);
     expect(find.textContaining('/ 100 UNLOCKED'), findsOneWidget);
     expect(find.text('CENTURY'), findsOneWidget);
@@ -39,13 +47,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('CLASSIC 25'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.text('CLASSIC RUNS 5'),
-      220,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('CLASSIC RUNS 5'), findsOneWidget);
+    await revealVertical(find.text('CLASSIC RUNS 5'));
     expect(tester.takeException(), isNull);
 
     await tester.ensureVisible(find.text('PASS IT').first);
@@ -53,13 +55,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('PASS IT REGULAR'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.text('HANDOFF 50'),
-      220,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('HANDOFF 50'), findsOneWidget);
+    await revealVertical(find.text('HANDOFF 50'));
     expect(find.text('UNLOCKED'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
