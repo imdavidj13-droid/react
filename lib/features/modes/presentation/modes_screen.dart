@@ -17,10 +17,85 @@ class ModesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     void open(Widget screen) {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => screen),
-      );
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
     }
+
+    final modes = <_ModeData>[
+      _ModeData(
+        title: 'CLASSIC',
+        subtitle: 'Survive as long as you can.',
+        detail: '3 LIVES  •  SPEED RAMPS',
+        icon: Icons.bolt_rounded,
+        color: ReactColors.electricBlueBright,
+        badge: 'CORE MODE',
+        onTap: () => open(const ClassicScreen()),
+      ),
+      _ModeData(
+        title: 'BLITZ',
+        subtitle: '60 seconds. Maximum pace.',
+        detail: 'FAST TIMER  •  SCORE ATTACK',
+        icon: Icons.timer_rounded,
+        color: ReactColors.coral,
+        badge: '60 SEC',
+        onTap: () => open(const BlitzScreen()),
+      ),
+      _ModeData(
+        title: 'ENDLESS',
+        subtitle: 'Keep going until you miss.',
+        detail: 'NO LIMIT  •  INTENSITY RAMPS FAST',
+        icon: Icons.all_inclusive_rounded,
+        color: ReactColors.lime,
+        badge: 'NO LIMIT',
+        onTap: () => open(const EndlessScreen()),
+      ),
+      _ModeData(
+        title: 'SEQUENCE',
+        subtitle: 'Tap numbered dots in the exact order.',
+        detail: '2–5 DOTS  •  RANDOM POSITIONS  •  3 LIVES',
+        icon: Icons.blur_circular_rounded,
+        color: ReactColors.electricBlueBright,
+        badge: 'NEW MODE',
+        onTap: () => open(
+          const ReactRunLaunchScreen(mode: ReactGameMode.sequence),
+        ),
+      ),
+      _ModeData(
+        title: 'PASS IT',
+        subtitle: 'Local multiplayer reaction rounds.',
+        detail: '2–4 PLAYERS  •  ONE DEVICE',
+        icon: Icons.groups_2_outlined,
+        color: ReactColors.purple,
+        badge: 'MULTIPLAYER',
+        onTap: () => open(const PassItScreen()),
+      ),
+      _ModeData(
+        title: 'DAILY',
+        subtitle: 'A different rule every day.',
+        detail: 'NO COMMAND CAP  •  7 ROTATING MODIFIERS',
+        icon: Icons.calendar_month_rounded,
+        color: ReactColors.lime,
+        badge: 'DAILY RUN',
+        onTap: () => open(const DailyScreen()),
+      ),
+      _ModeData(
+        title: 'SCORES',
+        subtitle: 'See your best runs on this device.',
+        detail: 'LOCAL RECORDS  •  EVERY MODE',
+        icon: Icons.leaderboard_rounded,
+        color: ReactColors.purple,
+        badge: 'RECORDS',
+        onTap: () => open(const LeaderboardScreen()),
+      ),
+      _ModeData(
+        title: 'PROFILE',
+        subtitle: 'Local stats and game preferences.',
+        detail: 'PERFORMANCE  •  VISUAL EFFECTS  •  RECORDS',
+        icon: Icons.person_outline_rounded,
+        color: ReactColors.electricBlueBright,
+        badge: 'SETTINGS',
+        onTap: () => open(const SettingsScreen()),
+      ),
+    ];
 
     return Scaffold(
       backgroundColor: ReactColors.background,
@@ -35,87 +110,18 @@ class ModesScreen extends StatelessWidget {
                   _Header(onBack: () => Navigator.of(context).pop()),
                   const SizedBox(height: 22),
                   const _ModesHero(),
-                  const SizedBox(height: 20),
-                  _ModePanel(
-                    title: 'CLASSIC',
-                    subtitle: 'Survive as long as you can.',
-                    detail: '3 LIVES  •  SPEED RAMPS',
-                    icon: Icons.bolt_rounded,
-                    color: ReactColors.electricBlueBright,
-                    badge: 'CORE MODE',
-                    onTap: () => open(const ClassicScreen()),
-                  ),
-                  const SizedBox(height: 12),
-                  _ModePanel(
-                    title: 'BLITZ',
-                    subtitle: '60 seconds. Maximum pace.',
-                    detail: 'FAST TIMER  •  SCORE ATTACK',
-                    icon: Icons.timer_rounded,
-                    color: ReactColors.coral,
-                    badge: '60 SEC',
-                    onTap: () => open(const BlitzScreen()),
-                  ),
-                  const SizedBox(height: 12),
-                  _ModePanel(
-                    title: 'ENDLESS',
-                    subtitle: 'Keep going until you miss.',
-                    detail: 'NO LIMIT  •  INTENSITY RAMPS FAST',
-                    icon: Icons.all_inclusive_rounded,
-                    color: ReactColors.lime,
-                    badge: 'NO LIMIT',
-                    onTap: () => open(const EndlessScreen()),
-                  ),
-                  const SizedBox(height: 12),
-                  _ModePanel(
-                    title: 'SEQUENCE',
-                    subtitle: 'Tap numbered dots in the exact order.',
-                    detail: '2–5 DOTS  •  RANDOM POSITIONS  •  3 LIVES',
-                    icon: Icons.blur_circular_rounded,
-                    color: ReactColors.electricBlueBright,
-                    badge: 'NEW MODE',
-                    onTap: () => open(
-                      const ReactRunLaunchScreen(mode: ReactGameMode.sequence),
+                  const SizedBox(height: 18),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: modes.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: .86,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  _ModePanel(
-                    title: 'PASS IT',
-                    subtitle: 'Local multiplayer reaction rounds.',
-                    detail: '2–4 PLAYERS  •  ONE DEVICE',
-                    icon: Icons.groups_2_outlined,
-                    color: ReactColors.purple,
-                    badge: 'MULTIPLAYER',
-                    onTap: () => open(const PassItScreen()),
-                  ),
-                  const SizedBox(height: 12),
-                  _ModePanel(
-                    title: 'DAILY',
-                    subtitle: 'A different rule every day.',
-                    detail: 'NO COMMAND CAP  •  7 ROTATING MODIFIERS',
-                    icon: Icons.calendar_month_rounded,
-                    color: ReactColors.lime,
-                    badge: 'DAILY RUN',
-                    onTap: () => open(const DailyScreen()),
-                  ),
-                  const SizedBox(height: 12),
-                  _ModePanel(
-                    title: 'SCORES',
-                    subtitle: 'See your best runs on this device.',
-                    detail: 'LOCAL RECORDS  •  EVERY MODE',
-                    icon: Icons.leaderboard_rounded,
-                    color: ReactColors.purple,
-                    badge: 'RECORDS',
-                    onTap: () => open(const LeaderboardScreen()),
-                  ),
-                  const SizedBox(height: 12),
-                  _ModePanel(
-                    title: 'PROFILE',
-                    subtitle: 'Local stats and game preferences.',
-                    detail: 'PERFORMANCE  •  VISUAL EFFECTS  •  RECORDS',
-                    icon: Icons.person_outline_rounded,
-                    color: ReactColors.electricBlueBright,
-                    badge: 'SETTINGS',
-                    onTap: () => open(const SettingsScreen()),
+                    itemBuilder: (context, index) => _ModePanel(data: modes[index]),
                   ),
                 ],
               ),
@@ -125,6 +131,26 @@ class ModesScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ModeData {
+  const _ModeData({
+    required this.title,
+    required this.subtitle,
+    required this.detail,
+    required this.icon,
+    required this.color,
+    required this.badge,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final String detail;
+  final IconData icon;
+  final Color color;
+  final String badge;
+  final VoidCallback onTap;
 }
 
 class _Header extends StatelessWidget {
@@ -243,94 +269,88 @@ class _ModesHero extends StatelessWidget {
 }
 
 class _ModePanel extends StatelessWidget {
-  const _ModePanel({
-    required this.title,
-    required this.subtitle,
-    required this.detail,
-    required this.icon,
-    required this.color,
-    required this.badge,
-    required this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final String detail;
-  final IconData icon;
-  final Color color;
-  final String badge;
-  final VoidCallback onTap;
+  const _ModePanel({required this.data});
+  final _ModeData data;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(22),
+      onTap: data.onTap,
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(15, 15, 14, 15),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
         decoration: BoxDecoration(
           color: const Color(0xFF07111D),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: color.withValues(alpha: .5)),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: data.color.withValues(alpha: .5)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF050A13),
-                border: Border.all(color: color.withValues(alpha: .85), width: 2),
-              ),
-              child: Icon(icon, color: color, size: 31),
-            ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                            color: ReactColors.textPrimary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: .8,
-                          ),
-                        ),
-                      ),
-                      _Badge(label: badge, color: color),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: ReactColors.textSecondary,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w600,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF050A13),
+                    border: Border.all(
+                      color: data.color.withValues(alpha: .85),
+                      width: 1.6,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    detail,
-                    style: TextStyle(
-                      color: color.withValues(alpha: .9),
-                      fontSize: 7.5,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: .95,
-                    ),
-                  ),
-                ],
+                  child: Icon(data.icon, color: data.color, size: 23),
+                ),
+                const Spacer(),
+                _Badge(label: data.badge, color: data.color),
+              ],
+            ),
+            const Spacer(),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                data.title,
+                style: const TextStyle(
+                  color: ReactColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .7,
+                ),
               ),
             ),
-            const SizedBox(width: 8),
-            Icon(Icons.chevron_right_rounded, color: color, size: 24),
+            const SizedBox(height: 5),
+            Text(
+              data.subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 9.5,
+                height: 1.25,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              data.detail,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: data.color.withValues(alpha: .9),
+                fontSize: 7,
+                height: 1.25,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .7,
+              ),
+            ),
+            const SizedBox(height: 7),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Icon(Icons.chevron_right_rounded, color: data.color, size: 22),
+            ),
           ],
         ),
       ),
@@ -346,19 +366,23 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      constraints: const BoxConstraints(maxWidth: 78),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withValues(alpha: .45)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 6.7,
-          fontWeight: FontWeight.w900,
-          letterSpacing: .8,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 6.4,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .65,
+          ),
         ),
       ),
     );
