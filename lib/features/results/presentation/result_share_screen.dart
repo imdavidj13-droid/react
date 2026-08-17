@@ -259,7 +259,7 @@ class _ShareCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _Header(mode: result.mode, color: color, pro: pro),
-                    SizedBox(height: pro ? 17 : 19),
+                    SizedBox(height: pro ? 13 : 19),
                     Text(
                       _heroEyebrow(result),
                       style: TextStyle(
@@ -285,14 +285,14 @@ class _ShareCard extends StatelessWidget {
                         color: pro
                             ? ReactColors.textPrimary
                             : ReactColors.lime,
-                        fontSize: pro ? 82 : 76,
+                        fontSize: pro ? 72 : 76,
                         height: .92,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -3.2,
                       ),
                     ),
                     if (newBest && result.mode != ReactGameMode.passIt) ...[
-                      const SizedBox(height: 7),
+                      const SizedBox(height: 6),
                       _Badge(
                         label: result.mode == ReactGameMode.daily
                             ? 'NEW MODIFIER BEST'
@@ -301,23 +301,34 @@ class _ShareCard extends StatelessWidget {
                       ),
                     ],
                     if (medals.isNotEmpty) ...[
-                      const SizedBox(height: 7),
+                      const SizedBox(height: 6),
                       _MedalStrip(medals: medals),
                     ],
-                    const Spacer(),
+                    if (pro) ...[
+                      const SizedBox(height: 9),
+                      _ProRunProfile(
+                        result: result,
+                        color: color,
+                        newBest: newBest,
+                        medalCount: medals.length,
+                      ),
+                      const SizedBox(height: 9),
+                    ] else
+                      const Spacer(),
                     if (result.mode == ReactGameMode.daily) ...[
                       _DailySummary(result: result, color: color, pro: pro),
-                      const SizedBox(height: 9),
+                      const SizedBox(height: 8),
                     ] else if (result.mode == ReactGameMode.passIt) ...[
                       _PassItSummary(result: result, color: color, pro: pro),
-                      const SizedBox(height: 9),
+                      const SizedBox(height: 8),
                     ],
+                    if (pro) const Spacer(),
                     pro
                         ? _ProMetrics(result: result, color: color)
                         : _Metrics(result: result),
-                    const SizedBox(height: 9),
+                    const SizedBox(height: 8),
                     _Outcome(result: result, color: color),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     _Footer(color: color, pro: pro),
                   ],
                 ),
@@ -328,6 +339,162 @@ class _ShareCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ProRunProfile extends StatelessWidget {
+  const _ProRunProfile({
+    required this.result,
+    required this.color,
+    required this.newBest,
+    required this.medalCount,
+  });
+
+  final ReactRunResult result;
+  final Color color;
+  final bool newBest;
+  final int medalCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final sequence = result.mode == ReactGameMode.sequence;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(11, 9, 11, 9),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .055),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: .30)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.analytics_outlined, color: color, size: 14),
+              const SizedBox(width: 6),
+              const Text(
+                'RUN PROFILE',
+                style: TextStyle(
+                  color: ReactColors.textPrimary,
+                  fontSize: 7.2,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                newBest ? 'PERSONAL BEST' : '${medalCount} MEDALS',
+                style: TextStyle(
+                  color: newBest ? ReactColors.lime : color,
+                  fontSize: 6.2,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .7,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _proModeContext(result),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 6.4,
+              fontWeight: FontWeight.w800,
+              letterSpacing: .35,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: _ProfileDatum(
+                  label: sequence ? 'MISTAKES' : 'MISSES',
+                  value: '${result.misses}',
+                  color: ReactColors.coral,
+                ),
+              ),
+              Expanded(
+                child: _ProfileDatum(
+                  label: sequence ? 'SEQ STREAK' : 'BEST STREAK',
+                  value: '${result.maxStreak}',
+                  color: ReactColors.lime,
+                ),
+              ),
+              Expanded(
+                child: _ProfileDatum(
+                  label: sequence ? 'AVG CLEAR' : 'REACTION AVG',
+                  value: _average(result),
+                  color: ReactColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileDatum extends StatelessWidget {
+  const _ProfileDatum({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        value,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      const SizedBox(height: 1),
+      FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 5.3,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .45,
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+String _proModeContext(ReactRunResult result) => switch (result.mode) {
+  ReactGameMode.classic => 'CLASSIC • 3 LIVES • SPEED RAMPS WITH EVERY CLEAR',
+  ReactGameMode.blitz => 'BLITZ • 60 SECOND SCORE ATTACK • MISSES COST TIME',
+  ReactGameMode.endless => 'ENDLESS • NO LIMIT • ONE MISS ENDS THE RUN',
+  ReactGameMode.daily =>
+    'DAILY • ${result.dailyModifierLabel ?? 'CHALLENGE'} • ONE MISS ENDS THE ATTEMPT',
+  ReactGameMode.passIt =>
+    'PASS IT • ${result.playerLives?.length ?? 0} PLAYERS • LAST PLAYER STANDING',
+  ReactGameMode.sequence =>
+    'SEQUENCE • ${_sequencePeakDots(result.score)} DOT PEAK • 3 LIVES • STRICT ORDER',
+};
+
+int _sequencePeakDots(int score) {
+  if (score < 3) return 2;
+  if (score < 8) return 3;
+  if (score < 15) return 4;
+  return 5;
 }
 
 class _Header extends StatelessWidget {
@@ -342,45 +509,40 @@ class _Header extends StatelessWidget {
   final bool pro;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Text(
-          'RE△CT',
-          style: TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 24,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 3,
-          ),
+  Widget build(BuildContext context) => Row(
+    children: [
+      const Text(
+        'RE△CT',
+        style: TextStyle(
+          color: ReactColors.textPrimary,
+          fontSize: 24,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 3,
         ),
-        const Spacer(),
-        if (pro) ...[
-          const _Badge(label: 'PRO', color: ReactColors.purple),
-          const SizedBox(width: 6),
-        ],
-        _Badge(label: mode.label, color: color),
+      ),
+      const Spacer(),
+      if (pro) ...[
+        const _Badge(label: 'PRO', color: ReactColors.purple),
+        const SizedBox(width: 6),
       ],
-    );
-  }
+      _Badge(label: mode.label, color: color),
+    ],
+  );
 }
 
 class _MedalStrip extends StatelessWidget {
   const _MedalStrip({required this.medals});
-
   final List<RunMedal> medals;
 
   @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 5,
-      runSpacing: 5,
-      children: [
-        for (final medal in medals)
-          _Badge(label: _medalLabel(medal), color: _medalColor(medal)),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Wrap(
+    spacing: 5,
+    runSpacing: 5,
+    children: [
+      for (final medal in medals)
+        _Badge(label: _medalLabel(medal), color: _medalColor(medal)),
+    ],
+  );
 }
 
 class _DailySummary extends StatelessWidget {
@@ -389,7 +551,6 @@ class _DailySummary extends StatelessWidget {
     required this.color,
     required this.pro,
   });
-
   final ReactRunResult result;
   final Color color;
   final bool pro;
@@ -400,7 +561,6 @@ class _DailySummary extends StatelessWidget {
     final dateLabel = date == null ? 'DATE UNAVAILABLE' : _dailyDateLabel(date);
     final modifier = result.dailyModifierLabel ?? 'DAILY CHALLENGE';
     final rule = result.dailyModifierRule ?? 'ONE MISS ENDS THE ATTEMPT';
-
     return _InfoStrip(
       color: color,
       icon: Icons.calendar_today_rounded,
@@ -417,7 +577,6 @@ class _PassItSummary extends StatelessWidget {
     required this.color,
     required this.pro,
   });
-
   final ReactRunResult result;
   final Color color;
   final bool pro;
@@ -431,7 +590,6 @@ class _PassItSummary extends StatelessWidget {
             for (var index = 0; index < lives.length; index++)
               'P${index + 1} ${lives[index]}♥',
           ].join('  •  ');
-
     return _InfoStrip(
       color: color,
       icon: Icons.emoji_events_rounded,
@@ -446,7 +604,6 @@ class _PassItSummary extends StatelessWidget {
 
 class _Metrics extends StatelessWidget {
   const _Metrics({required this.result});
-
   final ReactRunResult result;
 
   @override
@@ -484,7 +641,6 @@ class _Metrics extends StatelessWidget {
 
 class _ProMetrics extends StatelessWidget {
   const _ProMetrics({required this.result, required this.color});
-
   final ReactRunResult result;
   final Color color;
 
@@ -492,7 +648,7 @@ class _ProMetrics extends StatelessWidget {
   Widget build(BuildContext context) {
     final sequence = result.mode == ReactGameMode.sequence;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xB5070A12),
         borderRadius: BorderRadius.circular(14),
@@ -530,103 +686,87 @@ class _ProMetrics extends StatelessWidget {
 }
 
 class _Metric extends StatelessWidget {
-  const _Metric({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
+  const _Metric({required this.label, required this.value, required this.color});
   final String label;
   final String value;
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 54,
-      decoration: BoxDecoration(
-        color: const Color(0xC007111D),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: .20)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          FittedBox(
-            child: Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 6.2,
-              fontWeight: FontWeight.w900,
-              letterSpacing: .7,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FlatMetric extends StatelessWidget {
-  const _FlatMetric({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
+  Widget build(BuildContext context) => Container(
+    height: 54,
+    decoration: BoxDecoration(
+      color: const Color(0xC007111D),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: color.withValues(alpha: .20)),
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         FittedBox(
           child: Text(
             value,
             style: TextStyle(
               color: color,
-              fontSize: 14,
+              fontSize: 15,
               fontWeight: FontWeight.w900,
             ),
           ),
         ),
-        const SizedBox(height: 3),
-        FittedBox(
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 5.8,
-              fontWeight: FontWeight.w900,
-              letterSpacing: .6,
-            ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 6.2,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .7,
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
+
+class _FlatMetric extends StatelessWidget {
+  const _FlatMetric({required this.label, required this.value, required this.color});
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      FittedBox(
+        child: Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+      const SizedBox(height: 3),
+      FittedBox(
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 5.8,
+            fontWeight: FontWeight.w900,
+            letterSpacing: .6,
+          ),
+        ),
+      ),
+    ],
+  );
 }
 
 class _Divider extends StatelessWidget {
   const _Divider();
-
   @override
-  Widget build(BuildContext context) {
-    return Container(width: 1, height: 25, color: ReactColors.border);
-  }
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 25, color: ReactColors.border);
 }
 
 class _InfoStrip extends StatelessWidget {
@@ -637,7 +777,6 @@ class _InfoStrip extends StatelessWidget {
     required this.subtitle,
     required this.emphasized,
   });
-
   final Color color;
   final IconData icon;
   final String title;
@@ -645,147 +784,133 @@ class _InfoStrip extends StatelessWidget {
   final bool emphasized;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-      decoration: BoxDecoration(
-        color: emphasized
-            ? color.withValues(alpha: .08)
-            : const Color(0xC007111D),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: color.withValues(alpha: emphasized ? .48 : .30),
-        ),
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+    decoration: BoxDecoration(
+      color: emphasized ? color.withValues(alpha: .08) : const Color(0xC007111D),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(
+        color: color.withValues(alpha: emphasized ? .48 : .30),
       ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 8.2,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .7,
-                  ),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, color: color, size: 16),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: ReactColors.textPrimary,
+                  fontSize: 8.2,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .7,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 6.1,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: .3,
-                  ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: ReactColors.textSecondary,
+                  fontSize: 6.1,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: .3,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 }
 
 class _Outcome extends StatelessWidget {
   const _Outcome({required this.result, required this.color});
-
   final ReactRunResult result;
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return _InfoStrip(
-      color: color,
-      icon: _outcomeIcon(result),
-      title: result.mode == ReactGameMode.sequence
-          ? 'OUT OF LIVES'
-          : result.outcomeLabel,
-      subtitle: _outcomeDetail(result),
-      emphasized: false,
-    );
-  }
+  Widget build(BuildContext context) => _InfoStrip(
+    color: color,
+    icon: _outcomeIcon(result),
+    title: result.mode == ReactGameMode.sequence
+        ? 'OUT OF LIVES'
+        : result.outcomeLabel,
+    subtitle: _outcomeDetail(result),
+    emphasized: false,
+  );
 }
 
 class _Badge extends StatelessWidget {
   const _Badge({required this.label, required this.color});
-
   final String label;
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .09),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: .50)),
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .09),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: color.withValues(alpha: .50)),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(
+        color: color,
+        fontSize: 6.8,
+        fontWeight: FontWeight.w900,
+        letterSpacing: .8,
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 6.8,
-          fontWeight: FontWeight.w900,
-          letterSpacing: .8,
-        ),
-      ),
-    );
-  }
+    ),
+  );
 }
 
 class _Footer extends StatelessWidget {
   const _Footer({required this.color, required this.pro});
-
   final Color color;
   final bool pro;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(width: 20, height: 2, color: color),
-        const SizedBox(width: 7),
-        Expanded(
-          child: Text(
-            pro ? 'PERFORMANCE CARD' : 'REACTION • REFLEX • SPEED',
-            style: const TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 6.4,
-              fontWeight: FontWeight.w900,
-              letterSpacing: .8,
-            ),
-          ),
-        ),
-        Text(
-          pro ? 'BEAT THIS.' : 'CAN YOU BEAT IT?',
+  Widget build(BuildContext context) => Row(
+    children: [
+      Container(width: 20, height: 2, color: color),
+      const SizedBox(width: 7),
+      Expanded(
+        child: Text(
+          pro ? 'PRO PERFORMANCE CARD • VERIFIED RUN DATA' : 'REACTION • REFLEX • SPEED',
           style: const TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 6.5,
+            color: ReactColors.textSecondary,
+            fontSize: 6.1,
             fontWeight: FontWeight.w900,
             letterSpacing: .7,
           ),
         ),
-      ],
-    );
-  }
+      ),
+      Text(
+        pro ? 'BEAT THIS.' : 'CAN YOU BEAT IT?',
+        style: const TextStyle(
+          color: ReactColors.textPrimary,
+          fontSize: 6.5,
+          fontWeight: FontWeight.w900,
+          letterSpacing: .7,
+        ),
+      ),
+    ],
+  );
 }
 
 class _GridPainter extends CustomPainter {
   const _GridPainter({required this.color, required this.dense});
-
   final Color color;
   final bool dense;
 
@@ -813,48 +938,38 @@ String _average(ReactRunResult result) => result.averageTimeSeconds == 0
     : '${result.averageTimeSeconds.toStringAsFixed(2)}s';
 
 String _medalLabel(RunMedal medal) => switch (medal) {
-      RunMedal.perfectRun => 'PERFECT RUN',
-      RunMedal.lightning => 'LIGHTNING',
-      RunMedal.survivor => 'SURVIVOR',
-      RunMedal.dailyMaster => 'DAILY MASTER',
-      RunMedal.clutch => 'CLUTCH',
-    };
+  RunMedal.perfectRun => 'PERFECT RUN',
+  RunMedal.lightning => 'LIGHTNING',
+  RunMedal.survivor => 'SURVIVOR',
+  RunMedal.dailyMaster => 'DAILY MASTER',
+  RunMedal.clutch => 'CLUTCH',
+};
 
 Color _medalColor(RunMedal medal) => switch (medal) {
-      RunMedal.perfectRun => ReactColors.lime,
-      RunMedal.lightning => ReactColors.electricBlueBright,
-      RunMedal.survivor => ReactColors.lime,
-      RunMedal.dailyMaster => ReactColors.purple,
-      RunMedal.clutch => ReactColors.coral,
-    };
+  RunMedal.perfectRun => ReactColors.lime,
+  RunMedal.lightning => ReactColors.electricBlueBright,
+  RunMedal.survivor => ReactColors.lime,
+  RunMedal.dailyMaster => ReactColors.purple,
+  RunMedal.clutch => ReactColors.coral,
+};
 
 String _dailyDateLabel(DateTime date) {
   const months = <String>[
-    'JAN',
-    'FEB',
-    'MAR',
-    'APR',
-    'MAY',
-    'JUN',
-    'JUL',
-    'AUG',
-    'SEP',
-    'OCT',
-    'NOV',
-    'DEC',
+    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
   ];
   return '${date.day.toString().padLeft(2, '0')} '
       '${months[date.month - 1]} ${date.year}';
 }
 
 String _scoreLabel(ReactGameMode mode) => switch (mode) {
-      ReactGameMode.classic => 'FINAL SCORE',
-      ReactGameMode.blitz => '60 SECOND SCORE',
-      ReactGameMode.endless => 'COMMANDS SURVIVED',
-      ReactGameMode.daily => 'DAILY SCORE',
-      ReactGameMode.passIt => 'MATCH COMMANDS',
-      ReactGameMode.sequence => 'SEQUENCES CLEARED',
-    };
+  ReactGameMode.classic => 'FINAL SCORE',
+  ReactGameMode.blitz => '60 SECOND SCORE',
+  ReactGameMode.endless => 'COMMANDS SURVIVED',
+  ReactGameMode.daily => 'DAILY SCORE',
+  ReactGameMode.passIt => 'MATCH COMMANDS',
+  ReactGameMode.sequence => 'SEQUENCES CLEARED',
+};
 
 String _heroEyebrow(ReactRunResult result) {
   if (result.mode == ReactGameMode.passIt && result.winnerPlayer != null) {
@@ -869,11 +984,9 @@ String _outcomeDetail(ReactRunResult result) {
     return '${result.successfulCommands} SEQUENCES • ${result.misses} MISTAKES';
   }
   return switch (result.outcome) {
-    ReactRunOutcome.missedCommand =>
-      result.failedCommand?.title ?? 'MISSED COMMAND',
+    ReactRunOutcome.missedCommand => result.failedCommand?.title ?? 'MISSED COMMAND',
     ReactRunOutcome.timeUp => '60 SECOND RUN COMPLETE',
-    ReactRunOutcome.completed =>
-      '${result.successfulCommands} COMMANDS CLEARED',
+    ReactRunOutcome.completed => '${result.successfulCommands} COMMANDS CLEARED',
     ReactRunOutcome.winner => result.winnerPlayer == null
         ? 'LAST PLAYER STANDING'
         : 'PLAYER ${result.winnerPlayer} WINS',
@@ -882,12 +995,9 @@ String _outcomeDetail(ReactRunResult result) {
 }
 
 IconData _outcomeIcon(ReactRunResult result) {
-  if (result.mode == ReactGameMode.sequence) {
-    return Icons.blur_circular_rounded;
-  }
+  if (result.mode == ReactGameMode.sequence) return Icons.blur_circular_rounded;
   return switch (result.outcome) {
-    ReactRunOutcome.winner || ReactRunOutcome.completed =>
-      Icons.emoji_events_rounded,
+    ReactRunOutcome.winner || ReactRunOutcome.completed => Icons.emoji_events_rounded,
     ReactRunOutcome.timeUp => Icons.timer_rounded,
     ReactRunOutcome.missedCommand => Icons.bolt_rounded,
     ReactRunOutcome.quit => Icons.stop_circle_outlined,
@@ -910,10 +1020,10 @@ String _shareText(ReactRunResult result) {
 }
 
 Color _modeColor(ReactGameMode mode) => switch (mode) {
-      ReactGameMode.classic => ReactColors.electricBlueBright,
-      ReactGameMode.blitz => ReactColors.coral,
-      ReactGameMode.endless => ReactColors.lime,
-      ReactGameMode.daily => ReactColors.purple,
-      ReactGameMode.passIt => const Color(0xFFFFB85A),
-      ReactGameMode.sequence => ReactColors.electricBlueBright,
-    };
+  ReactGameMode.classic => ReactColors.electricBlueBright,
+  ReactGameMode.blitz => ReactColors.coral,
+  ReactGameMode.endless => ReactColors.lime,
+  ReactGameMode.daily => ReactColors.purple,
+  ReactGameMode.passIt => const Color(0xFFFFB85A),
+  ReactGameMode.sequence => ReactColors.electricBlueBright,
+};
