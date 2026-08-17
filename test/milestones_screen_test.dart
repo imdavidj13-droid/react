@@ -38,6 +38,13 @@ void main() {
     await tester.tap(find.text('CLASSIC').first);
     await tester.pumpAndSettle();
     expect(find.text('CLASSIC 25'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('CLASSIC RUNS 5'),
+      220,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('CLASSIC RUNS 5'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
@@ -45,6 +52,13 @@ void main() {
     await tester.tap(find.text('PASS IT').first);
     await tester.pumpAndSettle();
     expect(find.text('PASS IT REGULAR'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('HANDOFF 50'),
+      220,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('HANDOFF 50'), findsOneWidget);
     expect(find.text('UNLOCKED'), findsWidgets);
     expect(tester.takeException(), isNull);
