@@ -6,8 +6,8 @@ class DotSequenceRound {
   const DotSequenceRound({required this.positions});
 
   // Position centres stay deliberately conservative because the rendered dot
-  // itself has size, border and glow and the gameplay layout shifts the field
-  // slightly downward beneath the Sequence heading.
+  // itself has size, border and glow and the gameplay layout reserves a safe
+  // title/timer zone above the actual dot field.
   static const double maximumRadius = .56;
 
   final List<Offset> positions;
@@ -17,7 +17,7 @@ class DotSequenceRound {
   static DotSequenceRound generate(
     Random random, {
     required int count,
-    double minimumSpacing = .32,
+    double minimumSpacing = .50,
   }) {
     assert(count >= 1);
 
