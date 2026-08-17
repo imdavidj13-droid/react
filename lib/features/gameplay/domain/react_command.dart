@@ -17,61 +17,35 @@ enum ReactCommand {
 }
 
 extension ReactCommandUi on ReactCommand {
-  String get title {
-    if (ReactCosmetics.currentCommandStyle == ReactCommandStyle.glitch) {
-      return switch (this) {
-        ReactCommand.tap => 'TAP//IT',
-        ReactCommand.doubleTap => 'TAP::TAP',
-        ReactCommand.hold => 'HOLD//IT',
-        ReactCommand.swipeLeft => 'SWIPE<LEFT',
-        ReactCommand.swipeRight => 'SWIPE>RIGHT',
-        ReactCommand.swipeUp => 'SWIPE^UP',
-        ReactCommand.swipeDown => 'SWIPEvDOWN',
-        ReactCommand.pinch => 'PINCH::IN',
-        ReactCommand.spread => 'SPREAD::OUT',
-      };
-    }
+  String get title => switch (this) {
+    ReactCommand.tap => 'TAP IT',
+    ReactCommand.doubleTap => 'DOUBLE TAP',
+    ReactCommand.hold => 'HOLD IT',
+    ReactCommand.swipeLeft => 'SWIPE LEFT',
+    ReactCommand.swipeRight => 'SWIPE RIGHT',
+    ReactCommand.swipeUp => 'SWIPE UP',
+    ReactCommand.swipeDown => 'SWIPE DOWN',
+    ReactCommand.pinch => 'PINCH IT',
+    ReactCommand.spread => 'SPREAD IT',
+  };
 
-    return switch (this) {
-      ReactCommand.tap => 'TAP IT',
-      ReactCommand.doubleTap => 'DOUBLE TAP',
-      ReactCommand.hold => 'HOLD IT',
-      ReactCommand.swipeLeft => 'SWIPE LEFT',
-      ReactCommand.swipeRight => 'SWIPE RIGHT',
-      ReactCommand.swipeUp => 'SWIPE UP',
-      ReactCommand.swipeDown => 'SWIPE DOWN',
-      ReactCommand.pinch => 'PINCH IT',
-      ReactCommand.spread => 'SPREAD IT',
-    };
-  }
+  String get hint => switch (this) {
+    ReactCommand.tap => 'TAP ONCE',
+    ReactCommand.doubleTap => 'TAP TWICE',
+    ReactCommand.hold => 'PRESS AND HOLD',
+    ReactCommand.swipeLeft => 'SWIPE TO THE LEFT',
+    ReactCommand.swipeRight => 'SWIPE TO THE RIGHT',
+    ReactCommand.swipeUp => 'SWIPE UPWARD',
+    ReactCommand.swipeDown => 'SWIPE DOWNWARD',
+    ReactCommand.pinch => 'MOVE TWO FINGERS TOGETHER',
+    ReactCommand.spread => 'MOVE TWO FINGERS APART',
+  };
 
-  String get hint {
-    if (ReactCosmetics.currentCommandStyle == ReactCommandStyle.glitch) {
-      return switch (this) {
-        ReactCommand.tap => 'INPUT_01 • SINGLE PRESS',
-        ReactCommand.doubleTap => 'INPUT_02 • DOUBLE PRESS',
-        ReactCommand.hold => 'INPUT_HOLD • MAINTAIN PRESS',
-        ReactCommand.swipeLeft => 'VECTOR_X- • MOVE LEFT',
-        ReactCommand.swipeRight => 'VECTOR_X+ • MOVE RIGHT',
-        ReactCommand.swipeUp => 'VECTOR_Y- • MOVE UP',
-        ReactCommand.swipeDown => 'VECTOR_Y+ • MOVE DOWN',
-        ReactCommand.pinch => 'MULTI_02 • CONTRACT',
-        ReactCommand.spread => 'MULTI_02 • EXPAND',
-      };
-    }
-
-    return switch (this) {
-      ReactCommand.tap => 'TAP ONCE',
-      ReactCommand.doubleTap => 'TAP TWICE',
-      ReactCommand.hold => 'PRESS AND HOLD',
-      ReactCommand.swipeLeft => 'SWIPE TO THE LEFT',
-      ReactCommand.swipeRight => 'SWIPE TO THE RIGHT',
-      ReactCommand.swipeUp => 'SWIPE UPWARD',
-      ReactCommand.swipeDown => 'SWIPE DOWNWARD',
-      ReactCommand.pinch => 'MOVE TWO FINGERS TOGETHER',
-      ReactCommand.spread => 'MOVE TWO FINGERS APART',
-    };
-  }
+  /// Glitch remains a cosmetic treatment only. Command wording and meaning
+  /// stay identical to CORE so players never have to decode a skin while
+  /// reacting under time pressure.
+  bool get usesGlitchVisuals =>
+      ReactCosmetics.currentCommandStyle == ReactCommandStyle.glitch;
 
   IconData get icon => switch (this) {
     ReactCommand.tap => Icons.touch_app_rounded,
