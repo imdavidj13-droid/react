@@ -12,16 +12,18 @@ void main() {
 
     expect(ReactCommand.tap.title, 'TAP IT');
     expect(ReactCommand.spread.hint, 'MOVE TWO FINGERS APART');
+    expect(ReactCommand.tap.usesGlitchVisuals, isFalse);
   });
 
-  test('glitch style changes presentation but not timing', () {
+  test('glitch keeps readable wording and timing while enabling visuals', () {
     final coreWindow = ReactCommand.spread.reactionWindowMs(1000);
     ReactCosmetics.currentCommandStyle = ReactCommandStyle.glitch;
 
-    expect(ReactCommand.tap.title, 'TAP//IT');
-    expect(ReactCommand.swipeLeft.title, 'SWIPE<LEFT');
-    expect(ReactCommand.spread.title, 'SPREAD::OUT');
-    expect(ReactCommand.spread.hint, 'MULTI_02 • EXPAND');
+    expect(ReactCommand.tap.title, 'TAP IT');
+    expect(ReactCommand.swipeLeft.title, 'SWIPE LEFT');
+    expect(ReactCommand.spread.title, 'SPREAD IT');
+    expect(ReactCommand.spread.hint, 'MOVE TWO FINGERS APART');
+    expect(ReactCommand.spread.usesGlitchVisuals, isTrue);
     expect(ReactCommand.spread.reactionWindowMs(1000), coreWindow);
   });
 }
