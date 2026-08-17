@@ -44,15 +44,14 @@ void main() {
     expect(find.text('ENDLESS'), findsOneWidget);
   });
 
-  testWidgets('Modes fits and scrolls on a 320x640 screen', (tester) async {
+  testWidgets('Modes fits a 320x640 screen without scrolling', (tester) async {
     await pumpAtSize(tester, const ModesScreen(), const Size(320, 640));
+
+    expect(find.byType(SingleChildScrollView), findsNothing);
     expect(find.text('CLASSIC'), findsOneWidget);
-
-    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -600));
-    await tester.pumpAndSettle();
-
-    expect(tester.takeException(), isNull);
     expect(find.text('PROFILE'), findsOneWidget);
+    expect(find.text('CHOOSE YOUR MODE'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Pass It setup fits and scrolls on a 320x640 screen', (tester) async {
