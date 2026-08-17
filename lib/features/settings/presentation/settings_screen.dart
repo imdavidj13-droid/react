@@ -122,7 +122,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               FutureBuilder<_ProfileStats>(
                 future: _stats,
                 builder: (context, snapshot) {
-                  return _StatsPanel(stats: snapshot.data ?? const _ProfileStats());
+                  return _StatsPanel(
+                    stats: snapshot.data ?? const _ProfileStats(),
+                  );
                 },
               ),
               const SizedBox(height: 18),
@@ -149,7 +151,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _ActionTile(
                 icon: Icons.menu_book_rounded,
                 title: 'HOW TO PLAY',
-                subtitle: 'Review all 9 commands, Sequence mode and core rules at any time.',
+                subtitle:
+                    'Review all 9 commands, Sequence mode and core rules at any time.',
                 color: ReactColors.electricBlueBright,
                 onTap: _openHowToPlay,
               ),
@@ -157,7 +160,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _ActionTile(
                 icon: Icons.shopping_bag_outlined,
                 title: 'SHOP',
-                subtitle: 'Preview cosmetic themes, sound packs and visual styles.',
+                subtitle:
+                    'Preview cosmetic themes, sound packs and visual styles.',
                 color: ReactColors.coral,
                 onTap: _openShop,
               ),
@@ -176,7 +180,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _SettingTile(
                 icon: Icons.auto_awesome_rounded,
                 title: 'VISUAL EFFECTS',
-                subtitle: 'Flame particles, bursts, pulses and pressure effects.',
+                subtitle:
+                    'Flame particles, bursts, pulses and pressure effects.',
                 value: _visualEffectsEnabled,
                 color: ReactColors.purple,
                 onChanged: _setVisualEffects,
@@ -287,9 +292,8 @@ class _ProfileHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final text = Column(
-      crossAxisAlignment: largeText
-          ? CrossAxisAlignment.center
-          : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          largeText ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: const [
         Text(
           'LOCAL PLAYER',
@@ -369,94 +373,185 @@ class _StatsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0xFF263851)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Expanded(
-                child: _Metric(
+                child: _MetricCell(
                   label: 'RUNS',
                   value: '${stats.runs}',
                   color: ReactColors.textPrimary,
                 ),
               ),
+              const SizedBox(width: 8),
               Expanded(
-                child: _Metric(
+                child: _MetricCell(
                   label: 'COMMANDS',
                   value: '${stats.commands}',
                   color: ReactColors.lime,
                 ),
               ),
+              const SizedBox(width: 8),
               Expanded(
-                child: _Metric(
-                  label: 'STREAK',
+                child: _MetricCell(
+                  label: 'DAILY STREAK',
                   value: '${stats.streak}',
                   color: ReactColors.coral,
                 ),
               ),
             ],
           ),
-          const Divider(color: Color(0xFF22364E), height: 26),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'PERSONAL BESTS',
-              style: TextStyle(
-                color: ReactColors.textSecondary,
-                fontSize: 7.5,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
+          const _PanelLabel('PERSONAL BESTS'),
+          const SizedBox(height: 9),
           Row(
             children: [
               Expanded(
-                child: _Metric(
+                child: _MetricCell(
                   label: 'CLASSIC',
                   value: '${stats.classic}',
                   color: ReactColors.electricBlueBright,
+                  compact: true,
                 ),
               ),
+              const SizedBox(width: 8),
               Expanded(
-                child: _Metric(
+                child: _MetricCell(
                   label: 'BLITZ',
                   value: '${stats.blitz}',
                   color: ReactColors.coral,
-                ),
-              ),
-              Expanded(
-                child: _Metric(
-                  label: 'ENDLESS',
-                  value: '${stats.endless}',
-                  color: ReactColors.lime,
-                ),
-              ),
-              Expanded(
-                child: _Metric(
-                  label: 'DAILY',
-                  value: '${stats.daily}',
-                  color: ReactColors.purple,
+                  compact: true,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.center,
-            child: SizedBox(
-              width: 92,
-              child: _Metric(
-                label: 'SEQUENCE',
-                value: '${stats.sequence}',
-                color: ReactColors.electricBlueBright,
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _MetricCell(
+                  label: 'ENDLESS',
+                  value: '${stats.endless}',
+                  color: ReactColors.lime,
+                  compact: true,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _MetricCell(
+                  label: 'DAILY',
+                  value: '${stats.daily}',
+                  color: ReactColors.purple,
+                  compact: true,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _MetricCell(
+                  label: 'SEQUENCE',
+                  value: '${stats.sequence}',
+                  color: ReactColors.electricBlueBright,
+                  compact: true,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(child: _EmptyMetricCell()),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PanelLabel extends StatelessWidget {
+  const _PanelLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: ReactColors.textSecondary,
+            fontSize: 8,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.05,
+          ),
+        ),
+        const SizedBox(width: 10),
+        const Expanded(child: Divider(color: Color(0xFF22364E), height: 1)),
+      ],
+    );
+  }
+}
+
+class _MetricCell extends StatelessWidget {
+  const _MetricCell({
+    required this.label,
+    required this.value,
+    required this.color,
+    this.compact = false,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(minHeight: compact ? 68 : 76),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 7,
+        vertical: compact ? 10 : 11,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF091523),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: .25)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: compact ? 22 : 24,
+                fontWeight: FontWeight.w900,
+                height: 1,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 7.2,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .65,
               ),
             ),
           ),
@@ -466,40 +561,25 @@ class _StatsPanel extends StatelessWidget {
   }
 }
 
-class _Metric extends StatelessWidget {
-  const _Metric({required this.label, required this.value, required this.color});
-
-  final String label;
-  final String value;
-  final Color color;
+class _EmptyMetricCell extends StatelessWidget {
+  const _EmptyMetricCell();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        FittedBox(
-          child: Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 21,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
+    return Container(
+      constraints: const BoxConstraints(minHeight: 68),
+      decoration: BoxDecoration(
+        color: const Color(0xFF091523).withValues(alpha: .35),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF22364E).withValues(alpha: .45)),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.more_horiz_rounded,
+          color: Color(0xFF263851),
+          size: 19,
         ),
-        const SizedBox(height: 4),
-        FittedBox(
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 7,
-              fontWeight: FontWeight.w900,
-              letterSpacing: .6,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -724,7 +804,11 @@ class _ResetProgressTile extends StatelessWidget {
         ),
         child: const Row(
           children: [
-            Icon(Icons.delete_outline_rounded, color: ReactColors.coral, size: 25),
+            Icon(
+              Icons.delete_outline_rounded,
+              color: ReactColors.coral,
+              size: 25,
+            ),
             SizedBox(width: 12),
             Expanded(
               child: Column(
