@@ -5,6 +5,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/audio/react_audio.dart';
+import '../../../core/cosmetics/react_cosmetics.dart';
 import '../../../core/settings/react_settings.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../../game/react_game.dart';
@@ -130,7 +131,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
 
     _game = ReactGame()
       ..configure(
-        accent: _modeColor(widget.mode),
+        accent: _visualAccent(widget.mode),
         intensity: _initialFlameIntensity(widget.mode),
       );
 
@@ -689,6 +690,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
 
   @override
   Widget build(BuildContext context) {
+    final palette = ReactCosmetics.palette;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -696,7 +698,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
         _setPaused(true);
       },
       child: Scaffold(
-        backgroundColor: ReactColors.background,
+        backgroundColor: palette.background,
         body: Stack(
           fit: StackFit.expand,
           children: [
@@ -733,7 +735,7 @@ class _ReactRunScreenState extends State<ReactRunScreen>
                                 command: _command,
                                 progress: _progress,
                                 commandDurationMs: _commandDurationMs,
-                                accent: _modeColor(widget.mode),
+                                accent: _visualAccent(widget.mode),
                               ),
                             ),
                           ),
@@ -753,8 +755,8 @@ class _ReactRunScreenState extends State<ReactRunScreen>
                                           _feedback?.contains('LOST A LIFE') ==
                                               true ||
                                           _feedback?.startsWith('MISS') == true
-                                      ? ReactColors.coral
-                                      : ReactColors.electricBlueBright,
+                                      ? palette.failure
+                                      : palette.primary,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 1.4,
@@ -809,6 +811,9 @@ Color _modeColor(ReactGameMode mode) => switch (mode) {
   ReactGameMode.sequence => throw StateError('Sequence uses DotSequenceScreen.'),
 };
 
+Color _visualAccent(ReactGameMode mode) =>
+    ReactCosmetics.effectAccentFor(_modeColor(mode));
+
 double _initialFlameIntensity(ReactGameMode mode) => switch (mode) {
   ReactGameMode.classic => .18,
   ReactGameMode.blitz => .45,
@@ -817,6 +822,38 @@ double _initialFlameIntensity(ReactGameMode mode) => switch (mode) {
   ReactGameMode.passIt => .30,
   ReactGameMode.sequence => throw StateError('Sequence uses DotSequenceScreen.'),
 };
+
+Color _themePanelColor() => switch (ReactCosmetics.currentTheme) {
+  ReactVisualTheme.core => const Color(0xFF07111D),
+  ReactVisualTheme.redline => const Color(0xFF14080B),
+  ReactVisualTheme.synthwave => const Color(0xFF0D0920),
+  ReactVisualTheme.mono => const Color(0xFF0A0A0A),
+};
+
+Color _themeArenaSurfaceColor() => switch (ReactCosmetics.currentTheme) {
+  ReactVisualTheme.core => const Color(0xFF050A13),
+  ReactVisualTheme.redline => const Color(0xFF100609),
+  ReactVisualTheme.synthwave => const Color(0xFF090718),
+  ReactVisualTheme.mono => const Color(0xFF050505),
+};
+
+Color _themeBorderColor() => ReactCosmetics.currentTheme == ReactVisualTheme.core
+    ? const Color(0xFF243A57)
+    : ReactCosmetics.palette.primary.withValues(alpha: .38);
+
+Color _themeInnerBorderColor() =>
+    ReactCosmetics.currentTheme == ReactVisualTheme.core
+    ? const Color(0xFF153B65)
+    : ReactCosmetics.palette.primary.withValues(alpha: .44);
+
+Color _themeRingBaseColor() => ReactCosmetics.currentTheme == ReactVisualTheme.core
+    ? const Color(0xFF122038)
+    : ReactCosmetics.palette.primary.withValues(alpha: .16);
+
+Color _themeTimerTrackColor() =>
+    ReactCosmetics.currentTheme == ReactVisualTheme.core
+    ? const Color(0xFF10243D)
+    : ReactCosmetics.palette.primary.withValues(alpha: .20);
 
 class _Header extends StatelessWidget {
   const _Header({
@@ -835,6 +872,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = ReactCosmetics.palette;
     return Column(
       children: [
         Row(
@@ -842,9 +880,9 @@ class _Header extends StatelessWidget {
             IconButton(
               onPressed: onPause,
               style: IconButton.styleFrom(
-                backgroundColor: const Color(0xFF07101E),
+                backgroundColor: _themePanelColor(),
                 foregroundColor: ReactColors.textPrimary,
-                side: const BorderSide(color: Color(0xFF20456E)),
+                side: BorderSide(color: _themeBorderColor()),
               ),
               icon: const Icon(Icons.pause_rounded),
             ),
@@ -869,7 +907,7 @@ class _Header extends StatelessWidget {
               child: _HudCard(
                 label: 'SCORE',
                 value: '$score',
-                color: ReactColors.lime,
+                color: palette.secondary,
               ),
             ),
             const SizedBox(width: 10),
@@ -877,7 +915,7 @@ class _Header extends StatelessWidget {
               child: _HudCard(
                 label: 'MODE',
                 value: mode.label,
-                color: _modeColor(mode),
+                color: _visualAccent(mode),
                 compact: true,
               ),
             ),
@@ -887,8 +925,8 @@ class _Header extends StatelessWidget {
                 label: statusLabel,
                 value: statusValue,
                 color: mode == ReactGameMode.classic
-                    ? ReactColors.coral
-                    : _modeColor(mode),
+                    ? palette.failure
+                    : _visualAccent(mode),
                 compact: true,
               ),
             ),
@@ -917,9 +955,9 @@ class _HudCard extends StatelessWidget {
     return Container(
       height: 64,
       decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
+        color: _themePanelColor(),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF243A57)),
+        border: Border.all(color: _themeBorderColor()),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -967,6 +1005,7 @@ class _Arena extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = ReactCosmetics.palette;
     final seconds = (commandDurationMs * progress / 1000).clamp(0, 9.9);
 
     return SizedBox.square(
@@ -983,8 +1022,8 @@ class _Arena extends StatelessWidget {
             height: size * .69,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF050A13),
-              border: Border.all(color: const Color(0xFF153B65), width: 1.5),
+              color: _themeArenaSurfaceColor(),
+              border: Border.all(color: _themeInnerBorderColor(), width: 1.5),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1002,7 +1041,7 @@ class _Arena extends StatelessWidget {
                 const SizedBox(height: 18),
                 Icon(
                   command.icon,
-                  color: ReactColors.electricBlueBright,
+                  color: accent,
                   size:
                       command == ReactCommand.pinch ||
                           command == ReactCommand.spread
@@ -1030,8 +1069,8 @@ class _Arena extends StatelessWidget {
               height: 76,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF07111D),
-                border: Border.all(color: const Color(0xFF31577E), width: 2),
+                color: _themePanelColor(),
+                border: Border.all(color: _themeBorderColor(), width: 2),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1039,7 +1078,7 @@ class _Arena extends StatelessWidget {
                   Text(
                     seconds.toStringAsFixed(2),
                     style: TextStyle(
-                      color: progress < .2 ? ReactColors.coral : accent,
+                      color: progress < .2 ? palette.failure : accent,
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1070,19 +1109,20 @@ class _RingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final palette = ReactCosmetics.palette;
     final center = size.center(Offset.zero);
     final radius = size.width * .44;
     final base = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 9
-      ..color = const Color(0xFF122038);
+      ..color = _themeRingBaseColor();
     canvas.drawCircle(center, radius, base);
 
     final deco = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
-    deco.color = ReactColors.electricBlueBright.withValues(alpha: .7);
+    deco.color = palette.primary.withValues(alpha: .72);
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       .8,
@@ -1090,7 +1130,7 @@ class _RingPainter extends CustomPainter {
       false,
       deco,
     );
-    deco.color = ReactColors.lime.withValues(alpha: .7);
+    deco.color = palette.secondary.withValues(alpha: .72);
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       3.0,
@@ -1098,7 +1138,7 @@ class _RingPainter extends CustomPainter {
       false,
       deco,
     );
-    deco.color = ReactColors.coral.withValues(alpha: .7);
+    deco.color = palette.failure.withValues(alpha: .72);
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       4.75,
@@ -1111,14 +1151,14 @@ class _RingPainter extends CustomPainter {
     final track = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12
-      ..color = const Color(0xFF10243D);
+      ..color = _themeTimerTrackColor();
     canvas.drawCircle(center, timerRadius, track);
 
     final timer = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12
       ..strokeCap = StrokeCap.round
-      ..color = progress < .18 ? ReactColors.coral : accent;
+      ..color = progress < .18 ? palette.failure : accent;
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: timerRadius),
       -pi / 2,
@@ -1152,18 +1192,18 @@ class _BottomBar extends StatelessWidget {
       height: 68,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
+        color: _themePanelColor(),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF213A57)),
+        border: Border.all(color: _themeBorderColor()),
       ),
       child: Row(
         children: [
-          Icon(Icons.bolt_rounded, color: _modeColor(mode), size: 21),
+          Icon(Icons.bolt_rounded, color: _visualAccent(mode), size: 21),
           const SizedBox(width: 8),
           Text(
             mode.label,
             style: TextStyle(
-              color: _modeColor(mode),
+              color: _visualAccent(mode),
               fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 1,
@@ -1226,7 +1266,7 @@ class _Divider extends StatelessWidget {
     width: 1,
     height: 30,
     margin: const EdgeInsets.symmetric(horizontal: 9),
-    color: const Color(0xFF1B304A),
+    color: _themeBorderColor(),
   );
 }
 
@@ -1249,16 +1289,16 @@ class _PauseOverlay extends StatelessWidget {
         width: 300,
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
-          color: const Color(0xFF07111D),
+          color: _themePanelColor(),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFF2B496B)),
+          border: Border.all(color: _themeBorderColor()),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.pause_circle_outline_rounded,
-              color: ReactColors.electricBlueBright,
+              color: ReactCosmetics.palette.primary,
               size: 52,
             ),
             const SizedBox(height: 12),
@@ -1317,6 +1357,7 @@ class _HandoffOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = ReactCosmetics.palette;
     final hasLifeLoss =
         lostPlayer != null && livesBefore != null && livesAfter != null;
     final matchOver = winnerPlayer != null;
@@ -1330,10 +1371,10 @@ class _HandoffOverlay extends StatelessWidget {
             width: 330,
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
-              color: const Color(0xFF07111D),
+              color: _themePanelColor(),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: hasLifeLoss ? ReactColors.coral : ReactColors.purple,
+                color: hasLifeLoss ? palette.failure : _visualAccent(ReactGameMode.passIt),
               ),
             ),
             child: Column(
@@ -1343,7 +1384,9 @@ class _HandoffOverlay extends StatelessWidget {
                   hasLifeLoss
                       ? Icons.heart_broken_rounded
                       : Icons.phone_android_rounded,
-                  color: hasLifeLoss ? ReactColors.coral : ReactColors.purple,
+                  color: hasLifeLoss
+                      ? palette.failure
+                      : _visualAccent(ReactGameMode.passIt),
                   size: 58,
                 ),
                 if (hasLifeLoss) ...[
@@ -1351,8 +1394,8 @@ class _HandoffOverlay extends StatelessWidget {
                   Text(
                     'PLAYER $lostPlayer LOST A LIFE',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: ReactColors.coral,
+                    style: TextStyle(
+                      color: palette.failure,
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
                       letterSpacing: .5,
@@ -1375,7 +1418,7 @@ class _HandoffOverlay extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 18),
-                  Container(height: 1, color: const Color(0xFF283A52)),
+                  Container(height: 1, color: _themeBorderColor()),
                 ],
                 const SizedBox(height: 18),
                 Text(
@@ -1387,7 +1430,7 @@ class _HandoffOverlay extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: matchOver
-                        ? ReactColors.lime
+                        ? palette.secondary
                         : ReactColors.textPrimary,
                     fontSize: 27,
                     fontWeight: FontWeight.w900,
@@ -1398,18 +1441,18 @@ class _HandoffOverlay extends StatelessWidget {
                   Text(
                     'PLAYER $player  •  $lives LIVES  •  TAP WHEN READY',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: ReactColors.purple,
+                    style: TextStyle(
+                      color: _visualAccent(ReactGameMode.passIt),
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
                       letterSpacing: .8,
                     ),
                   )
                 else
-                  const Text(
+                  Text(
                     'LAST PLAYER STANDING',
                     style: TextStyle(
-                      color: ReactColors.lime,
+                      color: palette.secondary,
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.1,
@@ -1441,21 +1484,22 @@ class _LifeCount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = ReactCosmetics.palette;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF090F1B),
+        color: _themeArenaSurfaceColor(),
         borderRadius: BorderRadius.circular(13),
         border: Border.all(
           color: lost
-              ? ReactColors.coral.withValues(alpha: .62)
-              : const Color(0xFF30445F),
+              ? palette.failure.withValues(alpha: .62)
+              : _themeBorderColor(),
         ),
       ),
       child: Text(
         value == 0 ? '0  OUT' : '$value  ${List.filled(value, '♥').join(' ')}',
         style: TextStyle(
-          color: lost ? ReactColors.coral : ReactColors.textPrimary,
+          color: lost ? palette.failure : ReactColors.textPrimary,
           fontSize: 12,
           fontWeight: FontWeight.w900,
         ),
