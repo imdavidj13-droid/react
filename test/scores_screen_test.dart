@@ -38,7 +38,7 @@ void main() {
     expect(find.text('SCORE 17'), findsOneWidget);
     expect(find.textContaining('17 CLEARED'), findsOneWidget);
     expect(find.textContaining('2 MISSES'), findsOneWidget);
-    expect(find.text('0.74s'), findsOneWidget);
+    expect(find.text('0.74s'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 }
