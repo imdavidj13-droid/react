@@ -10,8 +10,18 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  test('Mode Lab contains every mockup mode with complete metadata', () {
-    expect(ReactVariantMode.values.length, 36);
+  test('Mode Lab contains every retained variant with complete metadata', () {
+    final retainedModes = ReactVariantMode.values
+        .where(
+          (mode) =>
+              mode != ReactVariantMode.tether &&
+              mode != ReactVariantMode.overload &&
+              mode != ReactVariantMode.lockstep &&
+              mode != ReactVariantMode.zenith,
+        )
+        .toList(growable: false);
+
+    expect(retainedModes.length, 32);
 
     final expected = <String>{
       'PHANTOM',
@@ -44,16 +54,12 @@ void main() {
       'SHUFFLE',
       'PULSE',
       'GLITCH',
-      'ZENITH',
       'BLACKOUT',
       'RICOCHET',
-      'TETHER',
-      'OVERLOAD',
-      'LOCKSTEP',
     };
 
-    expect(ReactVariantMode.values.map((mode) => mode.title).toSet(), expected);
-    for (final mode in ReactVariantMode.values) {
+    expect(retainedModes.map((mode) => mode.title).toSet(), expected);
+    for (final mode in retainedModes) {
       expect(mode.badge, isNotEmpty);
       expect(mode.subtitle, isNotEmpty);
       expect(mode.detail, isNotEmpty);
@@ -61,15 +67,13 @@ void main() {
     }
   });
 
-  test('specialized mechanics are assigned to their intended modes', () {
+  test('specialized mechanics are assigned to their intended retained modes', () {
     expect(ReactVariantMode.mosaic.mechanic, ReactVariantMechanic.grid);
     expect(ReactVariantMode.fracture.mechanic, ReactVariantMechanic.grid);
     expect(ReactVariantMode.memory.mechanic, ReactVariantMechanic.memory);
     expect(ReactVariantMode.orbit.mechanic, ReactVariantMechanic.target);
     expect(ReactVariantMode.vortex.mechanic, ReactVariantMechanic.target);
     expect(ReactVariantMode.ricochet.mechanic, ReactVariantMechanic.target);
-    expect(ReactVariantMode.tether.mechanic, ReactVariantMechanic.tether);
-    expect(ReactVariantMode.overload.mechanic, ReactVariantMechanic.overload);
     expect(ReactVariantMode.phantom.mechanic, ReactVariantMechanic.command);
   });
 
@@ -89,14 +93,14 @@ void main() {
 
   testWidgets('variant intro explains its real rule before starting', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(home: VariantModeScreen(mode: ReactVariantMode.tether)),
+      const MaterialApp(home: VariantModeScreen(mode: ReactVariantMode.ricochet)),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('TETHER'), findsOneWidget);
-    expect(find.text('DUAL ACTION'), findsOneWidget);
+    expect(find.text('RICOCHET'), findsOneWidget);
+    expect(find.text('BOUNCE'), findsOneWidget);
     expect(find.text('HOW IT WORKS'), findsOneWidget);
-    expect(find.textContaining('Keep one finger held'), findsOneWidget);
+    expect(find.textContaining('target bounces'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'START MODE'), findsOneWidget);
   });
 }
