@@ -1292,7 +1292,7 @@ class _EmptyRanking extends StatelessWidget {
   const _EmptyRanking();
 
   @override
-  Widget build(BuildContext context) => _EmptyCard(
+  Widget build(BuildContext context) => const _EmptyCard(
     icon: Icons.leaderboard_rounded,
     title: 'NO LIVE SCORES YET',
     subtitle: 'PLAY THIS MODE TO SET THE PACE AND CREATE A COMPETITIVE SCORE.',
