@@ -6,8 +6,10 @@ import 'package:react/features/dot_sequence/domain/dot_sequence_round.dart';
 import 'package:react/features/dot_sequence/presentation/dot_sequence_screen.dart';
 
 void main() {
-  test('generated sequence positions keep safe arena edge clearance', () {
-    for (var seed = 0; seed < 100; seed++) {
+  test('generated sequence positions stay random, spaced and inside arena bounds', () {
+    final fiveDotSignatures = <String>{};
+
+    for (var seed = 0; seed < 250; seed++) {
       final round = DotSequenceRound.generate(Random(seed), count: 5);
 
       expect(round.dotCount, 5);
@@ -22,11 +24,25 @@ void main() {
         for (var b = a + 1; b < round.positions.length; b++) {
           expect(
             (round.positions[a] - round.positions[b]).distance,
-            greaterThanOrEqualTo(.32),
+            greaterThanOrEqualTo(DotSequenceRound.defaultMinimumSpacing),
           );
         }
       }
+
+      // Quantize only for detecting obvious repeated layouts. Random layouts
+      // may naturally resemble one another, but they must not repeatedly fall
+      // back to one identical fixed five-point pattern.
+      fiveDotSignatures.add(
+        round.positions
+            .map(
+              (position) =>
+                  '${(position.dx * 100).round()},${(position.dy * 100).round()}',
+            )
+            .join('|'),
+      );
     }
+
+    expect(fiveDotSignatures.length, greaterThan(240));
   });
 
   testWidgets('Sequence starts with two dots and accepts them only in order',
