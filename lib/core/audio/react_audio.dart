@@ -21,10 +21,10 @@ enum ReactSoundCue {
 
 /// Central sound-effect controller for RE△CT.
 ///
-/// Both built-in sound packs are generated as PCM WAV clips. On native
-/// platforms those clips are persisted to temporary files and played with
-/// [DeviceFileSource]. The equipped sound pack is selected independently from
-/// the visual theme, so players can mix cosmetics.
+/// Every sound pack is generated as PCM WAV clips, so the packs are fully
+/// functional without shipping additional binary audio assets. On native
+/// platforms clips are persisted to temporary files and played with
+/// [DeviceFileSource].
 abstract final class ReactAudio {
   static const int _sampleRate = 22050;
   static const int _playerCount = 6;
@@ -38,6 +38,10 @@ abstract final class ReactAudio {
   static final Map<ReactSoundPack, Map<ReactSoundCue, Uint8List>> _clipSets = {
     ReactSoundPack.core: _buildCoreClips(),
     ReactSoundPack.arcade: _buildArcadeClips(),
+    ReactSoundPack.pulse: _buildPulseClips(),
+    ReactSoundPack.bass: _buildBassClips(),
+    ReactSoundPack.minimal: _buildMinimalClips(),
+    ReactSoundPack.laser: _buildLaserClips(),
   };
 
   static final Map<ReactSoundPack, Map<ReactSoundCue, String?>> _nativeClipPaths = {};
@@ -104,7 +108,6 @@ abstract final class ReactAudio {
     try {
       await initialize();
     } catch (_) {
-      // Audio initialization must never block gameplay. A later cue can retry.
       _initialization = null;
       return;
     }
@@ -156,16 +159,12 @@ abstract final class ReactAudio {
   };
 
   static Map<ReactSoundCue, Uint8List> _buildCoreClips() => {
-    ReactSoundCue.countdownTick: _wav([
-      const _Tone(920, 70, .58),
-    ]),
+    ReactSoundCue.countdownTick: _wav([const _Tone(920, 70, .58)]),
     ReactSoundCue.countdownGo: _wav([
       const _Tone(760, 55, .55),
       const _Tone(1220, 100, .72),
     ]),
-    ReactSoundCue.command: _wav([
-      const _Tone(1180, 38, .36),
-    ]),
+    ReactSoundCue.command: _wav([const _Tone(1180, 38, .36)]),
     ReactSoundCue.success: _wav([
       const _Tone(930, 48, .54),
       const _Tone(1420, 70, .68),
@@ -196,8 +195,6 @@ abstract final class ReactAudio {
     ]),
   };
 
-  /// Brighter, more stepped cues inspired by compact arcade bleeps. The pack
-  /// remains intentionally short and non-musical so it does not alter timing.
   static Map<ReactSoundCue, Uint8List> _buildArcadeClips() => {
     ReactSoundCue.countdownTick: _wav([
       const _Tone(1280, 34, .60),
@@ -246,6 +243,157 @@ abstract final class ReactAudio {
       const _Tone(1175, 42, .56),
       const _Tone(1480, 44, .64),
       const _Tone(1975, 92, .76),
+    ]),
+  };
+
+  /// Tight electronic pulses with a consistent two-hit identity.
+  static Map<ReactSoundCue, Uint8List> _buildPulseClips() => {
+    ReactSoundCue.countdownTick: _wav([
+      const _Tone(760, 36, .50),
+      const _Tone(1120, 36, .56),
+    ]),
+    ReactSoundCue.countdownGo: _wav([
+      const _Tone(720, 42, .50),
+      const _Tone(1040, 42, .60),
+      const _Tone(1560, 90, .76),
+    ]),
+    ReactSoundCue.command: _wav([
+      const _Tone(1360, 26, .42),
+      const _Tone(1680, 28, .34),
+    ]),
+    ReactSoundCue.success: _wav([
+      const _Tone(920, 38, .52),
+      const _Tone(1380, 45, .66),
+      const _Tone(1840, 58, .72),
+    ]),
+    ReactSoundCue.miss: _wav([
+      const _Tone(440, 58, .68),
+      const _Tone(300, 86, .78),
+    ]),
+    ReactSoundCue.lifeLost: _wav([
+      const _Tone(520, 55, .68),
+      const _Tone(340, 72, .76),
+      const _Tone(210, 105, .84),
+    ]),
+    ReactSoundCue.blitzWarning: _wav([
+      const _Tone(1240, 50, .74),
+      const _Tone(0, 42, 0),
+      const _Tone(1540, 58, .78),
+    ]),
+    ReactSoundCue.handoff: _wav([
+      const _Tone(700, 42, .50),
+      const _Tone(980, 42, .58),
+      const _Tone(1260, 64, .66),
+    ]),
+    ReactSoundCue.completed: _wav([
+      const _Tone(820, 45, .52),
+      const _Tone(1220, 50, .62),
+      const _Tone(1660, 60, .70),
+      const _Tone(2100, 95, .78),
+    ]),
+  };
+
+  /// Lower, weightier cues. Short envelopes keep them responsive in play.
+  static Map<ReactSoundCue, Uint8List> _buildBassClips() => {
+    ReactSoundCue.countdownTick: _wav([const _Tone(310, 78, .72)]),
+    ReactSoundCue.countdownGo: _wav([
+      const _Tone(260, 70, .72),
+      const _Tone(520, 120, .82),
+    ]),
+    ReactSoundCue.command: _wav([const _Tone(420, 48, .56)]),
+    ReactSoundCue.success: _wav([
+      const _Tone(360, 55, .66),
+      const _Tone(620, 90, .78),
+    ]),
+    ReactSoundCue.miss: _wav([
+      const _Tone(220, 100, .80),
+      const _Tone(130, 130, .88),
+    ]),
+    ReactSoundCue.lifeLost: _wav([
+      const _Tone(260, 90, .80),
+      const _Tone(170, 105, .86),
+      const _Tone(95, 150, .90),
+    ]),
+    ReactSoundCue.blitzWarning: _wav([
+      const _Tone(380, 75, .78),
+      const _Tone(0, 50, 0),
+      const _Tone(380, 75, .78),
+    ]),
+    ReactSoundCue.handoff: _wav([
+      const _Tone(280, 60, .62),
+      const _Tone(400, 65, .70),
+      const _Tone(560, 80, .76),
+    ]),
+    ReactSoundCue.completed: _wav([
+      const _Tone(300, 65, .64),
+      const _Tone(460, 75, .72),
+      const _Tone(720, 120, .82),
+    ]),
+  };
+
+  /// Sparse, single-note feedback for players who want less sonic clutter.
+  static Map<ReactSoundCue, Uint8List> _buildMinimalClips() => {
+    ReactSoundCue.countdownTick: _wav([const _Tone(840, 42, .48)]),
+    ReactSoundCue.countdownGo: _wav([const _Tone(1280, 80, .66)]),
+    ReactSoundCue.command: _wav([const _Tone(1080, 24, .30)]),
+    ReactSoundCue.success: _wav([const _Tone(1440, 58, .58)]),
+    ReactSoundCue.miss: _wav([const _Tone(260, 90, .70)]),
+    ReactSoundCue.lifeLost: _wav([const _Tone(180, 140, .80)]),
+    ReactSoundCue.blitzWarning: _wav([
+      const _Tone(1040, 52, .62),
+      const _Tone(0, 55, 0),
+      const _Tone(1040, 52, .62),
+    ]),
+    ReactSoundCue.handoff: _wav([const _Tone(760, 82, .56)]),
+    ReactSoundCue.completed: _wav([const _Tone(1640, 125, .70)]),
+  };
+
+  /// Bright high-frequency sweeps built from stepped tones.
+  static Map<ReactSoundCue, Uint8List> _buildLaserClips() => {
+    ReactSoundCue.countdownTick: _wav([
+      const _Tone(1760, 28, .48),
+      const _Tone(1320, 34, .40),
+    ]),
+    ReactSoundCue.countdownGo: _wav([
+      const _Tone(1120, 30, .48),
+      const _Tone(1680, 34, .60),
+      const _Tone(2240, 70, .72),
+    ]),
+    ReactSoundCue.command: _wav([
+      const _Tone(2100, 22, .36),
+      const _Tone(1540, 26, .30),
+    ]),
+    ReactSoundCue.success: _wav([
+      const _Tone(1320, 28, .46),
+      const _Tone(1880, 34, .58),
+      const _Tone(2440, 58, .70),
+    ]),
+    ReactSoundCue.miss: _wav([
+      const _Tone(760, 46, .62),
+      const _Tone(420, 76, .74),
+    ]),
+    ReactSoundCue.lifeLost: _wav([
+      const _Tone(880, 40, .60),
+      const _Tone(520, 58, .72),
+      const _Tone(240, 105, .82),
+    ]),
+    ReactSoundCue.blitzWarning: _wav([
+      const _Tone(2160, 38, .70),
+      const _Tone(0, 35, 0),
+      const _Tone(2160, 38, .70),
+      const _Tone(0, 35, 0),
+      const _Tone(2460, 50, .76),
+    ]),
+    ReactSoundCue.handoff: _wav([
+      const _Tone(1180, 32, .44),
+      const _Tone(1580, 36, .52),
+      const _Tone(2020, 55, .64),
+    ]),
+    ReactSoundCue.completed: _wav([
+      const _Tone(1280, 35, .48),
+      const _Tone(1720, 40, .58),
+      const _Tone(2160, 45, .66),
+      const _Tone(2640, 86, .76),
     ]),
   };
 
