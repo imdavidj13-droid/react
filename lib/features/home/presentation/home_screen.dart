@@ -9,7 +9,6 @@ import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import '../../leaderboard/presentation/leaderboard_screen.dart';
 import '../../modes/presentation/modes_screen.dart';
-import '../../player/presentation/player_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -64,9 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: EdgeInsets.fromLTRB(pad, 8, pad, 12),
                   child: Column(
                     children: [
-                      _TopSection(
-                        onProfile: () => _open(context, const PlayerProfileScreen()),
-                      ),
+                      const _TopSection(),
                       SizedBox(height: compact ? 10 : 14),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -194,75 +191,28 @@ class _HomeStats {
 }
 
 class _TopSection extends StatelessWidget {
-  const _TopSection({required this.onProfile});
-
-  final VoidCallback onProfile;
+  const _TopSection();
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.topCenter,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(top: 4),
-          child: Column(
-            children: [
-              _Logo(),
-              SizedBox(height: 6),
-              Text(
-                'FOLLOW THE COMMAND\nBEFORE TIME RUNS OUT',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: ReactColors.textSecondary,
-                  fontSize: 10.5,
-                  height: 1.35,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.7,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Positioned(
-          top: 0,
-          right: 0,
-          child: _ProfileHeaderButton(onTap: onProfile),
-        ),
-      ],
-    );
-  }
-}
-
-class _ProfileHeaderButton extends StatelessWidget {
-  const _ProfileHeaderButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        key: const ValueKey('home_profile_button'),
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Container(
-          width: 44,
-          height: 44,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF07101E),
-            border: Border.all(
-              color: ReactColors.electricBlue.withValues(alpha: .75),
+    return const Padding(
+      padding: EdgeInsets.only(top: 4),
+      child: Column(
+        children: [
+          _Logo(),
+          SizedBox(height: 6),
+          Text(
+            'FOLLOW THE COMMAND\nBEFORE TIME RUNS OUT',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 10.5,
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.7,
             ),
           ),
-          child: const Icon(
-            Icons.person_outline_rounded,
-            color: ReactColors.textPrimary,
-            size: 22,
-          ),
-        ),
+        ],
       ),
     );
   }
