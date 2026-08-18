@@ -72,8 +72,11 @@ void main() {
     expect(find.text('START GAME'), findsOneWidget);
   });
 
-  testWidgets('Profile settings fits and scrolls on a 320x640 screen', (tester) async {
+  testWidgets('Settings fits and scrolls on a 320x640 screen', (tester) async {
     await pumpAtSize(tester, const SettingsScreen(), const Size(320, 640));
+
+    expect(find.text('SETTINGS'), findsOneWidget);
+    expect(find.text('LOCAL PLAYER'), findsNothing);
 
     await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -500));
     await tester.pumpAndSettle();
