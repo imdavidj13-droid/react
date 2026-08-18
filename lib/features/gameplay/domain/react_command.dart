@@ -42,7 +42,8 @@ extension ReactCommandUi on ReactCommand {
   };
 
   String get title => switch (ReactCosmetics.currentCommandStyle) {
-    ReactCommandStyle.core || ReactCommandStyle.glitch => _coreTitle,
+    ReactCommandStyle.core => _coreTitle,
+    ReactCommandStyle.glitch => '$_coreTitle //',
     ReactCommandStyle.terminal => '> ${_coreTitle.replaceAll(' ', '_')}',
     ReactCommandStyle.arcade => '★ $_coreTitle ★',
     ReactCommandStyle.minimal => _minimalTitle,
@@ -50,7 +51,8 @@ extension ReactCommandUi on ReactCommand {
   };
 
   String get hint => switch (ReactCosmetics.currentCommandStyle) {
-    ReactCommandStyle.core || ReactCommandStyle.glitch => _coreHint,
+    ReactCommandStyle.core => _coreHint,
+    ReactCommandStyle.glitch => '[ $_coreHint ]',
     ReactCommandStyle.terminal => '// ${_coreHint.replaceAll(' ', '_')}',
     ReactCommandStyle.arcade => 'READY • $_coreHint',
     ReactCommandStyle.minimal => _minimalHint,
@@ -81,9 +83,8 @@ extension ReactCommandUi on ReactCommand {
     ReactCommand.spread => 'FINGERS OUT',
   };
 
-  /// Glitch remains a cosmetic treatment only. Command wording and meaning
-  /// stay identical to CORE so players never have to decode a skin while
-  /// reacting under time pressure.
+  /// Glitch uses a visibly different text treatment while preserving the
+  /// original command words and the exact same gameplay timing.
   bool get usesGlitchVisuals =>
       ReactCosmetics.currentCommandStyle == ReactCommandStyle.glitch;
 
