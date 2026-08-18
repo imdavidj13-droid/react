@@ -37,7 +37,11 @@ void main() {
         find.byKey(ValueKey<String>('countdown-style-${style.name}')),
         findsOneWidget,
       );
-      expect(find.text('CLASSIC'), findsOneWidget);
+      if (style == ReactCountdownStyle.terminal) {
+        expect(find.text('REACT://CLASSIC'), findsOneWidget);
+      } else {
+        expect(find.text('CLASSIC'), findsOneWidget);
+      }
       expect(tester.takeException(), isNull);
 
       await tester.pumpWidget(const SizedBox.shrink());
