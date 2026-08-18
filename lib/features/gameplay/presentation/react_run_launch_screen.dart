@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/audio/react_audio.dart';
+import '../../../core/cosmetics/react_cosmetics.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../daily/presentation/daily_run_screen.dart';
 import '../../dot_sequence/presentation/dot_sequence_screen.dart';
@@ -32,7 +33,7 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen>
   bool _suspended = false;
   bool _launching = false;
 
-  Color get _accent => switch (widget.mode) {
+  Color get _baseAccent => switch (widget.mode) {
         ReactGameMode.classic => ReactColors.electricBlueBright,
         ReactGameMode.blitz => ReactColors.coral,
         ReactGameMode.endless => ReactColors.lime,
@@ -40,6 +41,8 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen>
         ReactGameMode.passIt => ReactColors.purple,
         ReactGameMode.sequence => ReactColors.electricBlueBright,
       };
+
+  Color get _accent => ReactCosmetics.effectAccentFor(_baseAccent);
 
   @override
   void initState() {
@@ -118,8 +121,9 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen>
 
   @override
   Widget build(BuildContext context) {
+    final palette = ReactCosmetics.palette;
     return Scaffold(
-      backgroundColor: ReactColors.background,
+      backgroundColor: palette.background,
       body: SafeArea(
         child: Center(
           child: Column(
@@ -148,7 +152,7 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen>
                   _go ? 'GO' : '$_count',
                   key: ValueKey<String>(_go ? 'go' : '$_count'),
                   style: TextStyle(
-                    color: _go ? ReactColors.lime : ReactColors.textPrimary,
+                    color: _go ? palette.secondary : ReactColors.textPrimary,
                     fontSize: _go ? 86 : 118,
                     height: 1,
                     fontWeight: FontWeight.w900,
@@ -164,7 +168,7 @@ class _ReactRunLaunchScreenState extends State<ReactRunLaunchScreen>
                   borderRadius: BorderRadius.circular(99),
                   child: LinearProgressIndicator(
                     value: _go ? 1 : (4 - _count) / 3,
-                    backgroundColor: const Color(0xFF102039),
+                    backgroundColor: palette.primary.withValues(alpha: .14),
                     valueColor: AlwaysStoppedAnimation<Color>(_accent),
                   ),
                 ),
