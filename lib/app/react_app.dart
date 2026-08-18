@@ -125,8 +125,8 @@ class _DebugHome extends StatelessWidget {
       children: [
         const _HomeShell(),
         Positioned(
-          left: 12,
-          top: MediaQuery.paddingOf(context).top + 66,
+          left: 15,
+          top: MediaQuery.paddingOf(context).top + 58,
           child: Material(
             color: Colors.transparent,
             child: IconButton(
@@ -139,11 +139,14 @@ class _DebugHome extends StatelessWidget {
                 );
               },
               style: IconButton.styleFrom(
+                minimumSize: const Size.square(42),
+                maximumSize: const Size.square(42),
+                padding: EdgeInsets.zero,
                 backgroundColor: const Color(0xFF07111D),
                 foregroundColor: ReactColors.coral,
                 side: const BorderSide(color: ReactColors.coral),
               ),
-              icon: const Icon(Icons.science_rounded),
+              icon: const Icon(Icons.science_rounded, size: 20),
             ),
           ),
         ),
