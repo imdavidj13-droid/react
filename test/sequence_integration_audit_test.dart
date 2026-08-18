@@ -65,7 +65,7 @@ void main() {
     await tester.tap(selector);
     await tester.pumpAndSettle();
 
-    expect(find.text('SEQUENCES'), findsOneWidget);
+    expect(find.text('GLOBAL • SEQUENCE'), findsOneWidget);
     expect(find.text('27'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
