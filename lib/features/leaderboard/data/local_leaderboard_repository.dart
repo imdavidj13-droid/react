@@ -2,6 +2,7 @@ import '../../daily/domain/daily_challenge.dart';
 import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_history_entry.dart';
 import '../../gameplay/domain/react_run_result.dart';
+import '../../player/data/local_player_profile.dart';
 import '../domain/leaderboard_entry.dart';
 import '../domain/leaderboard_query.dart';
 import '../domain/leaderboard_snapshot.dart';
@@ -9,8 +10,6 @@ import 'leaderboard_repository.dart';
 
 class LocalLeaderboardRepository implements LeaderboardRepository {
   const LocalLeaderboardRepository();
-
-  static const _localPlayerId = 'local-player';
 
   @override
   Future<LeaderboardSnapshot> load(LeaderboardQuery query) async {
@@ -46,8 +45,10 @@ class LocalLeaderboardRepository implements LeaderboardRepository {
 
       entries.add(
         LeaderboardEntry(
-          playerId: _localPlayerId,
-          displayName: 'YOU',
+          playerId: LocalPlayerProfile.localId.isEmpty
+              ? 'local-player'
+              : LocalPlayerProfile.localId,
+          displayName: LocalPlayerProfile.displayName,
           score: score,
           isCurrentPlayer: true,
           averageReactionSeconds: matchingRun != null &&
