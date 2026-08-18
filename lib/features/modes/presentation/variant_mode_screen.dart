@@ -4,6 +4,7 @@ import '../../../core/cosmetics/react_cosmetics.dart';
 import '../../../core/theme/react_colors.dart';
 import '../data/local_variant_mode_stats.dart';
 import '../domain/react_variant_mode.dart';
+import 'random_target_run_screen.dart';
 import 'variant_run_screen.dart';
 
 class VariantModeScreen extends StatefulWidget {
@@ -32,8 +33,14 @@ class _VariantModeScreenState extends State<VariantModeScreen> {
   }
 
   Future<void> _start() async {
+    final runScreen = switch (widget.mode) {
+      ReactVariantMode.ricochet || ReactVariantMode.vortex =>
+        RandomTargetRunScreen(mode: widget.mode),
+      _ => VariantRunScreen(mode: widget.mode),
+    };
+
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => VariantRunScreen(mode: widget.mode)),
+      MaterialPageRoute<void>(builder: (_) => runScreen),
     );
     if (!mounted) return;
     setState(_reload);
@@ -106,14 +113,23 @@ class _VariantModeScreenState extends State<VariantModeScreen> {
                                   ),
                                 ],
                               ),
-                              child: Icon(widget.mode.icon, color: accent, size: compact ? 31 : 37),
+                              child: Icon(
+                                widget.mode.icon,
+                                color: accent,
+                                size: compact ? 31 : 37,
+                              ),
                             ),
                             const Spacer(),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 11,
+                                vertical: 7,
+                              ),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: accent.withValues(alpha: .55)),
+                                border: Border.all(
+                                  color: accent.withValues(alpha: .55),
+                                ),
                               ),
                               child: Text(
                                 widget.mode.badge,
@@ -166,7 +182,9 @@ class _VariantModeScreenState extends State<VariantModeScreen> {
                     decoration: BoxDecoration(
                       color: palette.primary.withValues(alpha: .035),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: palette.primary.withValues(alpha: .18)),
+                      border: Border.all(
+                        color: palette.primary.withValues(alpha: .18),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,9 +218,21 @@ class _VariantModeScreenState extends State<VariantModeScreen> {
                       final stats = snapshot.data ?? (0, 0);
                       return Row(
                         children: [
-                          Expanded(child: _Stat(label: 'BEST', value: '${stats.$1}', color: accent)),
+                          Expanded(
+                            child: _Stat(
+                              label: 'BEST',
+                              value: '${stats.$1}',
+                              color: accent,
+                            ),
+                          ),
                           const SizedBox(width: 10),
-                          Expanded(child: _Stat(label: 'RUNS', value: '${stats.$2}', color: palette.secondary)),
+                          Expanded(
+                            child: _Stat(
+                              label: 'RUNS',
+                              value: '${stats.$2}',
+                              color: palette.secondary,
+                            ),
+                          ),
                         ],
                       );
                     },
@@ -215,12 +245,17 @@ class _VariantModeScreenState extends State<VariantModeScreen> {
                       style: FilledButton.styleFrom(
                         backgroundColor: accent,
                         foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(29)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(29),
+                        ),
                       ),
                       icon: const Icon(Icons.play_arrow_rounded),
                       label: const Text(
                         'START MODE',
-                        style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
                       ),
                     ),
                   ),
@@ -253,9 +288,24 @@ class _Stat extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(label, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: TextStyle(color: color, fontSize: 23, fontWeight: FontWeight.w900)),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 23,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ],
       ),
     );
