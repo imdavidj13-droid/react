@@ -33,7 +33,13 @@ void main() {
     expect(find.text('PLAYER-517382'), findsOneWidget);
     expect(find.text('RX-5173822187'), findsWidgets);
     expect(find.text('GUEST PLAYER'), findsOneWidget);
-    expect(find.text('PLAYER STATS'), findsOneWidget);
+    expect(find.text('LIFETIME PERFORMANCE'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('PERSONAL BESTS'),
+      260,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('PERSONAL BESTS'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
