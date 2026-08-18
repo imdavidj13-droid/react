@@ -26,4 +26,26 @@ void main() {
     expect(ReactCommand.spread.usesGlitchVisuals, isTrue);
     expect(ReactCommand.spread.reactionWindowMs(1000), coreWindow);
   });
+
+  test('new command text packs are visibly distinct without changing timing', () {
+    final coreWindow = ReactCommand.doubleTap.reactionWindowMs(1000);
+
+    final titles = <String>{};
+    for (final style in <ReactCommandStyle>[
+      ReactCommandStyle.terminal,
+      ReactCommandStyle.arcade,
+      ReactCommandStyle.minimal,
+      ReactCommandStyle.impact,
+    ]) {
+      ReactCosmetics.currentCommandStyle = style;
+      titles.add(ReactCommand.doubleTap.title);
+      expect(ReactCommand.doubleTap.reactionWindowMs(1000), coreWindow);
+    }
+
+    expect(titles.length, 4);
+    ReactCosmetics.currentCommandStyle = ReactCommandStyle.terminal;
+    expect(ReactCommand.swipeLeft.title, '> SWIPE_LEFT');
+    ReactCosmetics.currentCommandStyle = ReactCommandStyle.minimal;
+    expect(ReactCommand.swipeLeft.title, 'LEFT');
+  });
 }
