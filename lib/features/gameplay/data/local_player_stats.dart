@@ -30,6 +30,8 @@ class LocalPlayerStats {
   static const _runsKey = 'runs_played';
   static const _bestStreakKey = 'best_command_streak';
   static const _bestSequenceStreakKey = 'best_sequence_streak';
+  static const _lifetimeAttemptsKey = 'lifetime_command_attempts';
+  static const _lifetimeSuccessesKey = 'lifetime_command_successes';
   static const _dailyLastPlayedKey = 'daily_last_played';
   static const _dailyActiveChallengeKey = 'daily_active_challenge';
   static const _dailyStreakKey = 'daily_streak';
@@ -58,12 +60,62 @@ class LocalPlayerStats {
 
   static Future<int> bestCommandStreak() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_bestStreakKey) ?? 0;
+    final persisted = prefs.getInt(_bestStreakKey) ?? 0;
+    if (persisted > 0) return persisted;
+
+    var recovered = 0;
+    for (final run in await recentRuns()) {
+      if (run.mode == ReactGameMode.sequence ||
+          run.mode == ReactGameMode.passIt) {
+        continue;
+      }
+      if (run.maxStreak > recovered) recovered = run.maxStreak;
+    }
+    if (recovered > 0) await prefs.setInt(_bestStreakKey, recovered);
+    return recovered;
   }
 
   static Future<int> bestSequenceStreak() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_bestSequenceStreakKey) ?? 0;
+    final persisted = prefs.getInt(_bestSequenceStreakKey) ?? 0;
+    if (persisted > 0) return persisted;
+
+    var recovered = 0;
+    for (final run in await recentRuns()) {
+      if (run.mode != ReactGameMode.sequence) continue;
+      if (run.maxStreak > recovered) recovered = run.maxStreak;
+    }
+    if (recovered > 0) {
+      await prefs.setInt(_bestSequenceStreakKey, recovered);
+    }
+    return recovered;
+  }
+
+  static Future<double> lifetimeAccuracy() async {
+    final prefs = await SharedPreferences.getInstance();
+    var attempts = prefs.getInt(_lifetimeAttemptsKey) ?? 0;
+    var successes = prefs.getInt(_lifetimeSuccessesKey) ?? 0;
+
+    if (attempts <= 0) {
+      for (final performance in await commandPerformance()) {
+        attempts += performance.attempts;
+        successes += performance.successes;
+      }
+    }
+
+    if (attempts <= 0) {
+      for (final run in await recentRuns()) {
+        if (run.mode == ReactGameMode.sequence ||
+            run.mode == ReactGameMode.passIt) {
+          continue;
+        }
+        successes += run.score;
+        attempts += run.score + run.misses;
+      }
+    }
+
+    if (attempts <= 0) return 0;
+    return (successes / attempts).clamp(0.0, 1.0);
   }
 
   static Future<int> runsPlayed() async {
@@ -263,6 +315,20 @@ class LocalPlayerStats {
       );
     }
 
+    if (result.mode != ReactGameMode.sequence &&
+        result.mode != ReactGameMode.passIt) {
+      await prefs.setInt(
+        _lifetimeSuccessesKey,
+        (prefs.getInt(_lifetimeSuccessesKey) ?? 0) + result.successfulCommands,
+      );
+      await prefs.setInt(
+        _lifetimeAttemptsKey,
+        (prefs.getInt(_lifetimeAttemptsKey) ?? 0) +
+            result.successfulCommands +
+            result.misses,
+      );
+    }
+
     for (final performance in result.commandPerformance.values) {
       if (performance.attempts <= 0) continue;
       final command = performance.command;
@@ -297,9 +363,6 @@ class LocalPlayerStats {
       if (isNewModifierBest) {
         await prefs.setInt(_dailyModifierBestKey(modifier), result.score);
       }
-      // Daily rules have intentionally different difficulty. For Results,
-      // "NEW BEST" therefore means a new record for the challenge modifier
-      // rather than a cross-modifier score that may not be directly comparable.
       isNewBest = isNewModifierBest;
 
       final existing = _decodeDailyHistory(prefs)[_dateKey(challengeDate)];
@@ -344,6 +407,8 @@ class LocalPlayerStats {
     await prefs.remove(_runsKey);
     await prefs.remove(_bestStreakKey);
     await prefs.remove(_bestSequenceStreakKey);
+    await prefs.remove(_lifetimeAttemptsKey);
+    await prefs.remove(_lifetimeSuccessesKey);
     await prefs.remove(_dailyLastPlayedKey);
     await prefs.remove(_dailyActiveChallengeKey);
     await prefs.remove(_dailyStreakKey);
