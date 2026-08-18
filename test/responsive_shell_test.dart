@@ -44,13 +44,21 @@ void main() {
     expect(find.text('ENDLESS'), findsOneWidget);
   });
 
-  testWidgets('Modes fits a 320x640 screen without scrolling', (tester) async {
+  testWidgets('Modes catalogue fits and scrolls on a 320x640 screen', (tester) async {
     await pumpAtSize(tester, const ModesScreen(), const Size(320, 640));
 
-    expect(find.byType(SingleChildScrollView), findsNothing);
+    expect(find.byKey(const ValueKey('modes_catalogue_scroll')), findsOneWidget);
     expect(find.text('CLASSIC'), findsOneWidget);
-    expect(find.text('PROFILE'), findsOneWidget);
-    expect(find.text('CHOOSE YOUR MODE'), findsOneWidget);
+    expect(find.text('CORE & UTILITIES'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('MODE LAB'),
+      350,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('MODE LAB'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
