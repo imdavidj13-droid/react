@@ -4,6 +4,8 @@ class LeaderboardEntry {
     required this.displayName,
     required this.score,
     required this.isCurrentPlayer,
+    this.playerCode,
+    this.avatarUrl,
     this.rank,
     this.averageReactionSeconds,
     this.recordedAt,
@@ -13,6 +15,8 @@ class LeaderboardEntry {
 
   final String playerId;
   final String displayName;
+  final String? playerCode;
+  final String? avatarUrl;
   final int score;
   final bool isCurrentPlayer;
   final int? rank;
@@ -22,6 +26,8 @@ class LeaderboardEntry {
   final String? dailyModifierLabel;
 
   LeaderboardEntry copyWith({
+    String? playerCode,
+    String? avatarUrl,
     int? rank,
     double? averageReactionSeconds,
     DateTime? recordedAt,
@@ -31,6 +37,8 @@ class LeaderboardEntry {
     return LeaderboardEntry(
       playerId: playerId,
       displayName: displayName,
+      playerCode: playerCode ?? this.playerCode,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       score: score,
       isCurrentPlayer: isCurrentPlayer,
       rank: rank ?? this.rank,
