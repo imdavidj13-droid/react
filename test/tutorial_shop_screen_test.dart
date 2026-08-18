@@ -10,11 +10,21 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     ReactCosmetics.currentTheme = ReactVisualTheme.core;
+    ReactCosmetics.currentCountdownStyle = ReactCountdownStyle.core;
     ReactCosmetics.currentSoundPack = ReactSoundPack.core;
     ReactCosmetics.currentCommandStyle = ReactCommandStyle.core;
     ReactCosmetics.currentShareStyle = ReactShareStyle.core;
     await LocalShopState.load();
   });
+
+  Future<void> scrollTo(WidgetTester tester, Finder finder) async {
+    await tester.scrollUntilVisible(
+      finder,
+      280,
+      scrollable: find.byType(CustomScrollView),
+    );
+    await tester.pumpAndSettle();
+  }
 
   testWidgets('how to play exposes the complete command tutorial', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: HowToPlayScreen()));
@@ -38,7 +48,7 @@ void main() {
     expect(find.text("LET'S PLAY"), findsOneWidget);
   });
 
-  testWidgets('shop exposes implemented cosmetics in debug', (tester) async {
+  testWidgets('shop exposes implemented cosmetics in clear sections', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
     await tester.pumpAndSettle();
 
@@ -52,10 +62,19 @@ void main() {
     expect(find.text('REDLINE'), findsOneWidget);
     expect(find.text('OWNED'), findsWidgets);
 
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
-    await tester.pumpAndSettle();
+    for (final section in <String>[
+      'REACTION PACKS',
+      'COUNTDOWN STYLES',
+      'AUDIO PACKS',
+      'COMMAND TEXT STYLES',
+      'SHARE CARDS',
+    ]) {
+      expect(find.text(section), findsOneWidget);
+    }
 
+    await scrollTo(tester, find.text('ARCADE SFX'));
     expect(find.text('ARCADE SFX'), findsOneWidget);
+    await scrollTo(tester, find.text('FAIR PLAY PROMISE'));
     expect(find.textContaining('NO EXTRA LIVES'), findsOneWidget);
     expect(find.textContaining('PAID GAMEPLAY ADVANTAGES'), findsOneWidget);
   });
@@ -64,19 +83,25 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
     await tester.pumpAndSettle();
 
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -520));
-    await tester.pumpAndSettle();
-
+    await scrollTo(tester, find.byKey(const ValueKey('shop_filter_audio')));
     await tester.tap(find.byKey(const ValueKey('shop_filter_audio')));
     await tester.pumpAndSettle();
     expect(find.text('ARCADE SFX'), findsOneWidget);
+    expect(find.text('PULSE SFX'), findsOneWidget);
     expect(find.text('SYNTHWAVE'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('shop_filter_styles')));
     await tester.pumpAndSettle();
     expect(find.text('GLITCH COMMANDS'), findsOneWidget);
+    expect(find.text('TERMINAL COMMANDS'), findsOneWidget);
     expect(find.text('PRO SHARE CARDS'), findsOneWidget);
     expect(find.text('ARCADE SFX'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('shop_filter_countdown')));
+    await tester.pumpAndSettle();
+    expect(find.text('RINGS COUNTDOWN'), findsOneWidget);
+    expect(find.text('PULSE COUNTDOWN'), findsOneWidget);
+    expect(find.text('GLITCH COMMANDS'), findsNothing);
   });
 
   testWidgets('featured Redline can be equipped in debug', (tester) async {
@@ -93,12 +118,26 @@ void main() {
     expect(await LocalShopState.equippedPack(), LocalShopState.redlinePackId);
   });
 
+  testWidgets('new Greenline reaction pack can be equipped in debug',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
+    await tester.pumpAndSettle();
+
+    await scrollTo(tester, find.text('GREENLINE'));
+    await tester.tap(find.text('GREENLINE'));
+    await tester.pumpAndSettle();
+    expect(find.text('Electric green arena accents'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'EQUIP'));
+    await tester.pumpAndSettle();
+    expect(ReactCosmetics.currentReactionPack, ReactReactionPack.greenline);
+  });
+
   testWidgets('Arcade SFX can be equipped independently in debug', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
     await tester.pumpAndSettle();
 
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
-    await tester.pumpAndSettle();
+    await scrollTo(tester, find.text('ARCADE SFX'));
     await tester.tap(find.text('ARCADE SFX'));
     await tester.pumpAndSettle();
     expect(find.text('Alternate countdown cues'), findsOneWidget);
@@ -108,12 +147,26 @@ void main() {
     expect(ReactCosmetics.currentSoundPack, ReactSoundPack.arcade);
   });
 
-  testWidgets('Glitch Commands can be equipped independently in debug', (tester) async {
+  testWidgets('Bass SFX can be equipped independently in debug', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
     await tester.pumpAndSettle();
 
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1100));
+    await scrollTo(tester, find.text('BASS SFX'));
+    await tester.tap(find.text('BASS SFX'));
     await tester.pumpAndSettle();
+    expect(find.text('Low command thumps'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'EQUIP'));
+    await tester.pumpAndSettle();
+    expect(ReactCosmetics.currentSoundPack, ReactSoundPack.bass);
+  });
+
+  testWidgets('Glitch Commands can be equipped independently in debug',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
+    await tester.pumpAndSettle();
+
+    await scrollTo(tester, find.text('GLITCH COMMANDS'));
     await tester.tap(find.text('GLITCH COMMANDS'));
     await tester.pumpAndSettle();
     expect(find.text('System-coded command hints'), findsOneWidget);
@@ -123,12 +176,27 @@ void main() {
     expect(ReactCosmetics.currentCommandStyle, ReactCommandStyle.glitch);
   });
 
-  testWidgets('Pro Share Cards can be equipped independently in debug', (tester) async {
+  testWidgets('Terminal countdown can be equipped independently in debug',
+      (tester) async {
     await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
     await tester.pumpAndSettle();
 
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1200));
+    await scrollTo(tester, find.text('TERMINAL COUNTDOWN'));
+    await tester.tap(find.text('TERMINAL COUNTDOWN'));
     await tester.pumpAndSettle();
+    expect(find.text('Command-line countdown labels'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'EQUIP'));
+    await tester.pumpAndSettle();
+    expect(ReactCosmetics.currentCountdownStyle, ReactCountdownStyle.terminal);
+  });
+
+  testWidgets('Pro Share Cards can be equipped independently in debug',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
+    await tester.pumpAndSettle();
+
+    await scrollTo(tester, find.text('PRO SHARE CARDS'));
     await tester.tap(find.text('PRO SHARE CARDS'));
     await tester.pumpAndSettle();
 
