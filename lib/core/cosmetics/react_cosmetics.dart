@@ -264,7 +264,10 @@ abstract final class ReactCosmetics {
             ReactReactionPack.voltage ||
             ReactReactionPack.ember ||
             ReactReactionPack.hotPink:
-        currentTheme = ReactVisualTheme.core;
+        // New colour packs use the existing neutral-black gameplay surfaces.
+        // Borders, timers and effects still derive from the pack palette, so
+        // no Core-blue or Redline-red chrome leaks into these colourways.
+        currentTheme = ReactVisualTheme.mono;
         _reactionPackOverride = pack;
     }
   }
