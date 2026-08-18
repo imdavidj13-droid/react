@@ -17,11 +17,16 @@ void main() {
               mode != ReactVariantMode.tether &&
               mode != ReactVariantMode.overload &&
               mode != ReactVariantMode.lockstep &&
-              mode != ReactVariantMode.zenith,
+              mode != ReactVariantMode.zenith &&
+              mode != ReactVariantMode.pulse &&
+              mode != ReactVariantMode.shuffle &&
+              mode != ReactVariantMode.fuse &&
+              mode != ReactVariantMode.orbit &&
+              mode != ReactVariantMode.echo,
         )
         .toList(growable: false);
 
-    expect(retainedModes.length, 32);
+    expect(retainedModes.length, 27);
 
     final expected = <String>{
       'PHANTOM',
@@ -48,11 +53,6 @@ void main() {
       'SNAP',
       'VORTEX',
       'TIMEDROP',
-      'ECHO',
-      'ORBIT',
-      'FUSE',
-      'SHUFFLE',
-      'PULSE',
       'GLITCH',
       'BLACKOUT',
       'RICOCHET',
@@ -71,7 +71,6 @@ void main() {
     expect(ReactVariantMode.mosaic.mechanic, ReactVariantMechanic.grid);
     expect(ReactVariantMode.fracture.mechanic, ReactVariantMechanic.grid);
     expect(ReactVariantMode.memory.mechanic, ReactVariantMechanic.memory);
-    expect(ReactVariantMode.orbit.mechanic, ReactVariantMechanic.target);
     expect(ReactVariantMode.vortex.mechanic, ReactVariantMechanic.target);
     expect(ReactVariantMode.ricochet.mechanic, ReactVariantMechanic.target);
     expect(ReactVariantMode.phantom.mechanic, ReactVariantMechanic.command);
@@ -83,12 +82,12 @@ void main() {
 
     expect(await LocalVariantModeStats.record(ReactVariantMode.phantom, 7), isTrue);
     expect(await LocalVariantModeStats.record(ReactVariantMode.phantom, 4), isFalse);
-    expect(await LocalVariantModeStats.record(ReactVariantMode.orbit, 11), isTrue);
+    expect(await LocalVariantModeStats.record(ReactVariantMode.ricochet, 11), isTrue);
 
     expect(await LocalVariantModeStats.best(ReactVariantMode.phantom), 7);
     expect(await LocalVariantModeStats.plays(ReactVariantMode.phantom), 2);
-    expect(await LocalVariantModeStats.best(ReactVariantMode.orbit), 11);
-    expect(await LocalVariantModeStats.plays(ReactVariantMode.orbit), 1);
+    expect(await LocalVariantModeStats.best(ReactVariantMode.ricochet), 11);
+    expect(await LocalVariantModeStats.plays(ReactVariantMode.ricochet), 1);
   });
 
   testWidgets('variant intro explains its real rule before starting', (tester) async {
