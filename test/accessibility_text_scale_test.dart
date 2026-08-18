@@ -44,24 +44,20 @@ void main() {
     expect(find.text('PLAY'), findsOneWidget);
   });
 
-  testWidgets('Modes keeps all eight options on one compact screen', (tester) async {
+  testWidgets('Modes catalogue scrolls safely with large text', (tester) async {
     await pumpLargeText(tester, const ModesScreen());
 
-    for (final label in <String>[
-      'CLASSIC',
-      'BLITZ',
-      'ENDLESS',
-      'SEQUENCE',
-      'PASS IT',
-      'DAILY',
-      'SCORES',
-      'PROFILE',
-    ]) {
-      expect(find.text(label), findsWidgets);
-    }
+    expect(find.byKey(const ValueKey('modes_catalogue_scroll')), findsOneWidget);
+    expect(find.text('CORE & UTILITIES'), findsOneWidget);
+    expect(find.text('CLASSIC'), findsOneWidget);
+    expect(find.text('BLITZ'), findsOneWidget);
 
-    final grid = tester.widget<GridView>(find.byType(GridView));
-    expect(grid.physics, isA<NeverScrollableScrollPhysics>());
+    await tester.scrollUntilVisible(
+      find.text('MODE LAB'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('MODE LAB'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
