@@ -132,6 +132,9 @@ class ModesScreen extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final pad = constraints.maxWidth < 380 ? 12.0 : 16.0;
+            final textScale = MediaQuery.textScalerOf(context).scale(1);
+            final baseCardExtent = constraints.maxWidth < 380 ? 220.0 : 190.0;
+            final cardExtent = baseCardExtent * textScale;
             return CustomScrollView(
               key: const ValueKey('modes_catalogue_scroll'),
               slivers: [
@@ -161,11 +164,11 @@ class ModesScreen extends StatelessWidget {
                       (context, index) => _ModePanel(data: coreModes[index]),
                       childCount: coreModes.length,
                     ),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 9,
                       mainAxisSpacing: 9,
-                      mainAxisExtent: 190,
+                      mainAxisExtent: cardExtent,
                     ),
                   ),
                 ),
@@ -186,11 +189,11 @@ class ModesScreen extends StatelessWidget {
                       (context, index) => _ModePanel(data: labModes[index]),
                       childCount: labModes.length,
                     ),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 9,
                       mainAxisSpacing: 9,
-                      mainAxisExtent: 190,
+                      mainAxisExtent: cardExtent,
                     ),
                   ),
                 ),
