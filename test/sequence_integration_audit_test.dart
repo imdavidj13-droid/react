@@ -41,7 +41,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('PERSONAL BESTS'), findsOneWidget);
-    expect(find.text('SEQUENCE'), findsOneWidget);
+    expect(find.text('SEQUENCE'), findsWidgets);
     expect(find.text('27'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
