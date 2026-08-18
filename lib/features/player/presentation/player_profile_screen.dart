@@ -337,6 +337,7 @@ class _PlayerStats {
         LocalPlayerStats.averageReactionSecondsFor(mode),
     ]);
     final commandPerformance = await LocalPlayerStats.commandPerformance();
+    final lifetimeAccuracy = await LocalPlayerStats.lifetimeAccuracy();
 
     final placementSnapshots = await Future.wait<LeaderboardSnapshot>([
       for (final mode in competitiveModes)
@@ -362,14 +363,6 @@ class _PlayerStats {
       weightedCommands += count;
     }
 
-    final totalAttempts = commandPerformance.fold<int>(
-      0,
-      (total, item) => total + item.attempts,
-    );
-    final totalSuccesses = commandPerformance.fold<int>(
-      0,
-      (total, item) => total + item.successes,
-    );
     final rankedCommands = commandPerformance
         .where((item) => item.attempts >= 3)
         .toList(growable: false)
@@ -407,7 +400,7 @@ class _PlayerStats {
     return _PlayerStats(
       runs: await LocalPlayerStats.runsPlayed(),
       commands: await LocalPlayerStats.totalSuccessfulCommands(),
-      accuracy: totalAttempts == 0 ? 0 : totalSuccesses / totalAttempts,
+      accuracy: lifetimeAccuracy,
       averageReactionSeconds:
           weightedCommands == 0 ? 0 : weightedReaction / weightedCommands,
       bestStreak: await LocalPlayerStats.bestCommandStreak(),
