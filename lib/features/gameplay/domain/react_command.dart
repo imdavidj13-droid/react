@@ -17,7 +17,7 @@ enum ReactCommand {
 }
 
 extension ReactCommandUi on ReactCommand {
-  String get title => switch (this) {
+  String get _coreTitle => switch (this) {
     ReactCommand.tap => 'TAP IT',
     ReactCommand.doubleTap => 'DOUBLE TAP',
     ReactCommand.hold => 'HOLD IT',
@@ -29,7 +29,7 @@ extension ReactCommandUi on ReactCommand {
     ReactCommand.spread => 'SPREAD IT',
   };
 
-  String get hint => switch (this) {
+  String get _coreHint => switch (this) {
     ReactCommand.tap => 'TAP ONCE',
     ReactCommand.doubleTap => 'TAP TWICE',
     ReactCommand.hold => 'PRESS AND HOLD',
@@ -39,6 +39,46 @@ extension ReactCommandUi on ReactCommand {
     ReactCommand.swipeDown => 'SWIPE DOWNWARD',
     ReactCommand.pinch => 'MOVE TWO FINGERS TOGETHER',
     ReactCommand.spread => 'MOVE TWO FINGERS APART',
+  };
+
+  String get title => switch (ReactCosmetics.currentCommandStyle) {
+    ReactCommandStyle.core || ReactCommandStyle.glitch => _coreTitle,
+    ReactCommandStyle.terminal => '> ${_coreTitle.replaceAll(' ', '_')}',
+    ReactCommandStyle.arcade => '★ $_coreTitle ★',
+    ReactCommandStyle.minimal => _minimalTitle,
+    ReactCommandStyle.impact => '$_coreTitle!',
+  };
+
+  String get hint => switch (ReactCosmetics.currentCommandStyle) {
+    ReactCommandStyle.core || ReactCommandStyle.glitch => _coreHint,
+    ReactCommandStyle.terminal => '// ${_coreHint.replaceAll(' ', '_')}',
+    ReactCommandStyle.arcade => 'READY • $_coreHint',
+    ReactCommandStyle.minimal => _minimalHint,
+    ReactCommandStyle.impact => 'NOW • $_coreHint',
+  };
+
+  String get _minimalTitle => switch (this) {
+    ReactCommand.tap => 'TAP',
+    ReactCommand.doubleTap => 'DOUBLE',
+    ReactCommand.hold => 'HOLD',
+    ReactCommand.swipeLeft => 'LEFT',
+    ReactCommand.swipeRight => 'RIGHT',
+    ReactCommand.swipeUp => 'UP',
+    ReactCommand.swipeDown => 'DOWN',
+    ReactCommand.pinch => 'PINCH',
+    ReactCommand.spread => 'SPREAD',
+  };
+
+  String get _minimalHint => switch (this) {
+    ReactCommand.tap => 'ONCE',
+    ReactCommand.doubleTap => 'TWICE',
+    ReactCommand.hold => 'PRESS + HOLD',
+    ReactCommand.swipeLeft => 'SWIPE LEFT',
+    ReactCommand.swipeRight => 'SWIPE RIGHT',
+    ReactCommand.swipeUp => 'SWIPE UP',
+    ReactCommand.swipeDown => 'SWIPE DOWN',
+    ReactCommand.pinch => 'FINGERS IN',
+    ReactCommand.spread => 'FINGERS OUT',
   };
 
   /// Glitch remains a cosmetic treatment only. Command wording and meaning
