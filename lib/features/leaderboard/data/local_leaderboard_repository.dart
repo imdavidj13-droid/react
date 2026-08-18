@@ -17,7 +17,7 @@ class LocalLeaderboardRepository implements LeaderboardRepository {
   @override
   Future<LeaderboardSnapshot> load(LeaderboardQuery query) async {
     final client = ReactSupabase.client;
-    if (client != null) {
+    if (client != null && ReactSupabase.hasPlayerSession) {
       try {
         return await _loadRemote(client, query);
       } catch (_) {
