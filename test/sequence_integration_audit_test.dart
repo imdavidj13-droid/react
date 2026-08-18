@@ -35,11 +35,13 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: PlayerProfileScreen()));
     await tester.pumpAndSettle();
 
+    final scrollable = find.byType(Scrollable).first;
     await tester.scrollUntilVisible(
       find.text('PERSONAL BESTS'),
       300,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: scrollable,
     );
+    await tester.drag(scrollable, const Offset(0, -260));
     await tester.pumpAndSettle();
 
     expect(find.text('SEQUENCE'), findsOneWidget);
