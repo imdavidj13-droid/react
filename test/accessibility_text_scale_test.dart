@@ -82,7 +82,7 @@ void main() {
   testWidgets('Settings tolerates 150 percent text on a compact phone',
       (tester) async {
     await pumpLargeText(tester, const SettingsScreen());
-    expect(find.text('PROFILE'), findsWidgets);
+    expect(find.text('SETTINGS'), findsOneWidget);
   });
 
   testWidgets('Results tolerates 150 percent text on a compact phone',
