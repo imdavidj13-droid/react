@@ -36,7 +36,10 @@ void main() {
 
   test('display name validation protects leaderboard-safe names', () {
     expect(LocalPlayerProfile.validateDisplayName('AB'), isNotNull);
-    expect(LocalPlayerProfile.validateDisplayName('A' * 21), isNotNull);
+    expect(
+      LocalPlayerProfile.validateDisplayName('AAAAAAAAAAAAAAAAAAAAA'),
+      isNotNull,
+    );
     expect(LocalPlayerProfile.validateDisplayName('Bad!Name'), isNotNull);
     expect(LocalPlayerProfile.validateDisplayName('Good_Name-7'), isNull);
   });
