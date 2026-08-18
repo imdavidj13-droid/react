@@ -5,10 +5,11 @@ import 'package:flutter/widgets.dart';
 class DotSequenceRound {
   const DotSequenceRound({required this.positions});
 
-  // Position centres stay deliberately conservative because the rendered dot
-  // itself has size, border and glow and the gameplay layout reserves a safe
-  // title/timer zone above the actual dot field.
-  static const double maximumRadius = .56;
+  // Positions are normalized against the Sequence arena's placement radius.
+  // Keeping centres inside this radius leaves visible clearance from the
+  // surrounding gameplay ring even after the rendered dot size is included.
+  static const double maximumRadius = .84;
+  static const double defaultMinimumSpacing = .62;
 
   final List<Offset> positions;
 
@@ -17,37 +18,40 @@ class DotSequenceRound {
   static DotSequenceRound generate(
     Random random, {
     required int count,
-    double minimumSpacing = .50,
+    double minimumSpacing = defaultMinimumSpacing,
   }) {
     assert(count >= 1);
+    assert(minimumSpacing > 0);
 
-    final positions = <Offset>[];
-    var attempts = 0;
+    // Build a completely fresh random layout whenever a partial attempt gets
+    // boxed in. The previous implementation eventually fell back to a regular
+    // polygon, which made five-dot rounds visibly repeat the same pattern.
+    // Restarting preserves true random placement while still enforcing the
+    // requested spacing between every pair of dots.
+    while (true) {
+      final positions = <Offset>[];
+      var attempts = 0;
 
-    while (positions.length < count && attempts < 600) {
-      attempts += 1;
+      while (positions.length < count && attempts < 400) {
+        attempts += 1;
 
-      final angle = random.nextDouble() * pi * 2;
-      final radius = sqrt(random.nextDouble()) * maximumRadius;
-      final candidate = Offset(cos(angle) * radius, sin(angle) * radius);
+        // sqrt() gives an even distribution across the area of the circle,
+        // rather than clustering points around its centre.
+        final angle = random.nextDouble() * pi * 2;
+        final radius = sqrt(random.nextDouble()) * maximumRadius;
+        final candidate = Offset(cos(angle) * radius, sin(angle) * radius);
 
-      final clear = positions.every(
-        (existing) => (existing - candidate).distance >= minimumSpacing,
-      );
-      if (clear) positions.add(candidate);
-    }
-
-    if (positions.length < count) {
-      positions
-        ..clear()
-        ..addAll(
-          List<Offset>.generate(count, (index) {
-            final angle = -pi / 2 + (pi * 2 * index) / count;
-            return Offset(cos(angle) * .48, sin(angle) * .48);
-          }),
+        final clear = positions.every(
+          (existing) => (existing - candidate).distance >= minimumSpacing,
         );
-    }
+        if (clear) positions.add(candidate);
+      }
 
-    return DotSequenceRound(positions: List<Offset>.unmodifiable(positions));
+      if (positions.length == count) {
+        return DotSequenceRound(
+          positions: List<Offset>.unmodifiable(positions),
+        );
+      }
+    }
   }
 }
