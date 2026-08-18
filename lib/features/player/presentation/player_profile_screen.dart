@@ -4,7 +4,11 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/backend/react_supabase.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../gameplay/data/local_player_stats.dart';
+import '../../gameplay/domain/react_command_performance.dart';
 import '../../gameplay/domain/react_run_result.dart';
+import '../../leaderboard/data/local_leaderboard_repository.dart';
+import '../../leaderboard/domain/leaderboard_query.dart';
+import '../../leaderboard/domain/leaderboard_snapshot.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../data/local_player_profile.dart';
 import '../data/player_profile_repository.dart';
@@ -229,9 +233,17 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                     const SizedBox(height: 14),
                     _IdentityPanel(profile: data.profile),
                     const SizedBox(height: 18),
-                    const _SectionTitle('PLAYER STATS'),
+                    const _SectionTitle('LIFETIME PERFORMANCE'),
                     const SizedBox(height: 9),
-                    _StatsGrid(stats: data.stats),
+                    _LifetimeGrid(stats: data.stats),
+                    const SizedBox(height: 18),
+                    const _SectionTitle('SKILL SNAPSHOT'),
+                    const SizedBox(height: 9),
+                    _SkillSnapshot(stats: data.stats),
+                    const SizedBox(height: 18),
+                    const _SectionTitle('GLOBAL PLACEMENTS'),
+                    const SizedBox(height: 9),
+                    _PlacementsCard(stats: data.stats),
                     const SizedBox(height: 18),
                     const _SectionTitle('PERSONAL BESTS'),
                     const SizedBox(height: 9),
@@ -271,45 +283,170 @@ class _PlayerStats {
   const _PlayerStats({
     required this.runs,
     required this.commands,
-    required this.streak,
+    required this.accuracy,
+    required this.averageReactionSeconds,
+    required this.bestStreak,
+    required this.bestSequenceStreak,
+    required this.dailyStreak,
+    required this.favoriteMode,
+    required this.strongestCommand,
     required this.classic,
     required this.blitz,
     required this.endless,
     required this.daily,
     required this.sequence,
+    required this.placements,
+    required this.onlineRanksAvailable,
   });
 
   final int runs;
   final int commands;
-  final int streak;
+  final double accuracy;
+  final double averageReactionSeconds;
+  final int bestStreak;
+  final int bestSequenceStreak;
+  final int dailyStreak;
+  final String favoriteMode;
+  final String strongestCommand;
   final int classic;
   final int blitz;
   final int endless;
   final int daily;
   final int sequence;
+  final List<_Placement> placements;
+  final bool onlineRanksAvailable;
 
   static Future<_PlayerStats> load() async {
-    final values = await Future.wait<int>([
-      LocalPlayerStats.runsPlayed(),
-      LocalPlayerStats.totalSuccessfulCommands(),
-      LocalPlayerStats.dailyStreak(),
-      LocalPlayerStats.bestFor(ReactGameMode.classic),
-      LocalPlayerStats.bestFor(ReactGameMode.blitz),
-      LocalPlayerStats.bestFor(ReactGameMode.endless),
-      LocalPlayerStats.bestFor(ReactGameMode.daily),
-      LocalPlayerStats.bestFor(ReactGameMode.sequence),
+    const leaderboard = LocalLeaderboardRepository();
+    const competitiveModes = <ReactGameMode>[
+      ReactGameMode.classic,
+      ReactGameMode.blitz,
+      ReactGameMode.endless,
+      ReactGameMode.sequence,
+    ];
+
+    final modeRuns = await Future.wait<int>([
+      for (final mode in competitiveModes) LocalPlayerStats.runsFor(mode),
     ]);
+    final modeCommands = await Future.wait<int>([
+      for (final mode in competitiveModes)
+        LocalPlayerStats.successfulCommandsFor(mode),
+    ]);
+    final modeAverages = await Future.wait<double>([
+      for (final mode in competitiveModes)
+        LocalPlayerStats.averageReactionSecondsFor(mode),
+    ]);
+    final commandPerformance = await LocalPlayerStats.commandPerformance();
+
+    final placementSnapshots = await Future.wait<LeaderboardSnapshot>([
+      for (final mode in competitiveModes)
+        leaderboard.load(
+          LeaderboardQuery(scope: LeaderboardScope.global, mode: mode),
+        ),
+      leaderboard.load(
+        LeaderboardQuery(
+          scope: LeaderboardScope.daily,
+          mode: ReactGameMode.daily,
+          dailyDate: DateTime.now(),
+        ),
+      ),
+    ]);
+
+    var weightedReaction = 0.0;
+    var weightedCommands = 0;
+    for (var index = 0; index < competitiveModes.length; index++) {
+      final count = modeCommands[index];
+      final average = modeAverages[index];
+      if (count <= 0 || average <= 0) continue;
+      weightedReaction += average * count;
+      weightedCommands += count;
+    }
+
+    final totalAttempts = commandPerformance.fold<int>(
+      0,
+      (total, item) => total + item.attempts,
+    );
+    final totalSuccesses = commandPerformance.fold<int>(
+      0,
+      (total, item) => total + item.successes,
+    );
+    final rankedCommands = commandPerformance
+        .where((item) => item.attempts >= 3)
+        .toList(growable: false)
+      ..sort((a, b) {
+        final accuracyOrder = b.accuracy.compareTo(a.accuracy);
+        if (accuracyOrder != 0) return accuracyOrder;
+        return b.attempts.compareTo(a.attempts);
+      });
+
+    var favoriteMode = 'NOT ENOUGH DATA';
+    var favoriteRuns = 0;
+    for (var index = 0; index < competitiveModes.length; index++) {
+      if (modeRuns[index] > favoriteRuns) {
+        favoriteRuns = modeRuns[index];
+        favoriteMode = competitiveModes[index].label;
+      }
+    }
+
+    final placements = <_Placement>[
+      for (var index = 0; index < competitiveModes.length; index++)
+        _Placement(
+          label: competitiveModes[index].label,
+          rank: placementSnapshots[index].isLocalPreview
+              ? null
+              : placementSnapshots[index].currentPlayerRank,
+        ),
+      _Placement(
+        label: 'DAILY',
+        rank: placementSnapshots.last.isLocalPreview
+            ? null
+            : placementSnapshots.last.currentPlayerRank,
+      ),
+    ];
+
     return _PlayerStats(
-      runs: values[0],
-      commands: values[1],
-      streak: values[2],
-      classic: values[3],
-      blitz: values[4],
-      endless: values[5],
-      daily: values[6],
-      sequence: values[7],
+      runs: await LocalPlayerStats.runsPlayed(),
+      commands: await LocalPlayerStats.totalSuccessfulCommands(),
+      accuracy: totalAttempts == 0 ? 0 : totalSuccesses / totalAttempts,
+      averageReactionSeconds:
+          weightedCommands == 0 ? 0 : weightedReaction / weightedCommands,
+      bestStreak: await LocalPlayerStats.bestCommandStreak(),
+      bestSequenceStreak: await LocalPlayerStats.bestSequenceStreak(),
+      dailyStreak: await LocalPlayerStats.dailyStreak(),
+      favoriteMode: favoriteMode,
+      strongestCommand: rankedCommands.isEmpty
+          ? 'NOT ENOUGH DATA'
+          : _commandLabel(rankedCommands.first),
+      classic: await LocalPlayerStats.bestFor(ReactGameMode.classic),
+      blitz: await LocalPlayerStats.bestFor(ReactGameMode.blitz),
+      endless: await LocalPlayerStats.bestFor(ReactGameMode.endless),
+      daily: await LocalPlayerStats.bestFor(ReactGameMode.daily),
+      sequence: await LocalPlayerStats.bestFor(ReactGameMode.sequence),
+      placements: placements,
+      onlineRanksAvailable:
+          placementSnapshots.any((snapshot) => !snapshot.isLocalPreview),
     );
   }
+
+  static String _commandLabel(ReactCommandPerformance performance) {
+    final raw = performance.command.name;
+    final buffer = StringBuffer();
+    for (var index = 0; index < raw.length; index++) {
+      final char = raw[index];
+      if (index > 0 && char.toUpperCase() == char && char.toLowerCase() != char) {
+        buffer.write(' ');
+      }
+      buffer.write(char.toUpperCase());
+    }
+    return buffer.toString();
+  }
+}
+
+class _Placement {
+  const _Placement({required this.label, required this.rank});
+
+  final String label;
+  final int? rank;
 }
 
 class _Header extends StatelessWidget {
@@ -451,27 +588,7 @@ class _IdentityHero extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-            decoration: BoxDecoration(
-              color: (profile.isAnonymous ? ReactColors.purple : ReactColors.lime)
-                  .withValues(alpha: .10),
-              borderRadius: BorderRadius.circular(99),
-              border: Border.all(
-                color: (profile.isAnonymous ? ReactColors.purple : ReactColors.lime)
-                    .withValues(alpha: .55),
-              ),
-            ),
-            child: Text(
-              profile.isAnonymous ? 'GUEST PLAYER' : 'SECURED PLAYER',
-              style: TextStyle(
-                color: profile.isAnonymous ? ReactColors.purple : ReactColors.lime,
-                fontSize: 9,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1,
-              ),
-            ),
-          ),
+          _StatusPill(profile: profile),
           if (onRemovePhoto != null) ...[
             const SizedBox(height: 10),
             TextButton.icon(
@@ -485,6 +602,34 @@ class _IdentityHero extends StatelessWidget {
             const LinearProgressIndicator(minHeight: 2),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.profile});
+
+  final PlayerProfileData profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = profile.isAnonymous ? ReactColors.purple : ReactColors.lime;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .10),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: color.withValues(alpha: .55)),
+      ),
+      child: Text(
+        profile.isAnonymous ? 'GUEST PLAYER' : 'SECURED PLAYER',
+        style: TextStyle(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1,
+        ),
       ),
     );
   }
@@ -532,13 +677,7 @@ class _IdentityPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF223750)),
-      ),
+    return _Panel(
       child: Column(
         children: [
           _InfoRow(
@@ -568,49 +707,92 @@ class _IdentityPanel extends StatelessWidget {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    required this.icon,
-    this.valueColor = ReactColors.textPrimary,
-  });
+class _LifetimeGrid extends StatelessWidget {
+  const _LifetimeGrid({required this.stats});
 
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color valueColor;
+  final _PlayerStats stats;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
+    final width = (MediaQuery.sizeOf(context).width - 45) / 2;
+    return Wrap(
+      spacing: 9,
+      runSpacing: 9,
+      children: [
+        _MetricCard(
+          width: width,
+          label: 'RUNS PLAYED',
+          value: '${stats.runs}',
+          color: ReactColors.electricBlueBright,
+        ),
+        _MetricCard(
+          width: width,
+          label: 'COMMANDS CLEARED',
+          value: '${stats.commands}',
+          color: ReactColors.lime,
+        ),
+        _MetricCard(
+          width: width,
+          label: 'LIFETIME ACCURACY',
+          value: stats.accuracy <= 0
+              ? '--'
+              : '${(stats.accuracy * 100).toStringAsFixed(1)}%',
+          color: ReactColors.purple,
+        ),
+        _MetricCard(
+          width: width,
+          label: 'AVG REACTION',
+          value: stats.averageReactionSeconds <= 0
+              ? '--'
+              : '${stats.averageReactionSeconds.toStringAsFixed(2)}s',
+          color: ReactColors.coral,
+        ),
+      ],
+    );
+  }
+}
+
+class _SkillSnapshot extends StatelessWidget {
+  const _SkillSnapshot({required this.stats});
+
+  final _PlayerStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Panel(
+      child: Column(
         children: [
-          Icon(icon, color: ReactColors.textSecondary, size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: ReactColors.textSecondary,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                letterSpacing: .8,
-              ),
-            ),
+          _InfoRow(
+            label: 'BEST COMMAND STREAK',
+            value: '${stats.bestStreak}',
+            icon: Icons.bolt_rounded,
+            valueColor: ReactColors.lime,
           ),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: valueColor,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: .5,
-              ),
-            ),
+          const Divider(color: Color(0xFF1B3048)),
+          _InfoRow(
+            label: 'BEST SEQUENCE STREAK',
+            value: '${stats.bestSequenceStreak}',
+            icon: Icons.blur_on_rounded,
+            valueColor: ReactColors.electricBlueBright,
+          ),
+          const Divider(color: Color(0xFF1B3048)),
+          _InfoRow(
+            label: 'DAILY STREAK',
+            value: '${stats.dailyStreak}',
+            icon: Icons.local_fire_department_outlined,
+            valueColor: ReactColors.coral,
+          ),
+          const Divider(color: Color(0xFF1B3048)),
+          _InfoRow(
+            label: 'FAVOURITE MODE',
+            value: stats.favoriteMode,
+            icon: Icons.favorite_border_rounded,
+          ),
+          const Divider(color: Color(0xFF1B3048)),
+          _InfoRow(
+            label: 'STRONGEST COMMAND',
+            value: stats.strongestCommand,
+            icon: Icons.auto_graph_rounded,
           ),
         ],
       ),
@@ -618,106 +800,93 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        color: ReactColors.textSecondary,
-        fontSize: 9,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 1.3,
-      ),
-    );
-  }
-}
-
-class _StatsGrid extends StatelessWidget {
-  const _StatsGrid({required this.stats});
+class _PlacementsCard extends StatelessWidget {
+  const _PlacementsCard({required this.stats});
 
   final _PlayerStats stats;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatCard(
-            label: 'RUNS',
-            value: '${stats.runs}',
-            color: ReactColors.electricBlueBright,
+    return _Panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                stats.onlineRanksAvailable
+                    ? Icons.public_rounded
+                    : Icons.cloud_off_rounded,
+                size: 18,
+                color: stats.onlineRanksAvailable
+                    ? ReactColors.lime
+                    : ReactColors.textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  stats.onlineRanksAvailable
+                      ? 'LIVE COMPETITIVE RANKS'
+                      : 'ONLINE RANKS UNAVAILABLE',
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .8,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _StatCard(
-            label: 'COMMANDS',
-            value: '${stats.commands}',
-            color: ReactColors.lime,
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final placement in stats.placements)
+                _PlacementChip(placement: placement),
+            ],
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _StatCard(
-            label: 'DAILY STREAK',
-            value: '${stats.streak}',
-            color: ReactColors.coral,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+class _PlacementChip extends StatelessWidget {
+  const _PlacementChip({required this.placement});
 
-  final String label;
-  final String value;
-  final Color color;
+  final _Placement placement;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 76),
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 10),
+      width: (MediaQuery.sizeOf(context).width - 70) / 2,
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 11),
       decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: .28)),
+        color: const Color(0xFF091523),
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
         children: [
-          FittedBox(
+          Expanded(
             child: Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 23,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          FittedBox(
-            child: Text(
-              label,
+              placement.label,
               style: const TextStyle(
                 color: ReactColors.textSecondary,
-                fontSize: 7.5,
+                fontSize: 8,
                 fontWeight: FontWeight.w900,
                 letterSpacing: .7,
               ),
+            ),
+          ),
+          Text(
+            placement.rank == null ? 'UNRANKED' : '#${placement.rank}',
+            style: TextStyle(
+              color: placement.rank == null
+                  ? ReactColors.textSecondary
+                  : ReactColors.lime,
+              fontSize: placement.rank == null ? 8 : 16,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -741,13 +910,7 @@ class _PersonalBests extends StatelessWidget {
       ('SEQUENCE', stats.sequence, ReactColors.electricBlueBright),
     ];
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF223750)),
-      ),
+    return _Panel(
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -813,6 +976,151 @@ class _BestTile extends StatelessWidget {
   }
 }
 
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
+    required this.width,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final double width;
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      constraints: const BoxConstraints(minHeight: 84),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: color.withValues(alpha: .28)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          FittedBox(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 23,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          FittedBox(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 7.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .7,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.valueColor = ReactColors.textPrimary,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, color: ReactColors.textSecondary, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                letterSpacing: .8,
+              ),
+            ),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: valueColor,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Panel extends StatelessWidget {
+  const _Panel({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF223750)),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: ReactColors.textSecondary,
+        fontSize: 9,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 1.3,
+      ),
+    );
+  }
+}
+
 class _AccountCard extends StatelessWidget {
   const _AccountCard({required this.profile});
 
@@ -820,22 +1128,22 @@ class _AccountCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = profile.isAnonymous ? ReactColors.purple : ReactColors.lime;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: (profile.isAnonymous ? ReactColors.purple : ReactColors.lime)
-              .withValues(alpha: .35),
-        ),
+        border: Border.all(color: color.withValues(alpha: .35)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            profile.isAnonymous ? Icons.shield_outlined : Icons.verified_user_outlined,
-            color: profile.isAnonymous ? ReactColors.purple : ReactColors.lime,
+            profile.isAnonymous
+                ? Icons.shield_outlined
+                : Icons.verified_user_outlined,
+            color: color,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -853,8 +1161,8 @@ class _AccountCard extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   profile.isAnonymous
-                      ? 'Your player profile works now without a login. Google and Apple linking can be added later without changing the player identity.'
-                      : 'This player identity is linked to a permanent sign-in method.',
+                      ? 'Your identity, name, photo and competitive record work without a login. Google and Apple linking can secure this same player later without creating a new profile.'
+                      : 'This player identity is linked to a permanent sign-in method and can be restored on another device.',
                   style: const TextStyle(
                     color: ReactColors.textSecondary,
                     fontSize: 9.5,
