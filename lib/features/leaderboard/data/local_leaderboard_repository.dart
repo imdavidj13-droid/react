@@ -156,7 +156,6 @@ class LocalLeaderboardRepository implements LeaderboardRepository {
           avatarUrl: LocalPlayerProfile.avatarUrl,
           score: score,
           isCurrentPlayer: true,
-          rank: 1,
           averageReactionSeconds: matchingRun != null &&
                   matchingRun.averageTimeSeconds > 0
               ? matchingRun.averageTimeSeconds
@@ -173,7 +172,6 @@ class LocalLeaderboardRepository implements LeaderboardRepository {
       query: query,
       entries: entries,
       source: LeaderboardDataSource.localPreview,
-      currentPlayerRank: entries.isEmpty ? null : 1,
     );
   }
 
