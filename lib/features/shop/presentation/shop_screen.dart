@@ -375,7 +375,9 @@ class _ShopScreenState extends State<ShopScreen> {
 
   void _refresh() {
     if (!mounted) return;
-    setState(() => _equippedPackIds = LocalShopState.equippedPackIds());
+    setState(() {
+      _equippedPackIds = LocalShopState.equippedPackIds();
+    });
   }
 
   Future<void> _equip(_ShopPack pack) async {
@@ -608,7 +610,9 @@ class _HeroCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: ReactColors.panel,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: ReactColors.electricBlue.withValues(alpha: .45)),
+          border: Border.all(
+            color: ReactColors.electricBlue.withValues(alpha: .45),
+          ),
         ),
         child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -651,7 +655,11 @@ class _DevCard extends StatelessWidget {
         ),
         child: const Row(
           children: [
-            Icon(Icons.developer_mode_rounded, color: ReactColors.purple, size: 20),
+            Icon(
+              Icons.developer_mode_rounded,
+              color: ReactColors.purple,
+              size: 20,
+            ),
             SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -756,7 +764,10 @@ class _PackCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: ReactColors.textSecondary),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: ReactColors.textSecondary,
+                ),
               ],
             ),
           ),
@@ -833,7 +844,10 @@ class _FeaturedCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: ReactColors.textPrimary),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: ReactColors.textPrimary,
+                ),
               ],
             ),
           ),
@@ -1015,7 +1029,11 @@ class _PackSheet extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle_rounded, color: pack.accent, size: 18),
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: pack.accent,
+                        size: 18,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
