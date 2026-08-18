@@ -102,20 +102,29 @@ class ModesScreen extends StatelessWidget {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final pad = constraints.maxWidth < 380 ? 16.0 : 20.0;
+            final pad = constraints.maxWidth < 380 ? 12.0 : 16.0;
+            final shortScreen = constraints.maxHeight < 700;
+            final heroHeight = shortScreen ? 88.0 : 104.0;
+
             return Padding(
-              padding: EdgeInsets.fromLTRB(pad, 10, pad, 10),
+              padding: EdgeInsets.fromLTRB(pad, 6, pad, 8),
               child: Column(
                 children: [
-                  _Header(onBack: () => Navigator.of(context).pop()),
-                  const SizedBox(height: 12),
-                  const _ModesHero(),
-                  const SizedBox(height: 8),
+                  _compactTextScale(
+                    context,
+                    _Header(onBack: () => Navigator.of(context).pop()),
+                  ),
+                  SizedBox(height: shortScreen ? 5 : 8),
+                  SizedBox(
+                    height: heroHeight,
+                    child: _compactTextScale(context, const _ModesHero()),
+                  ),
+                  SizedBox(height: shortScreen ? 5 : 7),
                   Expanded(
                     child: LayoutBuilder(
                       builder: (context, gridConstraints) {
                         const rowCount = 4;
-                        const spacing = 7.0;
+                        final spacing = shortScreen ? 5.0 : 7.0;
                         final rowHeight =
                             (gridConstraints.maxHeight - spacing * (rowCount - 1)) /
                                 rowCount;
@@ -130,8 +139,10 @@ class ModesScreen extends StatelessWidget {
                             mainAxisSpacing: spacing,
                             mainAxisExtent: rowHeight,
                           ),
-                          itemBuilder: (context, index) =>
-                              _ModePanel(data: modes[index]),
+                          itemBuilder: (context, index) => _compactTextScale(
+                            context,
+                            _ModePanel(data: modes[index]),
+                          ),
                         );
                       },
                     ),
@@ -142,6 +153,16 @@ class ModesScreen extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+
+  Widget _compactTextScale(BuildContext context, Widget child) {
+    final media = MediaQuery.of(context);
+    final currentScale = media.textScaler.scale(1);
+    final clampedScale = currentScale > 1.1 ? 1.1 : currentScale;
+    return MediaQuery(
+      data: media.copyWith(textScaler: TextScaler.linear(clampedScale)),
+      child: child,
     );
   }
 }
@@ -172,49 +193,57 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: onBack,
-          style: IconButton.styleFrom(
-            side: const BorderSide(color: Color(0xFF1E3552)),
-            backgroundColor: const Color(0xFF07101E),
-            foregroundColor: ReactColors.textPrimary,
+    return SizedBox(
+      height: 42,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              onPressed: onBack,
+              style: IconButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF1E3552)),
+                backgroundColor: const Color(0xFF07101E),
+                foregroundColor: ReactColors.textPrimary,
+              ),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 17),
+            ),
           ),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-        ),
-        const Spacer(),
-        const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'RE',
-              style: TextStyle(
-                color: ReactColors.textPrimary,
-                fontSize: 28,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 2.2,
+          const Spacer(),
+          const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'RE',
+                style: TextStyle(
+                  color: ReactColors.textPrimary,
+                  fontSize: 25,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 2,
+                ),
               ),
-            ),
-            Icon(
-              Icons.change_history_rounded,
-              color: ReactColors.electricBlueBright,
-              size: 27,
-            ),
-            Text(
-              'CT',
-              style: TextStyle(
-                color: ReactColors.textPrimary,
-                fontSize: 28,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 2.2,
+              Icon(
+                Icons.change_history_rounded,
+                color: ReactColors.electricBlueBright,
+                size: 24,
               ),
-            ),
-          ],
-        ),
-        const Spacer(),
-        const SizedBox(width: 40),
-      ],
+              Text(
+                'CT',
+                style: TextStyle(
+                  color: ReactColors.textPrimary,
+                  fontSize: 25,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 2,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          const SizedBox(width: 40),
+        ],
+      ),
     );
   }
 }
@@ -226,53 +255,64 @@ class _ModesHero extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFF25425F)),
       ),
       child: Row(
         children: [
           const Expanded(
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'CHOOSE YOUR MODE',
-                  style: TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 25,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .7,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'CHOOSE YOUR MODE',
+                    style: TextStyle(
+                      color: ReactColors.textPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .5,
+                    ),
                   ),
                 ),
-                SizedBox(height: 7),
+                SizedBox(height: 4),
                 Text(
-                  'DIFFERENT RULES.\nSAME REFLEXES.',
+                  'DIFFERENT RULES.  SAME REFLEXES.',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: ReactColors.textSecondary,
-                    fontSize: 10,
-                    height: 1.45,
+                    fontSize: 8.5,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
+                    letterSpacing: .9,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 14),
-          Container(
-            width: 96,
-            height: 96,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: ReactColors.electricBlueBright, width: 2),
-            ),
-            child: const Icon(
-              Icons.view_in_ar_rounded,
-              color: ReactColors.electricBlueBright,
-              size: 39,
+          const SizedBox(width: 10),
+          AspectRatio(
+            aspectRatio: 1,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 72, maxHeight: 72),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: ReactColors.electricBlueBright,
+                  width: 1.7,
+                ),
+              ),
+              child: const Icon(
+                Icons.view_in_ar_rounded,
+                color: ReactColors.electricBlueBright,
+                size: 30,
+              ),
             ),
           ),
         ],
@@ -287,93 +327,108 @@ class _ModePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: data.onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 7, 8, 6),
-        decoration: BoxDecoration(
-          color: const Color(0xFF07111D),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: data.color.withValues(alpha: .5)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 27,
-                  height: 27,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF050A13),
-                    border: Border.all(
-                      color: data.color.withValues(alpha: .85),
-                      width: 1.3,
-                    ),
-                  ),
-                  child: Icon(data.icon, color: data.color, size: 15),
-                ),
-                const SizedBox(width: 5),
-                Expanded(child: _Badge(label: data.badge, color: data.color)),
-              ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tiny = constraints.maxHeight < 78;
+        final iconSize = tiny ? 22.0 : 26.0;
+
+        return InkWell(
+          onTap: data.onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: EdgeInsets.fromLTRB(7, tiny ? 5 : 6, 7, tiny ? 4 : 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFF07111D),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: data.color.withValues(alpha: .5)),
             ),
-            const SizedBox(height: 3),
-            Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
+                Row(
+                  children: [
+                    Container(
+                      width: iconSize,
+                      height: iconSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF050A13),
+                        border: Border.all(
+                          color: data.color.withValues(alpha: .85),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Icon(
+                        data.icon,
+                        color: data.color,
+                        size: tiny ? 12 : 14,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(child: _Badge(label: data.badge, color: data.color)),
+                  ],
+                ),
+                SizedBox(height: tiny ? 2 : 3),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          data.title,
+                          style: TextStyle(
+                            color: ReactColors.textPrimary,
+                            fontSize: tiny ? 11 : 12.5,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: .45,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: data.color,
+                      size: tiny ? 13 : 15,
+                    ),
+                  ],
+                ),
+                if (!tiny) ...[
+                  const SizedBox(height: 1),
+                  Expanded(
                     child: Text(
-                      data.title,
+                      data.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: ReactColors.textPrimary,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: .55,
+                        color: ReactColors.textSecondary,
+                        fontSize: 7.4,
+                        height: 1.05,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                ),
-                Icon(Icons.chevron_right_rounded, color: data.color, size: 16),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Expanded(
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: Text(
-                  data.subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 8.2,
-                    height: 1.15,
-                    fontWeight: FontWeight.w600,
+                ] else
+                  const Spacer(),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    data.detail,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: data.color.withValues(alpha: .9),
+                      fontSize: tiny ? 5.2 : 5.8,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .4,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                data.detail,
-                maxLines: 1,
-                style: TextStyle(
-                  color: data.color.withValues(alpha: .9),
-                  fontSize: 6.2,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .5,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -388,8 +443,8 @@ class _Badge extends StatelessWidget {
     return Align(
       alignment: Alignment.centerRight,
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 70),
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+        constraints: const BoxConstraints(maxWidth: 66),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
         decoration: BoxDecoration(
           color: color.withValues(alpha: .08),
           borderRadius: BorderRadius.circular(20),
@@ -401,9 +456,9 @@ class _Badge extends StatelessWidget {
             label,
             style: TextStyle(
               color: color,
-              fontSize: 6.1,
+              fontSize: 5.8,
               fontWeight: FontWeight.w900,
-              letterSpacing: .55,
+              letterSpacing: .45,
             ),
           ),
         ),
