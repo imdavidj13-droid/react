@@ -4,6 +4,8 @@ import '../../../core/cosmetics/react_cosmetics.dart';
 import '../../../core/theme/react_colors.dart';
 import '../data/local_variant_mode_stats.dart';
 import '../domain/react_variant_mode.dart';
+import 'enhanced_variant_run_screen.dart';
+import 'mosaic_pressure_run_screen.dart';
 import 'random_target_run_screen.dart';
 import 'variant_run_screen.dart';
 
@@ -32,12 +34,21 @@ class _VariantModeScreenState extends State<VariantModeScreen> {
     ]).then((values) => (values[0], values[1]));
   }
 
-  Future<void> _start() async {
-    final runScreen = switch (widget.mode) {
-      ReactVariantMode.ricochet || ReactVariantMode.vortex =>
-        RandomTargetRunScreen(mode: widget.mode),
-      _ => VariantRunScreen(mode: widget.mode),
-    };
+  Future<void> _start({bool pressureGrid = false}) async {
+    final Widget runScreen;
+    if (pressureGrid) {
+      runScreen = const MosaicPressureRunScreen();
+    } else {
+      runScreen = switch (widget.mode) {
+        ReactVariantMode.ricochet || ReactVariantMode.vortex =>
+          RandomTargetRunScreen(mode: widget.mode),
+        ReactVariantMode.illusion ||
+        ReactVariantMode.memory ||
+        ReactVariantMode.tempest ||
+        ReactVariantMode.glitch => EnhancedVariantRunScreen(mode: widget.mode),
+        _ => VariantRunScreen(mode: widget.mode),
+      };
+    }
 
     await Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => runScreen),
@@ -50,6 +61,7 @@ class _VariantModeScreenState extends State<VariantModeScreen> {
   Widget build(BuildContext context) {
     final palette = ReactCosmetics.palette;
     final accent = ReactCosmetics.effectAccentFor(widget.mode.color);
+    final isMosaic = widget.mode == ReactVariantMode.mosaic;
 
     return Scaffold(
       backgroundColor: palette.background,
@@ -200,7 +212,9 @@ class _VariantModeScreenState extends State<VariantModeScreen> {
                         ),
                         const SizedBox(height: 9),
                         Text(
-                          widget.mode.rules,
+                          isMosaic
+                              ? '${widget.mode.rules}\n\nPressure Grid: all nine tiles slowly fill at different rates. Tap tiles to drain them before the entire grid fills.'
+                              : widget.mode.rules,
                           style: const TextStyle(
                             color: ReactColors.textPrimary,
                             fontSize: 12.5,
@@ -238,27 +252,46 @@ class _VariantModeScreenState extends State<VariantModeScreen> {
                     },
                   ),
                   SizedBox(height: compact ? 14 : 20),
-                  SizedBox(
-                    height: 58,
-                    child: FilledButton.icon(
-                      onPressed: _start,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: accent,
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(29),
+                  if (isMosaic) ...[
+                    _ModeChoiceButton(
+                      title: 'ORIGINAL MOSAIC',
+                      subtitle: 'ONE LIVE TILE • REACT FAST',
+                      icon: Icons.grid_view_rounded,
+                      color: accent,
+                      filled: true,
+                      onTap: () => _start(),
+                    ),
+                    const SizedBox(height: 10),
+                    _ModeChoiceButton(
+                      title: 'PRESSURE GRID',
+                      subtitle: 'DRAIN TILES • DON’T LET ALL 9 FILL',
+                      icon: Icons.hourglass_bottom_rounded,
+                      color: ReactColors.coral,
+                      filled: false,
+                      onTap: () => _start(pressureGrid: true),
+                    ),
+                  ] else
+                    SizedBox(
+                      height: 58,
+                      child: FilledButton.icon(
+                        onPressed: _start,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: accent,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(29),
+                          ),
                         ),
-                      ),
-                      icon: const Icon(Icons.play_arrow_rounded),
-                      label: const Text(
-                        'START MODE',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
+                        icon: const Icon(Icons.play_arrow_rounded),
+                        label: const Text(
+                          'START MODE',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                          ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             );
@@ -267,6 +300,112 @@ class _VariantModeScreenState extends State<VariantModeScreen> {
       ),
     );
   }
+}
+
+class _ModeChoiceButton extends StatelessWidget {
+  const _ModeChoiceButton({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.filled,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final bool filled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 70,
+        child: filled
+            ? FilledButton(
+                onPressed: onTap,
+                style: FilledButton.styleFrom(
+                  backgroundColor: color,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                ),
+                child: _ModeChoiceContent(
+                  title: title,
+                  subtitle: subtitle,
+                  icon: icon,
+                  color: Colors.black,
+                ),
+              )
+            : OutlinedButton(
+                onPressed: onTap,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: color,
+                  side: BorderSide(color: color.withValues(alpha: .70), width: 1.6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                ),
+                child: _ModeChoiceContent(
+                  title: title,
+                  subtitle: subtitle,
+                  icon: icon,
+                  color: color,
+                ),
+              ),
+      );
+}
+
+class _ModeChoiceContent extends StatelessWidget {
+  const _ModeChoiceContent({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          Icon(icon, color: color, size: 25),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .8,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: color.withValues(alpha: .72),
+                    fontSize: 7.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .65,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: color),
+        ],
+      );
 }
 
 class _Stat extends StatelessWidget {
