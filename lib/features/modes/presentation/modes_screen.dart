@@ -228,9 +228,29 @@ class _Header extends StatelessWidget {
         const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('RE', style: TextStyle(color: ReactColors.textPrimary, fontSize: 25, fontWeight: FontWeight.w600, letterSpacing: 2)),
-            Icon(Icons.change_history_rounded, color: ReactColors.electricBlueBright, size: 24),
-            Text('CT', style: TextStyle(color: ReactColors.textPrimary, fontSize: 25, fontWeight: FontWeight.w600, letterSpacing: 2)),
+            Text(
+              'RE',
+              style: TextStyle(
+                color: ReactColors.textPrimary,
+                fontSize: 25,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2,
+              ),
+            ),
+            Icon(
+              Icons.change_history_rounded,
+              color: ReactColors.electricBlueBright,
+              size: 24,
+            ),
+            Text(
+              'CT',
+              style: TextStyle(
+                color: ReactColors.textPrimary,
+                fontSize: 25,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2,
+              ),
+            ),
           ],
         ),
         const Spacer(),
@@ -260,9 +280,25 @@ class _ModesHero extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('MODES', style: TextStyle(color: ReactColors.textPrimary, fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                Text(
+                  'MODES',
+                  style: TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 36,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                  ),
+                ),
                 SizedBox(height: 4),
-                Text('DIFFERENT RULES.  SAME REFLEXES.', style: TextStyle(color: ReactColors.textSecondary, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                Text(
+                  'DIFFERENT RULES.  SAME REFLEXES.',
+                  style: TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
+                  ),
+                ),
               ],
             ),
           ),
@@ -271,10 +307,23 @@ class _ModesHero extends StatelessWidget {
             height: 82,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: ReactColors.electricBlueBright, width: 2),
-              boxShadow: [BoxShadow(color: ReactColors.electricBlueBright, blurRadius: 18, spreadRadius: -10)],
+              border: Border.all(
+                color: ReactColors.electricBlueBright,
+                width: 2,
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: ReactColors.electricBlueBright,
+                  blurRadius: 18,
+                  spreadRadius: -10,
+                ),
+              ],
             ),
-            child: const Icon(Icons.change_history_rounded, color: ReactColors.electricBlueBright, size: 42),
+            child: const Icon(
+              Icons.change_history_rounded,
+              color: ReactColors.electricBlueBright,
+              size: 42,
+            ),
           ),
         ],
       ),
@@ -294,9 +343,27 @@ class _SectionTitle extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: ReactColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 7.5, fontWeight: FontWeight.w800, letterSpacing: .75)),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 7.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: .75,
+                  ),
+                ),
               ],
             ),
           ),
@@ -322,7 +389,10 @@ class _ModePanel extends StatelessWidget {
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: data.color.withValues(alpha: .62)),
             boxShadow: [
-              BoxShadow(color: data.color.withValues(alpha: .05), blurRadius: 16),
+              BoxShadow(
+                color: data.color.withValues(alpha: .05),
+                blurRadius: 16,
+              ),
             ],
           ),
           child: Column(
@@ -349,14 +419,24 @@ class _ModePanel extends StatelessWidget {
                 data.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: ReactColors.textPrimary, fontSize: 19, fontWeight: FontWeight.w900, letterSpacing: .6),
+                style: const TextStyle(
+                  color: ReactColors.textPrimary,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .6,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 data.subtitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: ReactColors.textSecondary, fontSize: 10, height: 1.25, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: ReactColors.textSecondary,
+                  fontSize: 10,
+                  height: 1.25,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 7),
               Row(
@@ -366,7 +446,12 @@ class _ModePanel extends StatelessWidget {
                       data.detail,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: data.color, fontSize: 7.1, fontWeight: FontWeight.w900, letterSpacing: .45),
+                      style: TextStyle(
+                        color: data.color,
+                        fontSize: 7.1,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .45,
+                      ),
                     ),
                   ),
                   Icon(Icons.chevron_right_rounded, color: data.color, size: 19),
@@ -396,7 +481,15 @@ class _Badge extends StatelessWidget {
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(label, style: TextStyle(color: color, fontSize: 7.5, fontWeight: FontWeight.w900, letterSpacing: .7)),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 7.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .7,
+            ),
+          ),
         ),
       );
 }
