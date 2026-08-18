@@ -6,14 +6,34 @@ import '../../../core/cosmetics/react_cosmetics.dart';
 ///
 /// Release builds only own CORE until future verified store entitlements grant
 /// paid cosmetics. Debug builds deliberately unlock implemented cosmetics so
-/// they can be tested on-device before billing exists.
+/// every pack can be tested end-to-end before billing exists.
 abstract final class LocalShopState {
   static const corePackId = 'core';
   static const redlinePackId = 'redline';
   static const synthwavePackId = 'synthwave';
   static const monoPackId = 'mono';
+  static const greenlinePackId = 'greenline';
+  static const voltagePackId = 'voltage';
+  static const emberPackId = 'ember';
+  static const hotPinkPackId = 'hot_pink';
+
+  static const ringsCountdownPackId = 'rings_countdown';
+  static const cardsCountdownPackId = 'cards_countdown';
+  static const terminalCountdownPackId = 'terminal_countdown';
+  static const pulseCountdownPackId = 'pulse_countdown';
+
   static const arcadeSfxPackId = 'arcade_sfx';
+  static const pulseSfxPackId = 'pulse_sfx';
+  static const bassSfxPackId = 'bass_sfx';
+  static const minimalSfxPackId = 'minimal_sfx';
+  static const laserSfxPackId = 'laser_sfx';
+
   static const glitchCommandsPackId = 'glitch_commands';
+  static const terminalCommandsPackId = 'terminal_commands';
+  static const arcadeCommandsPackId = 'arcade_commands';
+  static const minimalCommandsPackId = 'minimal_commands';
+  static const impactCommandsPackId = 'impact_commands';
+
   static const proShareCardsPackId = 'pro_share_cards';
 
   static const Set<String> _builtInOwnedPacks = {corePackId};
@@ -22,12 +42,30 @@ abstract final class LocalShopState {
     redlinePackId,
     synthwavePackId,
     monoPackId,
+    greenlinePackId,
+    voltagePackId,
+    emberPackId,
+    hotPinkPackId,
+  };
+  static const Set<String> _implementedCountdownPacks = {
+    ringsCountdownPackId,
+    cardsCountdownPackId,
+    terminalCountdownPackId,
+    pulseCountdownPackId,
   };
   static const Set<String> _implementedAudioPacks = {
     arcadeSfxPackId,
+    pulseSfxPackId,
+    bassSfxPackId,
+    minimalSfxPackId,
+    laserSfxPackId,
   };
   static const Set<String> _implementedCommandStyles = {
     glitchCommandsPackId,
+    terminalCommandsPackId,
+    arcadeCommandsPackId,
+    minimalCommandsPackId,
+    impactCommandsPackId,
   };
   static const Set<String> _implementedShareStyles = {
     proShareCardsPackId,
@@ -39,12 +77,12 @@ abstract final class LocalShopState {
   static Future<void> load() async {
     await ReactCosmetics.load();
 
-    // Debug builds deliberately expose implemented cosmetics for testing, but
-    // release builds must not inherit a debug-only equipped value from the
-    // same application id. Until verified store entitlements exist, any slot
-    // that is not genuinely owned is restored to its built-in CORE option.
-    if (!isOwned(ReactCosmetics.currentTheme.packId)) {
-      await ReactCosmetics.equipTheme(ReactVisualTheme.core);
+    if (!isOwned(ReactCosmetics.currentReactionPack.packId)) {
+      await ReactCosmetics.equipReactionPack(ReactReactionPack.core);
+    }
+    if (ReactCosmetics.currentCountdownStyle != ReactCountdownStyle.core &&
+        !isOwned(ReactCosmetics.currentCountdownStyle.packId)) {
+      await ReactCosmetics.equipCountdownStyle(ReactCountdownStyle.core);
     }
     if (ReactCosmetics.currentSoundPack != ReactSoundPack.core &&
         !isOwned(ReactCosmetics.currentSoundPack.packId)) {
@@ -60,18 +98,23 @@ abstract final class LocalShopState {
     }
   }
 
-  static Future<String> equippedPack() async => ReactCosmetics.currentTheme.packId;
+  static Future<String> equippedPack() async =>
+      ReactCosmetics.currentReactionPack.packId;
 
   static Future<Set<String>> equippedPackIds() async {
-    final equipped = <String>{ReactCosmetics.currentTheme.packId};
-    if (ReactCosmetics.currentSoundPack == ReactSoundPack.arcade) {
-      equipped.add(arcadeSfxPackId);
+    final equipped = <String>{ReactCosmetics.currentReactionPack.packId};
+
+    if (ReactCosmetics.currentCountdownStyle != ReactCountdownStyle.core) {
+      equipped.add(ReactCosmetics.currentCountdownStyle.packId);
     }
-    if (ReactCosmetics.currentCommandStyle == ReactCommandStyle.glitch) {
-      equipped.add(glitchCommandsPackId);
+    if (ReactCosmetics.currentSoundPack != ReactSoundPack.core) {
+      equipped.add(ReactCosmetics.currentSoundPack.packId);
     }
-    if (ReactCosmetics.currentShareStyle == ReactShareStyle.pro) {
-      equipped.add(proShareCardsPackId);
+    if (ReactCosmetics.currentCommandStyle != ReactCommandStyle.core) {
+      equipped.add(ReactCosmetics.currentCommandStyle.packId);
+    }
+    if (ReactCosmetics.currentShareStyle != ReactShareStyle.core) {
+      equipped.add(ReactCosmetics.currentShareStyle.packId);
     }
     return equipped;
   }
@@ -83,12 +126,16 @@ abstract final class LocalShopState {
 
   static bool isImplemented(String packId) =>
       _implementedVisualPacks.contains(packId) ||
+      _implementedCountdownPacks.contains(packId) ||
       _implementedAudioPacks.contains(packId) ||
       _implementedCommandStyles.contains(packId) ||
       _implementedShareStyles.contains(packId);
 
   static bool isImplementedVisualPack(String packId) =>
       _implementedVisualPacks.contains(packId);
+
+  static bool isImplementedCountdownPack(String packId) =>
+      _implementedCountdownPacks.contains(packId);
 
   static bool isImplementedAudioPack(String packId) =>
       _implementedAudioPacks.contains(packId);
@@ -103,18 +150,26 @@ abstract final class LocalShopState {
     if (!isOwned(packId) || !isImplemented(packId)) return;
 
     if (isImplementedVisualPack(packId)) {
-      final theme = ReactVisualTheme.fromPackId(packId);
-      if (theme != null) await ReactCosmetics.equipTheme(theme);
+      final pack = ReactReactionPack.fromPackId(packId);
+      if (pack != null) await ReactCosmetics.equipReactionPack(pack);
       return;
     }
 
-    if (packId == arcadeSfxPackId) {
-      await ReactCosmetics.equipSoundPack(ReactSoundPack.arcade);
+    if (isImplementedCountdownPack(packId)) {
+      final style = ReactCountdownStyle.fromPackId(packId);
+      if (style != null) await ReactCosmetics.equipCountdownStyle(style);
       return;
     }
 
-    if (packId == glitchCommandsPackId) {
-      await ReactCosmetics.equipCommandStyle(ReactCommandStyle.glitch);
+    if (isImplementedAudioPack(packId)) {
+      final pack = ReactSoundPack.fromPackId(packId);
+      if (pack != null) await ReactCosmetics.equipSoundPack(pack);
+      return;
+    }
+
+    if (isImplementedCommandStyle(packId)) {
+      final style = ReactCommandStyle.fromPackId(packId);
+      if (style != null) await ReactCosmetics.equipCommandStyle(style);
       return;
     }
 
@@ -122,6 +177,12 @@ abstract final class LocalShopState {
       await ReactCosmetics.equipShareStyle(ReactShareStyle.pro);
     }
   }
+
+  static Future<void> equipCoreReactionPack() =>
+      ReactCosmetics.equipReactionPack(ReactReactionPack.core);
+
+  static Future<void> equipCoreCountdown() =>
+      ReactCosmetics.equipCountdownStyle(ReactCountdownStyle.core);
 
   static Future<void> equipCoreAudio() =>
       ReactCosmetics.equipSoundPack(ReactSoundPack.core);
