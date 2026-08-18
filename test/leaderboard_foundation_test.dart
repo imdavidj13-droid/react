@@ -96,8 +96,16 @@ void main() {
     expect(find.textContaining('LOCAL SCORE PREVIEW'), findsOneWidget);
     expect(find.text('GLOBAL'), findsOneWidget);
     expect(find.text('DAILY'), findsOneWidget);
-    expect(find.text('PLAYER-ABCDEF'), findsOneWidget);
     expect(find.text('42'), findsWidgets);
+
+    await tester.scrollUntilVisible(
+      find.text('PLAYER-ABCDEF'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('PLAYER-ABCDEF'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
