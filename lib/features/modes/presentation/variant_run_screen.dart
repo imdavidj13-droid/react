@@ -183,7 +183,7 @@ class _VariantRunScreenState extends State<VariantRunScreen>
     if (!mounted || _paused || _finished || !_running) return;
 
     if (mode == ReactVariantMode.reactor) {
-      _heat = max(0, _heat - .34);
+      _heat = max(0.0, _heat - .34);
     }
     if (mode == ReactVariantMode.fuse) {
       _fuseMs -= _tick.inMilliseconds;
@@ -221,16 +221,22 @@ class _VariantRunScreenState extends State<VariantRunScreen>
     switch (mode.mechanic) {
       case ReactVariantMechanic.command:
         _startCommandRound();
+        return;
       case ReactVariantMechanic.target:
         _startTargetRound();
+        return;
       case ReactVariantMechanic.grid:
         _startGridRound();
+        return;
       case ReactVariantMechanic.memory:
         _startMemoryPlayback();
+        return;
       case ReactVariantMechanic.tether:
         _startTetherRound();
+        return;
       case ReactVariantMechanic.overload:
         _startOverloadRound();
+        return;
     }
   }
 
@@ -397,7 +403,9 @@ class _VariantRunScreenState extends State<VariantRunScreen>
   void _handleCommand(ReactCommand performed) {
     if (!_accepting || _paused || _finished) return;
 
-    if ((mode == ReactVariantMode.pulse || _nexusPulse || _tempestPulse ||
+    if ((mode == ReactVariantMode.pulse ||
+            _nexusPulse ||
+            _tempestPulse ||
             mode == ReactVariantMode.lockstep) &&
         !_beatOpen) {
       _fail('OFF BEAT');
@@ -449,7 +457,7 @@ class _VariantRunScreenState extends State<VariantRunScreen>
 
     if (mode == ReactVariantMode.reactor) {
       final addedHeat = responseMs <= 700 ? 23.0 : 12.0;
-      _heat = min(100, _heat + addedHeat);
+      _heat = min(100.0, _heat + addedHeat);
       if (_heat >= 100) {
         _game.triggerMiss();
         _finish('REACTOR OVERHEATED');
@@ -463,7 +471,7 @@ class _VariantRunScreenState extends State<VariantRunScreen>
     }
 
     if (mode == ReactVariantMode.fuse) {
-      _fuseMs = min(6000, _fuseMs + 1250);
+      _fuseMs = min(6000.0, _fuseMs + 1250);
       _feedback = '+1.25 SEC  •  FUSE RESET';
     }
 
@@ -484,7 +492,7 @@ class _VariantRunScreenState extends State<VariantRunScreen>
       setState(() => _feedback = 'COOLING  •  HOLD');
       _phaseTimer = Timer(const Duration(milliseconds: 1100), () {
         if (!mounted || _paused || _finished) return;
-        _heat = max(0, _heat - 28);
+        _heat = max(0.0, _heat - 28);
         _startRound();
       });
       return;
@@ -736,7 +744,7 @@ class _VariantRunScreenState extends State<VariantRunScreen>
     unawaited(ReactAudio.play(ReactSoundCue.miss));
 
     if (mode == ReactVariantMode.fuse) {
-      _fuseMs = max(0, _fuseMs - 1200);
+      _fuseMs = max(0.0, _fuseMs - 1200);
       setState(() => _feedback = '$reason  •  -1.2 SEC');
       if (_fuseMs <= 0) {
         _finish('FUSE BURNED');
@@ -749,7 +757,7 @@ class _VariantRunScreenState extends State<VariantRunScreen>
     }
 
     if (mode == ReactVariantMode.timedrop) {
-      _timeDropMs = max(0, _timeDropMs - 1200);
+      _timeDropMs = max(0.0, _timeDropMs - 1200);
     }
 
     if (mode == ReactVariantMode.checkpoint) {
@@ -1043,7 +1051,12 @@ class _VariantRunScreenState extends State<VariantRunScreen>
               width: beatMode && _beatOpen ? 4 : 2,
             ),
             boxShadow: beatMode && _beatOpen
-                ? [BoxShadow(color: _accent.withValues(alpha: .26), blurRadius: 30)]
+                ? [
+                    BoxShadow(
+                      color: _accent.withValues(alpha: .26),
+                      blurRadius: 30,
+                    ),
+                  ]
                 : null,
           ),
           child: content,
@@ -1072,7 +1085,10 @@ class _VariantRunScreenState extends State<VariantRunScreen>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _palette.background.withValues(alpha: .82),
-                border: Border.all(color: _accent.withValues(alpha: .42), width: 2),
+                border: Border.all(
+                  color: _accent.withValues(alpha: .42),
+                  width: 2,
+                ),
               ),
             ),
           ),
@@ -1087,9 +1103,15 @@ class _VariantRunScreenState extends State<VariantRunScreen>
                   height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: ReactColors.textSecondary.withValues(alpha: .45)),
+                    border: Border.all(
+                      color: ReactColors.textSecondary.withValues(alpha: .45),
+                    ),
                   ),
-                  child: Icon(Icons.adjust_rounded, color: ReactColors.textSecondary.withValues(alpha: .55), size: 22),
+                  child: Icon(
+                    Icons.adjust_rounded,
+                    color: ReactColors.textSecondary.withValues(alpha: .55),
+                    size: 22,
+                  ),
                 ),
               ),
             ),
@@ -1105,9 +1127,18 @@ class _VariantRunScreenState extends State<VariantRunScreen>
                   shape: BoxShape.circle,
                   color: _accent.withValues(alpha: .12),
                   border: Border.all(color: _accent, width: 2.5),
-                  boxShadow: [BoxShadow(color: _accent.withValues(alpha: .25), blurRadius: 18)],
+                  boxShadow: [
+                    BoxShadow(
+                      color: _accent.withValues(alpha: .25),
+                      blurRadius: 18,
+                    ),
+                  ],
                 ),
-                child: Icon(mode.icon, color: _accent, size: targetSize * .45),
+                child: Icon(
+                  mode.icon,
+                  color: _accent,
+                  size: targetSize * .45,
+                ),
               ),
             ),
           ),
@@ -1120,18 +1151,26 @@ class _VariantRunScreenState extends State<VariantRunScreen>
     final elapsed = _roundClock.elapsedMilliseconds / 1000;
     if (mode == ReactVariantMode.orbit) {
       final angle = elapsed * 3.4;
-      return Offset(size / 2 + cos(angle) * size * .34, size / 2 + sin(angle) * size * .34);
+      return Offset(
+        size / 2 + cos(angle) * size * .34,
+        size / 2 + sin(angle) * size * .34,
+      );
     }
     if (mode == ReactVariantMode.vortex) {
       final angle = elapsed * 5.0;
-      final radius = size * (.36 * _progress.clamp(.18, 1.0));
-      return Offset(size / 2 + cos(angle) * radius, size / 2 + sin(angle) * radius);
+      final radius =
+          size * (.36 * _progress.clamp(.18, 1.0).toDouble());
+      return Offset(
+        size / 2 + cos(angle) * radius,
+        size / 2 + sin(angle) * radius,
+      );
     }
     if (mode == ReactVariantMode.ricochet) {
       double bounce(double value) {
         final x = value % 2;
         return x <= 1 ? x : 2 - x;
       }
+
       final x = .12 + bounce(elapsed * .82 + _score * .17) * .76;
       final y = .12 + bounce(elapsed * 1.07 + _score * .31) * .76;
       return Offset(x * size, y * size);
@@ -1167,7 +1206,9 @@ class _VariantRunScreenState extends State<VariantRunScreen>
               duration: const Duration(milliseconds: 100),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-                color: active ? _accent.withValues(alpha: .18) : _accent.withValues(alpha: .025),
+                color: active
+                    ? _accent.withValues(alpha: .18)
+                    : _accent.withValues(alpha: .025),
                 border: Border.all(
                   color: active ? _accent : _accent.withValues(alpha: .18),
                   width: active ? 2.2 : 1,
@@ -1175,7 +1216,9 @@ class _VariantRunScreenState extends State<VariantRunScreen>
               ),
               child: Icon(
                 active ? mode.icon : Icons.circle_outlined,
-                color: active ? _accent : ReactColors.textSecondary.withValues(alpha: .25),
+                color: active
+                    ? _accent
+                    : ReactColors.textSecondary.withValues(alpha: .25),
                 size: active ? 34 : 18,
               ),
             ),
@@ -1211,14 +1254,30 @@ class _VariantRunScreenState extends State<VariantRunScreen>
               duration: const Duration(milliseconds: 90),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(26),
-                color: lit ? _accent.withValues(alpha: .36) : _accent.withValues(alpha: .05),
-                border: Border.all(color: lit ? _accent : _accent.withValues(alpha: .25), width: lit ? 3 : 1.5),
-                boxShadow: lit ? [BoxShadow(color: _accent.withValues(alpha: .28), blurRadius: 26)] : null,
+                color: lit
+                    ? _accent.withValues(alpha: .36)
+                    : _accent.withValues(alpha: .05),
+                border: Border.all(
+                  color: lit ? _accent : _accent.withValues(alpha: .25),
+                  width: lit ? 3 : 1.5,
+                ),
+                boxShadow: lit
+                    ? [
+                        BoxShadow(
+                          color: _accent.withValues(alpha: .28),
+                          blurRadius: 26,
+                        ),
+                      ]
+                    : null,
               ),
               child: Center(
                 child: Text(
                   '${index + 1}',
-                  style: TextStyle(color: lit ? Colors.white : _accent, fontSize: 28, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                    color: lit ? Colors.white : _accent,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ),
@@ -1253,10 +1312,19 @@ class _VariantRunScreenState extends State<VariantRunScreen>
                 height: 90,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _tetherHeld ? _accent.withValues(alpha: .22) : _accent.withValues(alpha: .07),
-                  border: Border.all(color: _accent, width: _tetherHeld ? 4 : 2),
+                  color: _tetherHeld
+                      ? _accent.withValues(alpha: .22)
+                      : _accent.withValues(alpha: .07),
+                  border: Border.all(
+                    color: _accent,
+                    width: _tetherHeld ? 4 : 2,
+                  ),
                 ),
-                child: Icon(Icons.touch_app_rounded, color: _accent, size: 36),
+                child: Icon(
+                  Icons.touch_app_rounded,
+                  color: _accent,
+                  size: 36,
+                ),
               ),
             ),
             Positioned(
@@ -1270,13 +1338,21 @@ class _VariantRunScreenState extends State<VariantRunScreen>
                   color: _accent.withValues(alpha: .13),
                   border: Border.all(color: _accent, width: 2.5),
                 ),
-                child: Icon(Icons.ads_click_rounded, color: _accent, size: 30),
+                child: Icon(
+                  Icons.ads_click_rounded,
+                  color: _accent,
+                  size: 30,
+                ),
               ),
             ),
             if (_tetherHeld)
               CustomPaint(
                 size: Size.square(size),
-                painter: _TetherLinePainter(anchor: anchor, target: target, color: _accent),
+                painter: _TetherLinePainter(
+                  anchor: anchor,
+                  target: target,
+                  color: _accent,
+                ),
               ),
           ],
         ),
@@ -1310,14 +1386,20 @@ class _VariantRunScreenState extends State<VariantRunScreen>
                         ? _accent.withValues(alpha: .20)
                         : _accent.withValues(alpha: .07),
                     border: Border.all(
-                      color: target.$2 == _overloadExpected ? _accent : _accent.withValues(alpha: .45),
+                      color: target.$2 == _overloadExpected
+                          ? _accent
+                          : _accent.withValues(alpha: .45),
                       width: target.$2 == _overloadExpected ? 3 : 1.5,
                     ),
                   ),
                   child: Center(
                     child: Text(
                       '${target.$2}',
-                      style: TextStyle(color: _accent, fontSize: 26, fontWeight: FontWeight.w900),
+                      style: TextStyle(
+                        color: _accent,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ),
@@ -1362,21 +1444,49 @@ class _RunHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(mode.title, style: const TextStyle(color: ReactColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1.1)),
-              Text(mode.badge, style: TextStyle(color: accent, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+              Text(
+                mode.title,
+                style: const TextStyle(
+                  color: ReactColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.1,
+                ),
+              ),
+              Text(
+                mode.badge,
+                style: TextStyle(
+                  color: accent,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                ),
+              ),
             ],
           ),
         ),
-        _HeaderMetric(label: 'SCORE', value: '$score', color: accent),
+        _HeaderMetric(
+          label: 'SCORE',
+          value: '$score',
+          color: accent,
+        ),
         const SizedBox(width: 8),
-        _HeaderMetric(label: 'LIVES', value: '♥' * lives, color: ReactCosmetics.palette.failure),
+        _HeaderMetric(
+          label: 'LIVES',
+          value: List<String>.filled(lives, '♥').join(),
+          color: ReactCosmetics.palette.failure,
+        ),
       ],
     );
   }
 }
 
 class _HeaderMetric extends StatelessWidget {
-  const _HeaderMetric({required this.label, required this.value, required this.color});
+  const _HeaderMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
   final String label;
   final String value;
   final Color color;
@@ -1392,9 +1502,23 @@ class _HeaderMetric extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Text(label, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 7, fontWeight: FontWeight.w900)),
+            Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 7,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(value, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w900)),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ],
         ),
       );
@@ -1427,7 +1551,11 @@ class _CommandFace extends StatelessWidget {
   Widget build(BuildContext context) {
     if (hidden) {
       return Center(
-        child: Icon(Icons.visibility_off_rounded, color: accent.withValues(alpha: .22), size: 54),
+        child: Icon(
+          Icons.visibility_off_rounded,
+          color: accent.withValues(alpha: .22),
+          size: 54,
+        ),
       );
     }
 
@@ -1438,27 +1566,64 @@ class _CommandFace extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (decoy)
-            Text('DECOY', style: TextStyle(color: accent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)),
+            Text(
+              'DECOY',
+              style: TextStyle(
+                color: accent,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
+            ),
           if (!iconOnly) ...[
             Text(
               command.title,
               textAlign: TextAlign.center,
-              style: TextStyle(color: ReactColors.textPrimary, fontSize: titleSize, fontWeight: FontWeight.w900, height: 1),
+              style: TextStyle(
+                color: ReactColors.textPrimary,
+                fontSize: titleSize,
+                fontWeight: FontWeight.w900,
+                height: 1,
+              ),
             ),
             SizedBox(height: stealth ? 10 : 18),
           ],
           Icon(command.icon, color: accent, size: iconSize),
           if (!iconOnly && !stealth) ...[
             const SizedBox(height: 14),
-            Text(command.hint, textAlign: TextAlign.center, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.1)),
+            Text(
+              command.hint,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.1,
+              ),
+            ),
           ],
           if (bossHits > 0) ...[
             const SizedBox(height: 12),
-            Text('BOSS HITS LEFT  $bossHits', style: TextStyle(color: accent, fontSize: 10, fontWeight: FontWeight.w900)),
+            Text(
+              'BOSS HITS LEFT  $bossHits',
+              style: TextStyle(
+                color: accent,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ],
           if (beatOpen) ...[
             const SizedBox(height: 12),
-            Text('NOW', style: TextStyle(color: accent, fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 2)),
+            Text(
+              'NOW',
+              style: TextStyle(
+                color: accent,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
+            ),
           ],
         ],
       ),
@@ -1491,8 +1656,16 @@ class _StatusBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, value, meter) = switch (mode) {
       ReactVariantMode.reactor => ('HEAT', '${heat.round()}%', heat / 100),
-      ReactVariantMode.fuse => ('FUSE', '${(fuseMs / 1000).toStringAsFixed(1)}s', fuseMs / 6000),
-      ReactVariantMode.timedrop => ('RUN CLOCK', '${(timeDropMs / 1000).toStringAsFixed(1)}s', timeDropMs / 30000),
+      ReactVariantMode.fuse => (
+          'FUSE',
+          '${(fuseMs / 1000).toStringAsFixed(1)}s',
+          fuseMs / 6000,
+        ),
+      ReactVariantMode.timedrop => (
+          'RUN CLOCK',
+          '${(timeDropMs / 1000).toStringAsFixed(1)}s',
+          timeDropMs / 30000,
+        ),
       ReactVariantMode.checkpoint => ('BANKED', '$checkpoint', progress),
       ReactVariantMode.chain => ('CHAIN', '$streak', progress),
       _ => ('ROUND', '${(progress * 100).round()}%', progress),
@@ -1509,13 +1682,21 @@ class _StatusBar extends StatelessWidget {
         children: [
           SizedBox(
             width: 72,
-            child: Text(label, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1)),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+              ),
+            ),
           ),
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(99),
               child: LinearProgressIndicator(
-                value: meter.clamp(0.0, 1.0),
+                value: meter.clamp(0.0, 1.0).toDouble(),
                 minHeight: 7,
                 backgroundColor: accent.withValues(alpha: .10),
                 valueColor: AlwaysStoppedAnimation<Color>(accent),
@@ -1525,7 +1706,15 @@ class _StatusBar extends StatelessWidget {
           const SizedBox(width: 12),
           SizedBox(
             width: 62,
-            child: Text(value, textAlign: TextAlign.right, style: TextStyle(color: accent, fontSize: 12, fontWeight: FontWeight.w900)),
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: accent,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ),
         ],
       ),
@@ -1534,7 +1723,12 @@ class _StatusBar extends StatelessWidget {
 }
 
 class _CountdownOverlay extends StatelessWidget {
-  const _CountdownOverlay({required this.mode, required this.count, required this.go, required this.accent});
+  const _CountdownOverlay({
+    required this.mode,
+    required this.count,
+    required this.go,
+    required this.accent,
+  });
   final ReactVariantMode mode;
   final int count;
   final bool go;
@@ -1547,11 +1741,35 @@ class _CountdownOverlay extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(mode.title, style: TextStyle(color: accent, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 2.2)),
+              Text(
+                mode.title,
+                style: TextStyle(
+                  color: accent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.2,
+                ),
+              ),
               const SizedBox(height: 24),
-              Text(go ? 'GO' : '$count', style: TextStyle(color: go ? accent : ReactColors.textPrimary, fontSize: go ? 88 : 116, fontWeight: FontWeight.w900, height: 1)),
+              Text(
+                go ? 'GO' : '$count',
+                style: TextStyle(
+                  color: go ? accent : ReactColors.textPrimary,
+                  fontSize: go ? 88 : 116,
+                  fontWeight: FontWeight.w900,
+                  height: 1,
+                ),
+              ),
               const SizedBox(height: 24),
-              Text(mode.badge, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.4)),
+              Text(
+                mode.badge,
+                style: const TextStyle(
+                  color: ReactColors.textSecondary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.4,
+                ),
+              ),
             ],
           ),
         ),
@@ -1559,7 +1777,11 @@ class _CountdownOverlay extends StatelessWidget {
 }
 
 class _PauseOverlay extends StatelessWidget {
-  const _PauseOverlay({required this.accent, required this.onResume, required this.onQuit});
+  const _PauseOverlay({
+    required this.accent,
+    required this.onResume,
+    required this.onQuit,
+  });
   final Color accent;
   final VoidCallback onResume;
   final VoidCallback onQuit;
@@ -1579,11 +1801,42 @@ class _PauseOverlay extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('PAUSED', style: TextStyle(color: ReactColors.textPrimary, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                const Text(
+                  'PAUSED',
+                  style: TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                  ),
+                ),
                 const SizedBox(height: 18),
-                SizedBox(width: double.infinity, child: FilledButton(onPressed: onResume, style: FilledButton.styleFrom(backgroundColor: accent, foregroundColor: Colors.black), child: const Text('RESUME', style: TextStyle(fontWeight: FontWeight.w900)))),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: onResume,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor: Colors.black,
+                    ),
+                    child: const Text(
+                      'RESUME',
+                      style: TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 8),
-                SizedBox(width: double.infinity, child: OutlinedButton(onPressed: onQuit, style: OutlinedButton.styleFrom(foregroundColor: ReactColors.textPrimary, side: BorderSide(color: accent.withValues(alpha: .45))), child: const Text('QUIT'))),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: onQuit,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: ReactColors.textPrimary,
+                      side: BorderSide(color: accent.withValues(alpha: .45)),
+                    ),
+                    child: const Text('QUIT'),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1592,7 +1845,11 @@ class _PauseOverlay extends StatelessWidget {
 }
 
 class _TetherLinePainter extends CustomPainter {
-  const _TetherLinePainter({required this.anchor, required this.target, required this.color});
+  const _TetherLinePainter({
+    required this.anchor,
+    required this.target,
+    required this.color,
+  });
   final Offset anchor;
   final Offset target;
   final Color color;
@@ -1610,7 +1867,9 @@ class _TetherLinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TetherLinePainter oldDelegate) =>
-      anchor != oldDelegate.anchor || target != oldDelegate.target || color != oldDelegate.color;
+      anchor != oldDelegate.anchor ||
+      target != oldDelegate.target ||
+      color != oldDelegate.color;
 }
 
 class VariantResultsScreen extends StatefulWidget {
@@ -1656,21 +1915,67 @@ class _VariantResultsScreenState extends State<VariantResultsScreen> {
               const Spacer(),
               Icon(widget.mode.icon, color: accent, size: 64),
               const SizedBox(height: 14),
-              Text(widget.mode.title, style: TextStyle(color: accent, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 2)),
+              Text(
+                widget.mode.title,
+                style: TextStyle(
+                  color: accent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                ),
+              ),
               const SizedBox(height: 8),
-              Text(widget.reason, textAlign: TextAlign.center, style: const TextStyle(color: ReactColors.textPrimary, fontSize: 28, fontWeight: FontWeight.w900)),
+              Text(
+                widget.reason,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: ReactColors.textPrimary,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
               const SizedBox(height: 28),
-              Text('${widget.score}', style: const TextStyle(color: ReactColors.textPrimary, fontSize: 92, fontWeight: FontWeight.w900, height: 1)),
+              Text(
+                '${widget.score}',
+                style: const TextStyle(
+                  color: ReactColors.textPrimary,
+                  fontSize: 92,
+                  fontWeight: FontWeight.w900,
+                  height: 1,
+                ),
+              ),
               const SizedBox(height: 5),
-              Text(widget.newBest ? 'NEW BEST' : 'FINAL SCORE', style: TextStyle(color: widget.newBest ? palette.secondary : ReactColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+              Text(
+                widget.newBest ? 'NEW BEST' : 'FINAL SCORE',
+                style: TextStyle(
+                  color: widget.newBest
+                      ? palette.secondary
+                      : ReactColors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                ),
+              ),
               const SizedBox(height: 24),
               FutureBuilder<int>(
                 future: _best,
                 builder: (context, snapshot) => Row(
                   children: [
-                    Expanded(child: _ResultMetric(label: 'BEST', value: '${snapshot.data ?? widget.score}', color: accent)),
+                    Expanded(
+                      child: _ResultMetric(
+                        label: 'BEST',
+                        value: '${snapshot.data ?? widget.score}',
+                        color: accent,
+                      ),
+                    ),
                     const SizedBox(width: 10),
-                    Expanded(child: _ResultMetric(label: 'MAX STREAK', value: '${widget.maxStreak}', color: palette.secondary)),
+                    Expanded(
+                      child: _ResultMetric(
+                        label: 'MAX STREAK',
+                        value: '${widget.maxStreak}',
+                        color: palette.secondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1679,10 +1984,23 @@ class _VariantResultsScreenState extends State<VariantResultsScreen> {
                 width: double.infinity,
                 height: 56,
                 child: FilledButton.icon(
-                  onPressed: () => Navigator.of(context).pushReplacement(MaterialPageRoute<void>(builder: (_) => VariantRunScreen(mode: widget.mode))),
-                  style: FilledButton.styleFrom(backgroundColor: accent, foregroundColor: Colors.black),
+                  onPressed: () => Navigator.of(context).pushReplacement(
+                    MaterialPageRoute<void>(
+                      builder: (_) => VariantRunScreen(mode: widget.mode),
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: accent,
+                    foregroundColor: Colors.black,
+                  ),
                   icon: const Icon(Icons.replay_rounded),
-                  label: const Text('PLAY AGAIN', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
+                  label: const Text(
+                    'PLAY AGAIN',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 9),
@@ -1691,8 +2009,14 @@ class _VariantResultsScreenState extends State<VariantResultsScreen> {
                 height: 52,
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  style: OutlinedButton.styleFrom(foregroundColor: ReactColors.textPrimary, side: BorderSide(color: accent.withValues(alpha: .40))),
-                  child: const Text('BACK TO MODE', style: TextStyle(fontWeight: FontWeight.w800)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ReactColors.textPrimary,
+                    side: BorderSide(color: accent.withValues(alpha: .40)),
+                  ),
+                  child: const Text(
+                    'BACK TO MODE',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
                 ),
               ),
             ],
@@ -1704,7 +2028,11 @@ class _VariantResultsScreenState extends State<VariantResultsScreen> {
 }
 
 class _ResultMetric extends StatelessWidget {
-  const _ResultMetric({required this.label, required this.value, required this.color});
+  const _ResultMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
   final String label;
   final String value;
   final Color color;
@@ -1720,9 +2048,23 @@ class _ResultMetric extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(label, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 8, fontWeight: FontWeight.w900)),
+            Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
             const SizedBox(height: 3),
-            Text(value, style: TextStyle(color: color, fontSize: 25, fontWeight: FontWeight.w900)),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 25,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ],
         ),
       );
