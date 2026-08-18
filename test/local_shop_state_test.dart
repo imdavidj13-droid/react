@@ -7,6 +7,7 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     ReactCosmetics.currentTheme = ReactVisualTheme.core;
+    ReactCosmetics.currentCountdownStyle = ReactCountdownStyle.core;
     ReactCosmetics.currentSoundPack = ReactSoundPack.core;
     ReactCosmetics.currentCommandStyle = ReactCommandStyle.core;
     ReactCosmetics.currentShareStyle = ReactShareStyle.core;
@@ -19,30 +20,54 @@ void main() {
     expect(await LocalShopState.equippedPackIds(), {LocalShopState.corePackId});
   });
 
-  test('debug build exposes every implemented cosmetic', () {
-    expect(LocalShopState.isOwned(LocalShopState.redlinePackId), isTrue);
-    expect(LocalShopState.isOwned(LocalShopState.synthwavePackId), isTrue);
-    expect(LocalShopState.isOwned(LocalShopState.monoPackId), isTrue);
-    expect(LocalShopState.isOwned(LocalShopState.arcadeSfxPackId), isTrue);
-    expect(LocalShopState.isOwned(LocalShopState.glitchCommandsPackId), isTrue);
-    expect(LocalShopState.isOwned(LocalShopState.proShareCardsPackId), isTrue);
+  test('debug build exposes every implemented cosmetic family', () {
+    for (final packId in <String>[
+      LocalShopState.redlinePackId,
+      LocalShopState.synthwavePackId,
+      LocalShopState.monoPackId,
+      LocalShopState.greenlinePackId,
+      LocalShopState.voltagePackId,
+      LocalShopState.emberPackId,
+      LocalShopState.hotPinkPackId,
+      LocalShopState.ringsCountdownPackId,
+      LocalShopState.cardsCountdownPackId,
+      LocalShopState.terminalCountdownPackId,
+      LocalShopState.pulseCountdownPackId,
+      LocalShopState.arcadeSfxPackId,
+      LocalShopState.pulseSfxPackId,
+      LocalShopState.bassSfxPackId,
+      LocalShopState.minimalSfxPackId,
+      LocalShopState.laserSfxPackId,
+      LocalShopState.glitchCommandsPackId,
+      LocalShopState.terminalCommandsPackId,
+      LocalShopState.arcadeCommandsPackId,
+      LocalShopState.minimalCommandsPackId,
+      LocalShopState.impactCommandsPackId,
+      LocalShopState.proShareCardsPackId,
+    ]) {
+      expect(LocalShopState.isOwned(packId), isTrue, reason: packId);
+      expect(LocalShopState.isImplemented(packId), isTrue, reason: packId);
+    }
   });
 
-  test('all four cosmetic slots can be equipped together', () async {
-    await LocalShopState.equip(LocalShopState.redlinePackId);
-    await LocalShopState.equip(LocalShopState.arcadeSfxPackId);
-    await LocalShopState.equip(LocalShopState.glitchCommandsPackId);
+  test('all five cosmetic slots can be equipped together', () async {
+    await LocalShopState.equip(LocalShopState.greenlinePackId);
+    await LocalShopState.equip(LocalShopState.terminalCountdownPackId);
+    await LocalShopState.equip(LocalShopState.bassSfxPackId);
+    await LocalShopState.equip(LocalShopState.impactCommandsPackId);
     await LocalShopState.equip(LocalShopState.proShareCardsPackId);
 
     expect(await LocalShopState.equippedPackIds(), {
-      LocalShopState.redlinePackId,
-      LocalShopState.arcadeSfxPackId,
-      LocalShopState.glitchCommandsPackId,
+      LocalShopState.greenlinePackId,
+      LocalShopState.terminalCountdownPackId,
+      LocalShopState.bassSfxPackId,
+      LocalShopState.impactCommandsPackId,
       LocalShopState.proShareCardsPackId,
     });
-    expect(ReactCosmetics.currentTheme, ReactVisualTheme.redline);
-    expect(ReactCosmetics.currentSoundPack, ReactSoundPack.arcade);
-    expect(ReactCosmetics.currentCommandStyle, ReactCommandStyle.glitch);
+    expect(ReactCosmetics.currentReactionPack, ReactReactionPack.greenline);
+    expect(ReactCosmetics.currentCountdownStyle, ReactCountdownStyle.terminal);
+    expect(ReactCosmetics.currentSoundPack, ReactSoundPack.bass);
+    expect(ReactCosmetics.currentCommandStyle, ReactCommandStyle.impact);
     expect(ReactCosmetics.currentShareStyle, ReactShareStyle.pro);
   });
 
@@ -59,21 +84,42 @@ void main() {
     expect(ReactCosmetics.currentShareStyle, ReactShareStyle.core);
   });
 
-  test('equipped cosmetic slots persist after reload', () async {
-    await LocalShopState.equip(LocalShopState.synthwavePackId);
-    await LocalShopState.equip(LocalShopState.arcadeSfxPackId);
-    await LocalShopState.equip(LocalShopState.glitchCommandsPackId);
+  test('new cosmetic slots persist after reload', () async {
+    await LocalShopState.equip(LocalShopState.hotPinkPackId);
+    await LocalShopState.equip(LocalShopState.pulseCountdownPackId);
+    await LocalShopState.equip(LocalShopState.laserSfxPackId);
+    await LocalShopState.equip(LocalShopState.terminalCommandsPackId);
     await LocalShopState.equip(LocalShopState.proShareCardsPackId);
 
     ReactCosmetics.currentTheme = ReactVisualTheme.core;
+    ReactCosmetics.currentCountdownStyle = ReactCountdownStyle.core;
     ReactCosmetics.currentSoundPack = ReactSoundPack.core;
     ReactCosmetics.currentCommandStyle = ReactCommandStyle.core;
     ReactCosmetics.currentShareStyle = ReactShareStyle.core;
     await LocalShopState.load();
 
-    expect(ReactCosmetics.currentTheme, ReactVisualTheme.synthwave);
-    expect(ReactCosmetics.currentSoundPack, ReactSoundPack.arcade);
-    expect(ReactCosmetics.currentCommandStyle, ReactCommandStyle.glitch);
+    expect(ReactCosmetics.currentReactionPack, ReactReactionPack.hotPink);
+    expect(ReactCosmetics.currentCountdownStyle, ReactCountdownStyle.pulse);
+    expect(ReactCosmetics.currentSoundPack, ReactSoundPack.laser);
+    expect(ReactCosmetics.currentCommandStyle, ReactCommandStyle.terminal);
     expect(ReactCosmetics.currentShareStyle, ReactShareStyle.pro);
+  });
+
+  test('new reaction palettes are distinct', () {
+    final colors = <int>{
+      ReactCosmetics.paletteForReactionPack(ReactReactionPack.greenline)
+          .primary
+          .toARGB32(),
+      ReactCosmetics.paletteForReactionPack(ReactReactionPack.voltage)
+          .primary
+          .toARGB32(),
+      ReactCosmetics.paletteForReactionPack(ReactReactionPack.ember)
+          .primary
+          .toARGB32(),
+      ReactCosmetics.paletteForReactionPack(ReactReactionPack.hotPink)
+          .primary
+          .toARGB32(),
+    };
+    expect(colors.length, 4);
   });
 }
