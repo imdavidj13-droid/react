@@ -72,7 +72,9 @@ class PlayerProfileRepository {
       final displayName = (row['display_name'] as String?)?.trim();
       final playerCode = (row['player_code'] as String?)?.trim();
       final avatarPath = _clean(row['avatar_path'] as String?);
-      final createdAt = DateTime.tryParse('${row['created_at']}') ?? user.createdAt;
+      final createdAt = DateTime.tryParse('${row['created_at']}') ??
+          DateTime.tryParse('${user.createdAt}') ??
+          LocalPlayerProfile.createdAt;
       final resolvedName = displayName == null || displayName.isEmpty
           ? LocalPlayerProfile.displayName
           : displayName;
@@ -142,7 +144,8 @@ class PlayerProfileRepository {
     }
 
     final safeExtension = _safeExtension(extension);
-    final path = '${user.id}/avatar-${DateTime.now().millisecondsSinceEpoch}.$safeExtension';
+    final path =
+        '${user.id}/avatar-${DateTime.now().millisecondsSinceEpoch}.$safeExtension';
 
     await client.storage.from(_avatarBucket).uploadBinary(
       path,
@@ -167,7 +170,9 @@ class PlayerProfileRepository {
     final oldPath = current.avatarPath;
     await LocalPlayerProfile.setAvatar(path: path, url: url);
 
-    if (oldPath != null && oldPath != path && oldPath.startsWith('${user.id}/')) {
+    if (oldPath != null &&
+        oldPath != path &&
+        oldPath.startsWith('${user.id}/')) {
       try {
         await client.storage.from(_avatarBucket).remove(<String>[oldPath]);
       } catch (_) {
