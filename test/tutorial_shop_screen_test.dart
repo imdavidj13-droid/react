@@ -21,7 +21,7 @@ void main() {
     await tester.scrollUntilVisible(
       finder,
       280,
-      scrollable: find.byType(CustomScrollView),
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
   }
