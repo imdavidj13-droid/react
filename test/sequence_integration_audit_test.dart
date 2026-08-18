@@ -32,16 +32,13 @@ void main() {
 
   testWidgets('Player Profile includes Sequence in personal bests',
       (tester) async {
+    tester.view.physicalSize = const Size(500, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(const MaterialApp(home: PlayerProfileScreen()));
     await tester.pumpAndSettle();
-
-    final scrollable = find.byType(Scrollable).first;
-    for (var attempt = 0;
-        attempt < 8 && find.text('SEQUENCE').evaluate().isEmpty;
-        attempt++) {
-      await tester.drag(scrollable, const Offset(0, -350));
-      await tester.pumpAndSettle();
-    }
 
     expect(find.text('PERSONAL BESTS'), findsOneWidget);
     expect(find.text('SEQUENCE'), findsOneWidget);
