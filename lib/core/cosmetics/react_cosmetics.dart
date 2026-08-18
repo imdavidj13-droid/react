@@ -206,8 +206,17 @@ abstract final class ReactCosmetics {
   static ReactCommandStyle currentCommandStyle = ReactCommandStyle.core;
   static ReactShareStyle currentShareStyle = ReactShareStyle.core;
 
-  static ReactReactionPack get currentReactionPack =>
-      _reactionPackOverride ?? ReactReactionPack.fromLegacyTheme(currentTheme);
+  /// The four newer colour packs deliberately use the neutral MONO surface
+  /// family underneath. Only treat the private override as active while that
+  /// neutral family is still selected. This keeps older code/tests that assign
+  /// [currentTheme] directly fully backward compatible.
+  static ReactReactionPack get currentReactionPack {
+    final override = _reactionPackOverride;
+    if (override != null && currentTheme == ReactVisualTheme.mono) {
+      return override;
+    }
+    return ReactReactionPack.fromLegacyTheme(currentTheme);
+  }
 
   static ReactCosmeticPalette get palette => paletteForReactionPack(currentReactionPack);
 
@@ -264,9 +273,6 @@ abstract final class ReactCosmetics {
             ReactReactionPack.voltage ||
             ReactReactionPack.ember ||
             ReactReactionPack.hotPink:
-        // New colour packs use the existing neutral-black gameplay surfaces.
-        // Borders, timers and effects still derive from the pack palette, so
-        // no Core-blue or Redline-red chrome leaks into these colourways.
         currentTheme = ReactVisualTheme.mono;
         _reactionPackOverride = pack;
     }
