@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:react/features/modes/data/local_variant_mode_stats.dart';
 import 'package:react/features/modes/domain/react_variant_mode.dart';
+import 'package:react/features/modes/presentation/modes_screen.dart';
 import 'package:react/features/modes/presentation/variant_mode_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,56 +11,25 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  test('Mode Lab contains every retained variant with complete metadata', () {
-    final retainedModes = ReactVariantMode.values
-        .where(
-          (mode) =>
-              mode != ReactVariantMode.tether &&
-              mode != ReactVariantMode.overload &&
-              mode != ReactVariantMode.lockstep &&
-              mode != ReactVariantMode.zenith &&
-              mode != ReactVariantMode.pulse &&
-              mode != ReactVariantMode.shuffle &&
-              mode != ReactVariantMode.fuse &&
-              mode != ReactVariantMode.orbit &&
-              mode != ReactVariantMode.echo,
-        )
-        .toList(growable: false);
+  test('Mode Lab exposes only the retained playtest set', () {
+    expect(ModesScreen.retainedLabModes.length, 10);
+    expect(
+      ModesScreen.retainedLabModes.map((mode) => mode.title).toList(),
+      <String>[
+        'PHANTOM',
+        'MOSAIC',
+        'ILLUSION',
+        'MEMORY',
+        'TEMPEST',
+        'VORTEX',
+        'TIMEDROP',
+        'GLITCH',
+        'BLACKOUT',
+        'RICOCHET',
+      ],
+    );
 
-    expect(retainedModes.length, 27);
-
-    final expected = <String>{
-      'PHANTOM',
-      'MOSAIC',
-      'ACCEL',
-      'TITAN',
-      'BEACON',
-      'COLLAPSE',
-      'MAGNET',
-      'ILLUSION',
-      'CHECKPOINT',
-      'REACTOR',
-      'NEXUS',
-      'PRISM',
-      'MEMORY',
-      'HUNTER',
-      'ASCENT',
-      'FRACTURE',
-      'TEMPEST',
-      'CHAIN',
-      'SURVIVOR',
-      'DECODER',
-      'STEALTH',
-      'SNAP',
-      'VORTEX',
-      'TIMEDROP',
-      'GLITCH',
-      'BLACKOUT',
-      'RICOCHET',
-    };
-
-    expect(retainedModes.map((mode) => mode.title).toSet(), expected);
-    for (final mode in retainedModes) {
+    for (final mode in ModesScreen.retainedLabModes) {
       expect(mode.badge, isNotEmpty);
       expect(mode.subtitle, isNotEmpty);
       expect(mode.detail, isNotEmpty);
@@ -67,9 +37,8 @@ void main() {
     }
   });
 
-  test('specialized mechanics are assigned to their intended retained modes', () {
+  test('retained specialized mechanics keep their expected foundations', () {
     expect(ReactVariantMode.mosaic.mechanic, ReactVariantMechanic.grid);
-    expect(ReactVariantMode.fracture.mechanic, ReactVariantMechanic.grid);
     expect(ReactVariantMode.memory.mechanic, ReactVariantMechanic.memory);
     expect(ReactVariantMode.vortex.mechanic, ReactVariantMechanic.target);
     expect(ReactVariantMode.ricochet.mechanic, ReactVariantMechanic.target);
@@ -80,9 +49,18 @@ void main() {
     expect(await LocalVariantModeStats.best(ReactVariantMode.phantom), 0);
     expect(await LocalVariantModeStats.plays(ReactVariantMode.phantom), 0);
 
-    expect(await LocalVariantModeStats.record(ReactVariantMode.phantom, 7), isTrue);
-    expect(await LocalVariantModeStats.record(ReactVariantMode.phantom, 4), isFalse);
-    expect(await LocalVariantModeStats.record(ReactVariantMode.ricochet, 11), isTrue);
+    expect(
+      await LocalVariantModeStats.record(ReactVariantMode.phantom, 7),
+      isTrue,
+    );
+    expect(
+      await LocalVariantModeStats.record(ReactVariantMode.phantom, 4),
+      isFalse,
+    );
+    expect(
+      await LocalVariantModeStats.record(ReactVariantMode.ricochet, 11),
+      isTrue,
+    );
 
     expect(await LocalVariantModeStats.best(ReactVariantMode.phantom), 7);
     expect(await LocalVariantModeStats.plays(ReactVariantMode.phantom), 2);
@@ -90,9 +68,25 @@ void main() {
     expect(await LocalVariantModeStats.plays(ReactVariantMode.ricochet), 1);
   });
 
-  testWidgets('variant intro explains its real rule before starting', (tester) async {
+  testWidgets('Mosaic intro offers both playable variants', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(home: VariantModeScreen(mode: ReactVariantMode.ricochet)),
+      const MaterialApp(home: VariantModeScreen(mode: ReactVariantMode.mosaic)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('MOSAIC'), findsOneWidget);
+    expect(find.text('HOW IT WORKS'), findsOneWidget);
+    expect(find.text('ORIGINAL MOSAIC'), findsOneWidget);
+    expect(find.text('PRESSURE GRID'), findsOneWidget);
+  });
+
+  testWidgets('Ricochet intro still explains the retained target mode', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: VariantModeScreen(mode: ReactVariantMode.ricochet),
+      ),
     );
     await tester.pumpAndSettle();
 
