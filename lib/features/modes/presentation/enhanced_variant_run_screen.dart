@@ -460,12 +460,12 @@ class _EnhancedVariantRunScreenState extends State<EnhancedVariantRunScreen> {
             offset: Offset(sin(t * 7) * 72, cos(t * 5) * 54),
             child: face,
           ),
-        _ => Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..scale(sin(t * 4) > 0 ? -1.0 : 1.0, 1.0)
-              ..rotateZ(sin(t * 6) * .65),
-            child: face,
+        _ => Transform.rotate(
+            angle: sin(t * 6) * .65,
+            child: Transform.flip(
+              flipX: sin(t * 4) > 0,
+              child: face,
+            ),
           ),
       };
     }
