@@ -115,7 +115,7 @@ class LocalPlayerStats {
     }
 
     if (attempts <= 0) return 0;
-    return (successes / attempts).clamp(0.0, 1.0);
+    return (successes / attempts).clamp(0.0, 1.0).toDouble();
   }
 
   static Future<int> runsPlayed() async {
