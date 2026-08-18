@@ -36,14 +36,14 @@ void main() {
     await tester.pumpAndSettle();
 
     final scrollable = find.byType(Scrollable).first;
-    await tester.scrollUntilVisible(
-      find.text('PERSONAL BESTS'),
-      300,
-      scrollable: scrollable,
-    );
-    await tester.drag(scrollable, const Offset(0, -260));
-    await tester.pumpAndSettle();
+    for (var attempt = 0;
+        attempt < 8 && find.text('SEQUENCE').evaluate().isEmpty;
+        attempt++) {
+      await tester.drag(scrollable, const Offset(0, -350));
+      await tester.pumpAndSettle();
+    }
 
+    expect(find.text('PERSONAL BESTS'), findsOneWidget);
     expect(find.text('SEQUENCE'), findsOneWidget);
     expect(find.text('27'), findsOneWidget);
     expect(tester.takeException(), isNull);
