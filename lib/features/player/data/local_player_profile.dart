@@ -7,9 +7,17 @@ class LocalPlayerProfile {
 
   static const _idKey = 'react_player_local_id';
   static const _displayNameKey = 'react_player_display_name';
+  static const _createdAtKey = 'react_player_created_at';
+  static const _avatarPathKey = 'react_player_avatar_path';
+  static const _avatarUrlKey = 'react_player_avatar_url';
 
   static String localId = '';
   static String displayName = 'PLAYER';
+  static DateTime createdAt = DateTime.fromMillisecondsSinceEpoch(0);
+  static String? avatarPath;
+  static String? avatarUrl;
+
+  static String get localPlayerCode => playerCodeFor(localId);
 
   static Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -28,6 +36,15 @@ class LocalPlayerProfile {
     if (storedName == null || storedName.isEmpty) {
       await prefs.setString(_displayNameKey, displayName);
     }
+
+    final storedCreatedAt = prefs.getString(_createdAtKey);
+    createdAt = DateTime.tryParse(storedCreatedAt ?? '') ?? DateTime.now();
+    if (storedCreatedAt == null) {
+      await prefs.setString(_createdAtKey, createdAt.toUtc().toIso8601String());
+    }
+
+    avatarPath = _cleanOptional(prefs.getString(_avatarPathKey));
+    avatarUrl = _cleanOptional(prefs.getString(_avatarUrlKey));
   }
 
   static Future<void> setDisplayName(String value) async {
@@ -40,6 +57,25 @@ class LocalPlayerProfile {
     displayName = normalized;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_displayNameKey, normalized);
+  }
+
+  static Future<void> setAvatar({
+    required String path,
+    required String url,
+  }) async {
+    avatarPath = path;
+    avatarUrl = url;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_avatarPathKey, path);
+    await prefs.setString(_avatarUrlKey, url);
+  }
+
+  static Future<void> clearAvatar() async {
+    avatarPath = null;
+    avatarUrl = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_avatarPathKey);
+    await prefs.remove(_avatarUrlKey);
   }
 
   static String normalizeDisplayName(String value) =>
@@ -58,8 +94,23 @@ class LocalPlayerProfile {
 
   static String defaultDisplayNameFor(String id) {
     final compact = id.replaceAll('-', '').toUpperCase();
-    final suffix = compact.length >= 6 ? compact.substring(0, 6) : compact.padRight(6, '0');
+    final suffix = compact.length >= 6
+        ? compact.substring(0, 6)
+        : compact.padRight(6, '0');
     return 'PLAYER-$suffix';
+  }
+
+  static String playerCodeFor(String id) {
+    final compact = id.replaceAll('-', '').toUpperCase();
+    final suffix = compact.length >= 10
+        ? compact.substring(0, 10)
+        : compact.padRight(10, '0');
+    return 'RX-$suffix';
+  }
+
+  static String? _cleanOptional(String? value) {
+    final cleaned = value?.trim();
+    return cleaned == null || cleaned.isEmpty ? null : cleaned;
   }
 
   static String _generateLocalId() {
