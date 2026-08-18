@@ -9,7 +9,7 @@ import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import '../../leaderboard/presentation/leaderboard_screen.dart';
 import '../../modes/presentation/modes_screen.dart';
-import '../../settings/presentation/settings_screen.dart';
+import '../../player/presentation/player_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -65,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     children: [
                       _TopSection(
-                        onProfile: () => _open(context, const SettingsScreen()),
+                        onProfile: () => _open(context, const PlayerProfileScreen()),
                       ),
                       SizedBox(height: compact ? 10 : 14),
                       Row(
@@ -223,21 +223,47 @@ class _TopSection extends StatelessWidget {
             ],
           ),
         ),
-        Align(
-          alignment: Alignment.topRight,
-          child: IconButton(
-            onPressed: onProfile,
-            style: IconButton.styleFrom(
-              backgroundColor: const Color(0xFF07101E),
-              foregroundColor: ReactColors.textPrimary,
-              side: BorderSide(
-                color: ReactColors.electricBlue.withValues(alpha: .75),
-              ),
-            ),
-            icon: const Icon(Icons.person_outline_rounded, size: 22),
-          ),
+        Positioned(
+          top: 0,
+          right: 0,
+          child: _ProfileHeaderButton(onTap: onProfile),
         ),
       ],
+    );
+  }
+}
+
+class _ProfileHeaderButton extends StatelessWidget {
+  const _ProfileHeaderButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: const ValueKey('home_profile_button'),
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF07101E),
+            border: Border.all(
+              color: ReactColors.electricBlue.withValues(alpha: .75),
+            ),
+          ),
+          child: const Icon(
+            Icons.person_outline_rounded,
+            color: ReactColors.textPrimary,
+            size: 22,
+          ),
+        ),
+      ),
     );
   }
 }
