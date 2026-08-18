@@ -93,7 +93,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('LEADERBOARD'), findsOneWidget);
-    expect(find.text('LOCAL PREVIEW'), findsOneWidget);
+    expect(find.textContaining('LOCAL SCORE PREVIEW'), findsOneWidget);
     expect(find.text('GLOBAL'), findsOneWidget);
     expect(find.text('DAILY'), findsOneWidget);
     expect(find.text('PLAYER-ABCDEF'), findsOneWidget);
