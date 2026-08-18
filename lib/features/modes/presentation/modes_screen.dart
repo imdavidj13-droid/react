@@ -10,6 +10,8 @@ import '../../gameplay/presentation/react_run_launch_screen.dart';
 import '../../leaderboard/presentation/leaderboard_screen.dart';
 import '../../pass_it/presentation/pass_it_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
+import '../domain/react_variant_mode.dart';
+import 'variant_mode_screen.dart';
 
 class ModesScreen extends StatelessWidget {
   const ModesScreen({super.key});
@@ -20,7 +22,7 @@ class ModesScreen extends StatelessWidget {
       Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
     }
 
-    final modes = <_ModeData>[
+    final coreModes = <_ModeData>[
       _ModeData(
         title: 'CLASSIC',
         subtitle: 'Survive as long as you can.',
@@ -50,14 +52,12 @@ class ModesScreen extends StatelessWidget {
       ),
       _ModeData(
         title: 'SEQUENCE',
-        subtitle: 'Tap numbered dots in the exact order.',
+        subtitle: 'Tap numbered dots in exact order.',
         detail: '2–5 DOTS  •  RANDOM POSITIONS  •  3 LIVES',
         icon: Icons.blur_circular_rounded,
         color: ReactColors.electricBlueBright,
-        badge: 'NEW MODE',
-        onTap: () => open(
-          const ReactRunLaunchScreen(mode: ReactGameMode.sequence),
-        ),
+        badge: 'SEQUENCE',
+        onTap: () => open(const ReactRunLaunchScreen(mode: ReactGameMode.sequence)),
       ),
       _ModeData(
         title: 'PASS IT',
@@ -71,7 +71,7 @@ class ModesScreen extends StatelessWidget {
       _ModeData(
         title: 'DAILY',
         subtitle: 'A different rule every day.',
-        detail: 'NO COMMAND CAP  •  7 ROTATING MODIFIERS',
+        detail: '7 ROTATING MODIFIERS  •  BEST COUNTS',
         icon: Icons.calendar_month_rounded,
         color: ReactColors.lime,
         badge: 'DAILY RUN',
@@ -79,8 +79,8 @@ class ModesScreen extends StatelessWidget {
       ),
       _ModeData(
         title: 'SCORES',
-        subtitle: 'See your best runs on this device.',
-        detail: 'LOCAL RECORDS  •  EVERY MODE',
+        subtitle: 'See your established records.',
+        detail: 'LOCAL RECORDS  •  CORE MODES',
         icon: Icons.leaderboard_rounded,
         color: ReactColors.purple,
         badge: 'RECORDS',
@@ -88,8 +88,8 @@ class ModesScreen extends StatelessWidget {
       ),
       _ModeData(
         title: 'PROFILE',
-        subtitle: 'Local stats and game preferences.',
-        detail: 'PERFORMANCE  •  VISUAL EFFECTS  •  RECORDS',
+        subtitle: 'Stats and game preferences.',
+        detail: 'PERFORMANCE  •  EFFECTS  •  SETTINGS',
         icon: Icons.person_outline_rounded,
         color: ReactColors.electricBlueBright,
         badge: 'SETTINGS',
@@ -97,72 +97,92 @@ class ModesScreen extends StatelessWidget {
       ),
     ];
 
+    final labModes = ReactVariantMode.values
+        .map(
+          (mode) => _ModeData(
+            title: mode.title,
+            subtitle: mode.subtitle,
+            detail: mode.detail,
+            icon: mode.icon,
+            color: mode.color,
+            badge: mode.badge,
+            onTap: () => open(VariantModeScreen(mode: mode)),
+          ),
+        )
+        .toList(growable: false);
+
     return Scaffold(
       backgroundColor: ReactColors.background,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             final pad = constraints.maxWidth < 380 ? 12.0 : 16.0;
-            final shortScreen = constraints.maxHeight < 700;
-            final heroHeight = shortScreen ? 88.0 : 104.0;
-
-            return Padding(
-              padding: EdgeInsets.fromLTRB(pad, 6, pad, 8),
-              child: Column(
-                children: [
-                  _compactTextScale(
-                    context,
-                    _Header(onBack: () => Navigator.of(context).pop()),
+            return CustomScrollView(
+              key: const ValueKey('modes_catalogue_scroll'),
+              slivers: [
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(pad, 8, pad, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: _Header(onBack: () => Navigator.of(context).pop()),
                   ),
-                  SizedBox(height: shortScreen ? 5 : 8),
-                  SizedBox(
-                    height: heroHeight,
-                    child: _compactTextScale(context, const _ModesHero()),
-                  ),
-                  SizedBox(height: shortScreen ? 5 : 7),
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, gridConstraints) {
-                        const rowCount = 4;
-                        final spacing = shortScreen ? 5.0 : 7.0;
-                        final rowHeight =
-                            (gridConstraints.maxHeight - spacing * (rowCount - 1)) /
-                                rowCount;
-
-                        return GridView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: EdgeInsets.zero,
-                          itemCount: modes.length,
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: spacing,
-                            mainAxisSpacing: spacing,
-                            mainAxisExtent: rowHeight,
-                          ),
-                          itemBuilder: (context, index) => _compactTextScale(
-                            context,
-                            _ModePanel(data: modes[index]),
-                          ),
-                        );
-                      },
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(pad, 12, pad, 0),
+                  sliver: const SliverToBoxAdapter(child: _ModesHero()),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(pad, 18, pad, 9),
+                  sliver: const SliverToBoxAdapter(
+                    child: _SectionTitle(
+                      title: 'CORE & UTILITIES',
+                      subtitle: 'ESTABLISHED MODES, RECORDS AND SETTINGS',
                     ),
                   ),
-                ],
-              ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: pad),
+                  sliver: SliverGrid(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _ModePanel(data: coreModes[index]),
+                      childCount: coreModes.length,
+                    ),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 9,
+                      mainAxisSpacing: 9,
+                      mainAxisExtent: 136,
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(pad, 24, pad, 9),
+                  sliver: SliverToBoxAdapter(
+                    child: _SectionTitle(
+                      title: 'MODE LAB',
+                      subtitle: '${labModes.length} PLAYABLE VARIANTS  •  TEST WHAT EARNS A PERMANENT SLOT',
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(pad, 0, pad, 28),
+                  sliver: SliverGrid(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _ModePanel(data: labModes[index]),
+                      childCount: labModes.length,
+                    ),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 9,
+                      mainAxisSpacing: 9,
+                      mainAxisExtent: 168,
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         ),
       ),
-    );
-  }
-
-  Widget _compactTextScale(BuildContext context, Widget child) {
-    final media = MediaQuery.of(context);
-    final currentScale = media.textScaler.scale(1);
-    final clampedScale = currentScale > 1.1 ? 1.1 : currentScale;
-    return MediaQuery(
-      data: media.copyWith(textScaler: TextScaler.linear(clampedScale)),
-      child: child,
     );
   }
 }
@@ -193,57 +213,29 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 42,
-      child: Row(
-        children: [
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              onPressed: onBack,
-              style: IconButton.styleFrom(
-                side: const BorderSide(color: Color(0xFF1E3552)),
-                backgroundColor: const Color(0xFF07101E),
-                foregroundColor: ReactColors.textPrimary,
-              ),
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 17),
-            ),
+    return Row(
+      children: [
+        IconButton(
+          onPressed: onBack,
+          style: IconButton.styleFrom(
+            side: const BorderSide(color: Color(0xFF1E3552)),
+            backgroundColor: const Color(0xFF07101E),
+            foregroundColor: ReactColors.textPrimary,
           ),
-          const Spacer(),
-          const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'RE',
-                style: TextStyle(
-                  color: ReactColors.textPrimary,
-                  fontSize: 25,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 2,
-                ),
-              ),
-              Icon(
-                Icons.change_history_rounded,
-                color: ReactColors.electricBlueBright,
-                size: 24,
-              ),
-              Text(
-                'CT',
-                style: TextStyle(
-                  color: ReactColors.textPrimary,
-                  fontSize: 25,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 2,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          const SizedBox(width: 40),
-        ],
-      ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+        ),
+        const Spacer(),
+        const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('RE', style: TextStyle(color: ReactColors.textPrimary, fontSize: 25, fontWeight: FontWeight.w600, letterSpacing: 2)),
+            Icon(Icons.change_history_rounded, color: ReactColors.electricBlueBright, size: 24),
+            Text('CT', style: TextStyle(color: ReactColors.textPrimary, fontSize: 25, fontWeight: FontWeight.w600, letterSpacing: 2)),
+          ],
+        ),
+        const Spacer(),
+        const SizedBox(width: 48),
+      ],
     );
   }
 }
@@ -254,11 +246,11 @@ class _ModesHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      height: 116,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFF25425F)),
       ),
       child: Row(
@@ -268,57 +260,48 @@ class _ModesHero extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'CHOOSE YOUR MODE',
-                    style: TextStyle(
-                      color: ReactColors.textPrimary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: .5,
-                    ),
-                  ),
-                ),
+                Text('MODES', style: TextStyle(color: ReactColors.textPrimary, fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
                 SizedBox(height: 4),
-                Text(
-                  'DIFFERENT RULES.  SAME REFLEXES.',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: .9,
-                  ),
-                ),
+                Text('DIFFERENT RULES.  SAME REFLEXES.', style: TextStyle(color: ReactColors.textSecondary, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
               ],
             ),
           ),
-          const SizedBox(width: 10),
-          AspectRatio(
-            aspectRatio: 1,
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 72, maxHeight: 72),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: ReactColors.electricBlueBright,
-                  width: 1.7,
-                ),
-              ),
-              child: const Icon(
-                Icons.view_in_ar_rounded,
-                color: ReactColors.electricBlueBright,
-                size: 30,
-              ),
+          Container(
+            width: 82,
+            height: 82,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: ReactColors.electricBlueBright, width: 2),
+              boxShadow: [BoxShadow(color: ReactColors.electricBlueBright, blurRadius: 18, spreadRadius: -10)],
             ),
+            child: const Icon(Icons.change_history_rounded, color: ReactColors.electricBlueBright, size: 42),
           ),
         ],
       ),
     );
   }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title, required this.subtitle});
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(color: ReactColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                const SizedBox(height: 2),
+                Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 7.5, fontWeight: FontWeight.w800, letterSpacing: .75)),
+              ],
+            ),
+          ),
+        ],
+      );
 }
 
 class _ModePanel extends StatelessWidget {
@@ -327,108 +310,72 @@ class _ModePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final tiny = constraints.maxHeight < 78;
-        final iconSize = tiny ? 22.0 : 26.0;
-
-        return InkWell(
-          onTap: data.onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: EdgeInsets.fromLTRB(7, tiny ? 5 : 6, 7, tiny ? 4 : 5),
-            decoration: BoxDecoration(
-              color: const Color(0xFF07111D),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: data.color.withValues(alpha: .5)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: iconSize,
-                      height: iconSize,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFF050A13),
-                        border: Border.all(
-                          color: data.color.withValues(alpha: .85),
-                          width: 1.2,
-                        ),
-                      ),
-                      child: Icon(
-                        data.icon,
-                        color: data.color,
-                        size: tiny ? 12 : 14,
-                      ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: data.onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: const Color(0xFF07111D),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: data.color.withValues(alpha: .62)),
+            boxShadow: [
+              BoxShadow(color: data.color.withValues(alpha: .05), blurRadius: 16),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF050A13),
+                      border: Border.all(color: data.color, width: 1.6),
                     ),
-                    const SizedBox(width: 4),
-                    Expanded(child: _Badge(label: data.badge, color: data.color)),
-                  ],
-                ),
-                SizedBox(height: tiny ? 2 : 3),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          data.title,
-                          style: TextStyle(
-                            color: ReactColors.textPrimary,
-                            fontSize: tiny ? 11 : 12.5,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: .45,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: data.color,
-                      size: tiny ? 13 : 15,
-                    ),
-                  ],
-                ),
-                if (!tiny) ...[
-                  const SizedBox(height: 1),
+                    child: Icon(data.icon, color: data.color, size: 22),
+                  ),
+                  const Spacer(),
+                  Flexible(child: _Badge(label: data.badge, color: data.color)),
+                ],
+              ),
+              const Spacer(),
+              Text(
+                data.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: ReactColors.textPrimary, fontSize: 19, fontWeight: FontWeight.w900, letterSpacing: .6),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                data.subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: ReactColors.textSecondary, fontSize: 10, height: 1.25, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 7),
+              Row(
+                children: [
                   Expanded(
                     child: Text(
-                      data.subtitle,
+                      data.detail,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: ReactColors.textSecondary,
-                        fontSize: 7.4,
-                        height: 1.05,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TextStyle(color: data.color, fontSize: 7.1, fontWeight: FontWeight.w900, letterSpacing: .45),
                     ),
                   ),
-                ] else
-                  const Spacer(),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    data.detail,
-                    maxLines: 1,
-                    style: TextStyle(
-                      color: data.color.withValues(alpha: .9),
-                      fontSize: tiny ? 5.2 : 5.8,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: .4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                  Icon(Icons.chevron_right_rounded, color: data.color, size: 19),
+                ],
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -439,30 +386,17 @@ class _Badge extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 66),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+  Widget build(BuildContext context) => Container(
+        constraints: const BoxConstraints(maxWidth: 92),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: .08),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withValues(alpha: .45)),
+          color: color.withValues(alpha: .06),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: .48)),
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 5.8,
-              fontWeight: FontWeight.w900,
-              letterSpacing: .45,
-            ),
-          ),
+          child: Text(label, style: TextStyle(color: color, fontSize: 7.5, fontWeight: FontWeight.w900, letterSpacing: .7)),
         ),
-      ),
-    );
-  }
+      );
 }
