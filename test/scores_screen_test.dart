@@ -28,15 +28,17 @@ void main() {
     await tester.tap(find.text('BLITZ'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.text('RECENT RUNS'),
+      find.text('RECENT ACTIVITY'),
       250,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('RECENT RUNS'), findsOneWidget);
-    expect(find.text('17 cleared  •  2 misses  •  0.74s avg'), findsOneWidget);
-    expect(find.text('17'), findsWidgets);
+    expect(find.text('RECENT ACTIVITY'), findsOneWidget);
+    expect(find.text('SCORE 17'), findsOneWidget);
+    expect(find.textContaining('17 CLEARED'), findsOneWidget);
+    expect(find.textContaining('2 MISSES'), findsOneWidget);
+    expect(find.text('0.74s'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
