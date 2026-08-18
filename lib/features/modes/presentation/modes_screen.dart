@@ -98,6 +98,18 @@ class ModesScreen extends StatelessWidget {
     ];
 
     final labModes = ReactVariantMode.values
+        .where(
+          (mode) =>
+              mode != ReactVariantMode.tether &&
+              mode != ReactVariantMode.overload &&
+              mode != ReactVariantMode.lockstep &&
+              mode != ReactVariantMode.zenith &&
+              mode != ReactVariantMode.pulse &&
+              mode != ReactVariantMode.shuffle &&
+              mode != ReactVariantMode.fuse &&
+              mode != ReactVariantMode.orbit &&
+              mode != ReactVariantMode.echo,
+        )
         .map(
           (mode) => _ModeData(
             title: mode.title,
