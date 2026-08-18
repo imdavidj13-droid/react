@@ -28,6 +28,7 @@ enum ReactSoundCue {
 abstract final class ReactAudio {
   static const int _sampleRate = 22050;
   static const int _playerCount = 6;
+  static const int _rapidSuccessCooldownMs = 170;
 
   static final List<AudioPlayer> _players = List<AudioPlayer>.generate(
     _playerCount,
@@ -44,6 +45,8 @@ abstract final class ReactAudio {
   static int _nextPlayer = 0;
   static bool _initialized = false;
   static Future<void>? _initialization;
+  static ReactSoundCue? _lastRequestedCue;
+  static int _lastRequestedCueMs = -1000000;
 
   static bool get enabled => ReactSettings.soundEnabled;
 
@@ -87,6 +90,16 @@ abstract final class ReactAudio {
 
   static Future<void> play(ReactSoundCue cue) async {
     if (!enabled) return;
+
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    if (cue == ReactSoundCue.success &&
+        _lastRequestedCue == ReactSoundCue.success &&
+        nowMs - _lastRequestedCueMs < _rapidSuccessCooldownMs) {
+      _lastRequestedCueMs = nowMs;
+      return;
+    }
+    _lastRequestedCue = cue;
+    _lastRequestedCueMs = nowMs;
 
     try {
       await initialize();
