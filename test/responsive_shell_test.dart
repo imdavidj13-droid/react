@@ -114,14 +114,14 @@ void main() {
     await pumpAtSize(tester, const LeaderboardScreen(), const Size(320, 640));
 
     await tester.scrollUntilVisible(
-      find.text('YOUR PERFORMANCE'),
+      find.text('YOUR COMPETITIVE SNAPSHOT'),
       250,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('YOUR PERFORMANCE'), findsOneWidget);
+    expect(find.text('YOUR COMPETITIVE SNAPSHOT'), findsOneWidget);
   });
 
   testWidgets('Results fits on a 320x640 screen without scrolling', (tester) async {
