@@ -6,11 +6,21 @@ import 'package:react/features/leaderboard/data/local_leaderboard_repository.dar
 import 'package:react/features/leaderboard/domain/leaderboard_query.dart';
 import 'package:react/features/leaderboard/domain/leaderboard_snapshot.dart';
 import 'package:react/features/leaderboard/presentation/leaderboard_screen.dart';
+import 'package:react/features/player/data/local_player_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  test('local repository exposes a truthful unranked current-player row', () async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+  Future<void> seedGuest({Map<String, Object> values = const {}}) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'react_player_local_id': 'abcdef1234567890abcdef12',
+      'react_player_display_name': 'PLAYER-ABCDEF',
+      ...values,
+    });
+    await LocalPlayerProfile.load();
+  }
+
+  test('local repository exposes the persisted guest identity', () async {
+    await seedGuest();
     await LocalPlayerStats.recordResult(
       const ReactRunResult(
         mode: ReactGameMode.classic,
@@ -31,14 +41,15 @@ void main() {
 
     expect(snapshot.source, LeaderboardDataSource.localPreview);
     expect(snapshot.entries, hasLength(1));
-    expect(snapshot.entries.single.displayName, 'YOU');
+    expect(snapshot.entries.single.playerId, 'abcdef1234567890abcdef12');
+    expect(snapshot.entries.single.displayName, 'PLAYER-ABCDEF');
     expect(snapshot.entries.single.score, 42);
     expect(snapshot.entries.single.rank, isNull);
     expect(snapshot.entries.single.averageReactionSeconds, closeTo(.65, .001));
   });
 
   test('aggregate reaction data is never attached to an unrelated best score', () async {
-    SharedPreferences.setMockInitialValues(<String, Object>{
+    await seedGuest(values: <String, Object>{
       'best_classic': 42,
       'mode_commands_classic': 10,
       'mode_response_ms_classic': 6500,
@@ -71,7 +82,7 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    SharedPreferences.setMockInitialValues(<String, Object>{
+    await seedGuest(values: <String, Object>{
       'best_classic': 42,
       'mode_runs_classic': 3,
       'mode_commands_classic': 10,
@@ -85,7 +96,7 @@ void main() {
     expect(find.text('LOCAL PREVIEW'), findsOneWidget);
     expect(find.text('GLOBAL'), findsOneWidget);
     expect(find.text('DAILY'), findsOneWidget);
-    expect(find.text('YOU'), findsOneWidget);
+    expect(find.text('PLAYER-ABCDEF'), findsOneWidget);
     expect(find.text('42'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
