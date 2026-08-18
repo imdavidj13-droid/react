@@ -73,7 +73,7 @@ class PlayerProfileRepository {
       final playerCode = (row['player_code'] as String?)?.trim();
       final avatarPath = _clean(row['avatar_path'] as String?);
       final createdAt = DateTime.tryParse('${row['created_at']}') ??
-          DateTime.tryParse('${user.createdAt}') ??
+          DateTime.tryParse(user.createdAt) ??
           LocalPlayerProfile.createdAt;
       final resolvedName = displayName == null || displayName.isEmpty
           ? LocalPlayerProfile.displayName
