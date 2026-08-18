@@ -150,7 +150,7 @@ class ModesScreen extends StatelessWidget {
                       crossAxisCount: 2,
                       crossAxisSpacing: 9,
                       mainAxisSpacing: 9,
-                      mainAxisExtent: 136,
+                      mainAxisExtent: 190,
                     ),
                   ),
                 ),
@@ -174,7 +174,7 @@ class ModesScreen extends StatelessWidget {
                       crossAxisCount: 2,
                       crossAxisSpacing: 9,
                       mainAxisSpacing: 9,
-                      mainAxisExtent: 168,
+                      mainAxisExtent: 190,
                     ),
                   ),
                 ),
@@ -280,23 +280,33 @@ class _ModesHero extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'MODES',
-                  style: TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 36,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'MODES',
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: ReactColors.textPrimary,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                    ),
                   ),
                 ),
                 SizedBox(height: 4),
-                Text(
-                  'DIFFERENT RULES.  SAME REFLEXES.',
-                  style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'DIFFERENT RULES.  SAME REFLEXES.',
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
                   ),
                 ),
               ],
@@ -414,46 +424,58 @@ class _ModePanel extends StatelessWidget {
                   Flexible(child: _Badge(label: data.badge, color: data.color)),
                 ],
               ),
-              const Spacer(),
-              Text(
-                data.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: ReactColors.textPrimary,
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .6,
+              const SizedBox(height: 10),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  data.title,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .6,
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                data.subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: ReactColors.textSecondary,
-                  fontSize: 10,
-                  height: 1.25,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: Text(
+                    data.subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 10,
+                      height: 1.25,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: 5),
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      data.detail,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: data.color,
-                        fontSize: 7.1,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: .45,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        data.detail,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: data.color,
+                          fontSize: 7.1,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .45,
+                        ),
                       ),
                     ),
                   ),
+                  const SizedBox(width: 4),
                   Icon(Icons.chevron_right_rounded, color: data.color, size: 19),
                 ],
               ),
