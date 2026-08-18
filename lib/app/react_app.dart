@@ -6,7 +6,6 @@ import '../core/theme/react_colors.dart';
 import '../core/theme/react_theme.dart';
 import '../features/daily/presentation/daily_dev_screen.dart';
 import '../features/home/presentation/home_screen.dart';
-import '../features/player/presentation/player_profile_screen.dart';
 import '../features/shop/presentation/shop_screen.dart';
 import '../features/tutorial/presentation/how_to_play_screen.dart';
 
@@ -62,12 +61,6 @@ class _HomeShell extends StatelessWidget {
     );
   }
 
-  void _openProfile(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const PlayerProfileScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -89,25 +82,6 @@ class _HomeShell extends StatelessWidget {
                 ),
               ),
               icon: const Icon(Icons.shopping_bag_outlined, size: 22),
-            ),
-          ),
-        ),
-        Positioned(
-          right: 12,
-          top: MediaQuery.paddingOf(context).top + 10,
-          child: Material(
-            color: Colors.transparent,
-            child: IconButton(
-              tooltip: 'Player profile',
-              onPressed: () => _openProfile(context),
-              style: IconButton.styleFrom(
-                backgroundColor: const Color(0xFF07101E),
-                foregroundColor: ReactColors.textPrimary,
-                side: BorderSide(
-                  color: ReactColors.electricBlue.withValues(alpha: .75),
-                ),
-              ),
-              icon: const Icon(Icons.person_outline_rounded, size: 22),
             ),
           ),
         ),
