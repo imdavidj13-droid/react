@@ -43,14 +43,18 @@ class LocalLeaderboardRepository implements LeaderboardRepository {
             .firstOrNull;
       }
 
+      final localId = LocalPlayerProfile.localId.isEmpty
+          ? 'local-player'
+          : LocalPlayerProfile.localId;
       entries.add(
         LeaderboardEntry(
-          playerId: LocalPlayerProfile.localId.isEmpty
-              ? 'local-player'
-              : LocalPlayerProfile.localId,
+          playerId: localId,
           displayName: LocalPlayerProfile.displayName,
+          playerCode: LocalPlayerProfile.playerCodeFor(localId),
+          avatarUrl: LocalPlayerProfile.avatarUrl,
           score: score,
           isCurrentPlayer: true,
+          rank: 1,
           averageReactionSeconds: matchingRun != null &&
                   matchingRun.averageTimeSeconds > 0
               ? matchingRun.averageTimeSeconds
@@ -67,6 +71,7 @@ class LocalLeaderboardRepository implements LeaderboardRepository {
       query: query,
       entries: entries,
       source: LeaderboardDataSource.localPreview,
+      currentPlayerRank: entries.isEmpty ? null : 1,
     );
   }
 
