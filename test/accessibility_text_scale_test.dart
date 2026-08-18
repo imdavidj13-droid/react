@@ -44,9 +44,25 @@ void main() {
     expect(find.text('PLAY'), findsOneWidget);
   });
 
-  testWidgets('Modes tolerates 150 percent text on a compact phone', (tester) async {
+  testWidgets('Modes keeps all eight options on one compact screen', (tester) async {
     await pumpLargeText(tester, const ModesScreen());
-    expect(find.text('CLASSIC'), findsWidgets);
+
+    for (final label in <String>[
+      'CLASSIC',
+      'BLITZ',
+      'ENDLESS',
+      'SEQUENCE',
+      'PASS IT',
+      'DAILY',
+      'SCORES',
+      'PROFILE',
+    ]) {
+      expect(find.text(label), findsWidgets);
+    }
+
+    final grid = tester.widget<GridView>(find.byType(GridView));
+    expect(grid.physics, isA<NeverScrollableScrollPhysics>());
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Daily overview tolerates 150 percent text on a compact phone',
