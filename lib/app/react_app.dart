@@ -9,6 +9,7 @@ import '../features/friends/presentation/friends_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/player/presentation/player_profile_screen.dart';
 import '../features/season/presentation/home_season_strip.dart';
+import '../features/season/presentation/season_cosmetic_layers.dart';
 import '../features/shop/presentation/shop_screen.dart';
 import '../features/tutorial/presentation/how_to_play_screen.dart';
 
@@ -66,7 +67,11 @@ class _HomeShell extends StatelessWidget {
 
   void _openProfile(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const PlayerProfileScreen()),
+      MaterialPageRoute<void>(
+        builder: (_) => const SeasonProfileLayer(
+          child: PlayerProfileScreen(),
+        ),
+      ),
     );
   }
 
@@ -80,11 +85,13 @@ class _HomeShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        const Column(
-          children: [
-            Expanded(child: HomeScreen()),
-            SafeArea(top: false, child: HomeSeasonStrip()),
-          ],
+        SeasonCosmeticLayers.home(
+          child: const Column(
+            children: [
+              Expanded(child: HomeScreen()),
+              SafeArea(top: false, child: HomeSeasonStrip()),
+            ],
+          ),
         ),
         Positioned(
           left: 12,
