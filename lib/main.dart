@@ -10,6 +10,7 @@ import 'core/settings/react_settings.dart';
 import 'features/leaderboard/data/remote_leaderboard_submission_sync.dart';
 import 'features/player/data/local_player_profile.dart';
 import 'features/season/data/season_cosmetic_state.dart';
+import 'features/season/data/season_progress_service.dart';
 import 'features/season/data/season_repository.dart';
 import 'features/shop/data/local_shop_state.dart';
 
@@ -81,5 +82,6 @@ Future<void> _startOnlineServices() async {
   );
   if (!sessionReady) return;
   await RemoteLeaderboardSubmissionSync.flushPending();
+  await SeasonProgressService.flushPending();
   await const SeasonRepository().loadActiveSeason();
 }
