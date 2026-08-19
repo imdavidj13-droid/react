@@ -70,7 +70,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Expanded(child: _BestScore(score: stats.classicBest)),
                           const SizedBox(width: 14),
-                          _Streak(days: stats.dailyStreak),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: _Streak(days: stats.dailyStreak),
+                          ),
                         ],
                       ),
                       SizedBox(height: compact ? 8 : 12),

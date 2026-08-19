@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/audio/react_audio.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../gameplay/domain/react_command.dart';
 import '../../gameplay/presentation/react_gesture_surface.dart';
@@ -95,12 +96,15 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
   }
 
   void _startCountdown() {
+    unawaited(ReactAudio.play(ReactSoundCue.countdownTick));
     _countdownTimer = Timer.periodic(const Duration(milliseconds: 650), (_) {
       if (!mounted || _finished) return;
       if (_countdown > 1) {
         setState(() => _countdown -= 1);
+        unawaited(ReactAudio.play(ReactSoundCue.countdownTick));
       } else if (!_go) {
         setState(() => _go = true);
+        unawaited(ReactAudio.play(ReactSoundCue.countdownGo));
       } else {
         _countdownTimer?.cancel();
         _begin();
@@ -216,12 +220,14 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
     if (mode == ReactVariantMode.sparkgrid) {
       _clock.stop();
       setState(() => _accepting = true);
+      unawaited(ReactAudio.play(ReactSoundCue.command));
       return;
     }
     _clock
       ..reset()
       ..start();
     setState(() => _accepting = true);
+    unawaited(ReactAudio.play(ReactSoundCue.command));
   }
 
   void _complete({int points = 1}) {
@@ -230,6 +236,7 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
     _clock.stop();
     _accepting = false;
     _score += points;
+    unawaited(ReactAudio.play(ReactSoundCue.success));
 
     if (mode == ReactVariantMode.crucible) {
       _heat = max(0, _heat - (reaction < 900 ? .30 : .16));
@@ -265,6 +272,9 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
     _clock.stop();
     _accepting = false;
     if (loseLife) _lives -= 1;
+    unawaited(
+      ReactAudio.play(loseLife ? ReactSoundCue.lifeLost : ReactSoundCue.miss),
+    );
     if (mode == ReactVariantMode.thruster) _momentum = max(0, _momentum - .35);
     _feedback = reason;
     if (_lives <= 0) {
@@ -288,6 +298,7 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
     _ticker?.cancel();
     _phaseTimer?.cancel();
     _clock.stop();
+    unawaited(ReactAudio.play(ReactSoundCue.completed));
     final best = await LocalVariantModeStats.record(mode, _score);
     if (!mounted) return;
     setState(() {
@@ -382,10 +393,12 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
         _gridCharge[index] = 0;
         _score += points;
         _feedback = '+$points DISCHARGE';
+        unawaited(ReactAudio.play(ReactSoundCue.success));
         setState(() {});
       } else {
         _lives -= 1;
         _feedback = 'NOT CHARGED';
+        unawaited(ReactAudio.play(ReactSoundCue.lifeLost));
         if (_lives <= 0) _finish('GRID FAILED');
         setState(() {});
       }
@@ -429,6 +442,7 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
       return;
     }
     setState(() => _memoryFlash = _memorySequence[index]);
+    unawaited(ReactAudio.play(ReactSoundCue.command));
     _phaseTimer = Timer(const Duration(milliseconds: 410), () {
       if (!mounted || _finished) return;
       setState(() => _memoryFlash = -1);
@@ -453,6 +467,7 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
       _score += 1;
       _memorySequence.add(_random.nextInt(4));
       _feedback = 'REWIND +1';
+      unawaited(ReactAudio.play(ReactSoundCue.success));
       _phaseTimer = Timer(const Duration(milliseconds: 520), () {
         if (mounted && !_finished) _startMemoryPlayback();
       });

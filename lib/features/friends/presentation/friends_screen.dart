@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/theme/react_colors.dart';
+import '../../player/data/player_profile_repository.dart';
 import '../data/friends_repository.dart';
 
 class FriendsScreen extends StatefulWidget {
@@ -15,6 +17,7 @@ class FriendsScreen extends StatefulWidget {
 class _FriendsScreenState extends State<FriendsScreen> {
   final _searchController = TextEditingController();
   late Future<FriendsSnapshot> _snapshot;
+  late Future<PlayerProfileData> _profile;
   FriendPlayer? _searchResult;
   String? _searchMessage;
   bool _busy = false;
@@ -23,6 +26,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
   @override
   void initState() {
     super.initState();
+    _profile = const PlayerProfileRepository().load();
     _reload();
   }
 
@@ -132,6 +136,26 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 _Header(onBack: () => Navigator.of(context).pop()),
                 const SizedBox(height: 18),
                 _buildOverview(snapshot),
+                const SizedBox(height: 12),
+                FutureBuilder<PlayerProfileData>(
+                  future: _profile,
+                  builder: (context, profileSnapshot) {
+                    final profile = profileSnapshot.data;
+                    if (profile == null) return const SizedBox.shrink();
+                    return _OwnCodeCard(
+                      playerCode: profile.playerCode,
+                      onCopy: () async {
+                        await Clipboard.setData(
+                          ClipboardData(text: profile.playerCode),
+                        );
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Player code copied.')),
+                        );
+                      },
+                    );
+                  },
+                ),
                 const SizedBox(height: 20),
                 const _SectionTitle(
                   'FIND A PLAYER',
@@ -304,6 +328,70 @@ class _FriendsScreenState extends State<FriendsScreen> {
     final id = player.relationshipId;
     return id == null ? null : () => action(id);
   }
+}
+
+class _OwnCodeCard extends StatelessWidget {
+  const _OwnCodeCard({required this.playerCode, required this.onCopy});
+
+  final String playerCode;
+  final VoidCallback onCopy;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 10, 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF07111D),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: ReactColors.electricBlueBright.withValues(alpha: .35),
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.badge_outlined,
+              color: ReactColors.electricBlueBright,
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'YOUR PLAYER CODE',
+                    style: TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  SelectableText(
+                    playerCode,
+                    style: const TextStyle(
+                      color: ReactColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .7,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: 'Copy player code',
+              onPressed: onCopy,
+              style: IconButton.styleFrom(
+                foregroundColor: ReactColors.electricBlueBright,
+                backgroundColor:
+                    ReactColors.electricBlueBright.withValues(alpha: .08),
+              ),
+              icon: const Icon(Icons.copy_rounded, size: 20),
+            ),
+          ],
+        ),
+      );
 }
 
 class _Header extends StatelessWidget {

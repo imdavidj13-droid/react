@@ -133,6 +133,7 @@ class _RandomTargetRunScreenState extends State<RandomTargetRunScreen>
       ..reset()
       ..start();
     _lastTickElapsed = Duration.zero;
+    unawaited(ReactAudio.play(ReactSoundCue.command));
   }
 
   void _onTick(Timer timer) {
@@ -239,7 +240,7 @@ class _RandomTargetRunScreenState extends State<RandomTargetRunScreen>
     _lives -= 1;
     _streak = 0;
     _feedback = '$reason  •  $_lives ${_lives == 1 ? 'LIFE' : 'LIVES'}';
-    unawaited(ReactAudio.play(ReactSoundCue.miss));
+    unawaited(ReactAudio.play(ReactSoundCue.lifeLost));
 
     if (_lives <= 0) {
       unawaited(_finish(reason));
@@ -257,6 +258,7 @@ class _RandomTargetRunScreenState extends State<RandomTargetRunScreen>
     _ticker?.cancel();
     _countdownTimer?.cancel();
     _roundClock.stop();
+    unawaited(ReactAudio.play(ReactSoundCue.completed));
 
     final newBest = await LocalVariantModeStats.record(mode, _score);
     if (!mounted) return;

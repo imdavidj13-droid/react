@@ -119,8 +119,8 @@ class _HomeShell extends StatelessWidget {
           ),
         ),
         Positioned(
-          right: 15,
-          top: MediaQuery.paddingOf(context).top + 58,
+          right: 62,
+          top: MediaQuery.paddingOf(context).top + 10,
           child: Material(
             color: Colors.transparent,
             child: IconButton(
@@ -154,8 +154,8 @@ class _DebugHome extends StatelessWidget {
       children: [
         const _HomeShell(),
         Positioned(
-          left: 15,
-          top: MediaQuery.paddingOf(context).top + 58,
+          left: 62,
+          top: MediaQuery.paddingOf(context).top + 10,
           child: Material(
             color: Colors.transparent,
             child: IconButton(
