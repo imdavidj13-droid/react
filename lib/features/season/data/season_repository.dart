@@ -36,6 +36,7 @@ class SeasonRepository {
     required int successfulCommands,
     required bool isPersonalBest,
     required bool isDaily,
+    required DateTime completedAt,
   }) async {
     final client = ReactSupabase.client;
     if (client == null || client.auth.currentSession == null) return null;
@@ -49,6 +50,7 @@ class SeasonRepository {
           'p_successful_commands': successfulCommands,
           'p_is_personal_best': isPersonalBest,
           'p_is_daily': isDaily,
+          'p_completed_at': completedAt.toUtc().toIso8601String(),
         },
       );
       final data = _asMap(response);
