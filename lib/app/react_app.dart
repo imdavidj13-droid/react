@@ -5,6 +5,7 @@ import '../core/settings/react_settings.dart';
 import '../core/theme/react_colors.dart';
 import '../core/theme/react_theme.dart';
 import '../features/daily/presentation/daily_dev_screen.dart';
+import '../features/friends/presentation/friends_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/player/presentation/player_profile_screen.dart';
 import '../features/shop/presentation/shop_screen.dart';
@@ -68,6 +69,12 @@ class _HomeShell extends StatelessWidget {
     );
   }
 
+  void _openFriends(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const FriendsScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -108,6 +115,28 @@ class _HomeShell extends StatelessWidget {
                 ),
               ),
               icon: const Icon(Icons.person_outline_rounded, size: 22),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 15,
+          top: MediaQuery.paddingOf(context).top + 58,
+          child: Material(
+            color: Colors.transparent,
+            child: IconButton(
+              tooltip: 'Friends',
+              onPressed: () => _openFriends(context),
+              style: IconButton.styleFrom(
+                minimumSize: const Size.square(42),
+                maximumSize: const Size.square(42),
+                padding: EdgeInsets.zero,
+                backgroundColor: const Color(0xFF07111D),
+                foregroundColor: ReactColors.lime,
+                side: BorderSide(
+                  color: ReactColors.lime.withValues(alpha: .72),
+                ),
+              ),
+              icon: const Icon(Icons.group_outlined, size: 20),
             ),
           ),
         ),
