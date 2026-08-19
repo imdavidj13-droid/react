@@ -9,12 +9,14 @@ void main() {
   });
 
   test('season progress events persist and decode', () async {
-    const event = SeasonProgressEvent(
+    final completedAt = DateTime.utc(2026, 8, 19, 7, 30);
+    final event = SeasonProgressEvent(
       eventId: 'season-classic-12345678-abcd',
       score: 42,
       successfulCommands: 42,
       isPersonalBest: true,
       isDaily: false,
+      completedAt: completedAt,
     );
 
     await LocalSeasonProgressQueue.enqueue(event);
@@ -24,15 +26,17 @@ void main() {
     expect(pending.single.eventId, event.eventId);
     expect(pending.single.score, 42);
     expect(pending.single.isPersonalBest, isTrue);
+    expect(pending.single.completedAt, completedAt);
   });
 
   test('duplicate event ids are not queued twice', () async {
-    const event = SeasonProgressEvent(
+    final event = SeasonProgressEvent(
       eventId: 'season-daily-12345678-abcd',
       score: 20,
       successfulCommands: 20,
       isPersonalBest: false,
       isDaily: true,
+      completedAt: DateTime.utc(2026, 8, 19, 7, 31),
     );
 
     await LocalSeasonProgressQueue.enqueue(event);
@@ -42,19 +46,21 @@ void main() {
   });
 
   test('submitted ids are removed without dropping other events', () async {
-    const first = SeasonProgressEvent(
+    final first = SeasonProgressEvent(
       eventId: 'season-classic-11111111-abcd',
       score: 10,
       successfulCommands: 10,
       isPersonalBest: false,
       isDaily: false,
+      completedAt: DateTime.utc(2026, 8, 19, 7, 32),
     );
-    const second = SeasonProgressEvent(
+    final second = SeasonProgressEvent(
       eventId: 'season-blitz-22222222-abcd',
       score: 25,
       successfulCommands: 25,
       isPersonalBest: false,
       isDaily: false,
+      completedAt: DateTime.utc(2026, 8, 19, 7, 33),
     );
 
     await LocalSeasonProgressQueue.enqueue(first);
