@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
+import 'local_season_progress_queue.dart';
 import 'season_repository.dart';
 
 class SeasonProgressService {
@@ -18,21 +19,43 @@ class SeasonProgressService {
       final isPersonalBest = await _isNewPersonalBest(result);
       final completedAt = DateTime.now().toUtc();
       final random = Random.secure().nextInt(1 << 32).toRadixString(16);
-      final eventId =
-          'season-${result.mode.name}-${completedAt.microsecondsSinceEpoch}-$random';
-
-      await _repository.recordRun(
-        eventId: eventId,
+      final event = SeasonProgressEvent(
+        eventId:
+            'season-${result.mode.name}-${completedAt.microsecondsSinceEpoch}-$random',
         score: result.score,
         successfulCommands: result.successfulCommands,
         isPersonalBest: isPersonalBest,
         isDaily: result.mode == ReactGameMode.daily,
       );
+
+      await LocalSeasonProgressQueue.enqueue(event);
+      await flushPending();
     } catch (error) {
       // Season progression is additive. A backend failure must never block or
       // alter the completed run, Results, local stats, or leaderboard queue.
       debugPrint('RE△CT season progression unavailable: $error');
     }
+  }
+
+  static Future<int> flushPending() async {
+    final pending = await LocalSeasonProgressQueue.pending();
+    if (pending.isEmpty) return 0;
+
+    final completed = <String>[];
+    for (final event in pending.reversed) {
+      final snapshot = await _repository.recordRun(
+        eventId: event.eventId,
+        score: event.score,
+        successfulCommands: event.successfulCommands,
+        isPersonalBest: event.isPersonalBest,
+        isDaily: event.isDaily,
+      );
+      if (snapshot == null) break;
+      completed.add(event.eventId);
+    }
+
+    await LocalSeasonProgressQueue.remove(completed);
+    return completed.length;
   }
 
   static Future<bool> _isNewPersonalBest(ReactRunResult result) async {
