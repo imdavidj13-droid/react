@@ -17,8 +17,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
   late Future<FriendsSnapshot> _snapshot;
   FriendPlayer? _searchResult;
   String? _searchMessage;
-  bool _searching = false;
   bool _busy = false;
+  bool _searching = false;
 
   @override
   void initState() {
@@ -32,9 +32,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     super.dispose();
   }
 
-  void _reload() {
-    _snapshot = widget.repository.load();
-  }
+  void _reload() => _snapshot = widget.repository.load();
 
   Future<void> _refresh() async {
     setState(_reload);
@@ -45,33 +43,31 @@ class _FriendsScreenState extends State<FriendsScreen> {
     FocusScope.of(context).unfocus();
     setState(() {
       _searching = true;
-      _searchMessage = null;
       _searchResult = null;
+      _searchMessage = null;
     });
-
     try {
-      final result = await widget.repository.findByCode(_searchController.text);
+      final player = await widget.repository.findByCode(_searchController.text);
       if (!mounted) return;
       setState(() {
-        _searchResult = result;
-        _searchMessage = result == null ? 'NO PLAYER FOUND' : null;
+        _searchResult = player;
+        _searchMessage = player == null ? 'NO PLAYER FOUND' : null;
       });
     } on FriendsException catch (error) {
-      if (!mounted) return;
-      setState(() => _searchMessage = error.message.toUpperCase());
+      if (mounted) setState(() => _searchMessage = error.message.toUpperCase());
     } finally {
       if (mounted) setState(() => _searching = false);
     }
   }
 
-  Future<void> _runAction(
-    Future<void> Function() action, {
-    required String successMessage,
-  }) async {
+  Future<void> _act(
+    Future<void> Function() callback,
+    String successMessage,
+  ) async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      await action();
+      await callback();
       if (!mounted) return;
       setState(() {
         _reload();
@@ -91,17 +87,15 @@ class _FriendsScreenState extends State<FriendsScreen> {
     }
   }
 
-  Future<void> _confirmRemove(FriendPlayer player) async {
-    final relationshipId = player.relationshipId;
-    if (relationshipId == null) return;
+  Future<void> _removeFriend(FriendPlayer player) async {
+    final id = player.relationshipId;
+    if (id == null) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF07111D),
         title: const Text('REMOVE FRIEND?'),
-        content: Text(
-          '${player.displayName} will be removed from your friends list. You can add each other again later.',
-        ),
+        content: Text('Remove ${player.displayName} from your friends list?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -115,16 +109,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
         ],
       ),
     );
-    if (confirmed != true) return;
-    await _runAction(
-      () => widget.repository.remove(relationshipId),
-      successMessage: 'Friend removed.',
-    );
+    if (confirmed == true) {
+      await _act(() => widget.repository.remove(id), 'Friend removed.');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final horizontalPad = MediaQuery.sizeOf(context).width < 360 ? 12.0 : 18.0;
+    final horizontal = MediaQuery.sizeOf(context).width < 360 ? 12.0 : 18.0;
     return Scaffold(
       backgroundColor: ReactColors.background,
       body: SafeArea(
@@ -134,60 +126,72 @@ class _FriendsScreenState extends State<FriendsScreen> {
             return RefreshIndicator(
               onRefresh: _refresh,
               child: ListView(
-                padding: EdgeInsets.fromLTRB(horizontalPad, 10, horizontalPad, 30),
+                padding: EdgeInsets.fromLTRB(horizontal, 10, horizontal, 30),
                 children: [
                   _Header(onBack: () => Navigator.of(context).pop()),
                   const SizedBox(height: 18),
                   if (snapshot.hasData)
-                    _Overview(snapshot: snapshot.requireData)
+                    _Overview(data: snapshot.data!)
                   else if (snapshot.hasError)
-                    _OfflineCard(onRetry: () => setState(_reload))
+                    _StatusCard(
+                      icon: Icons.cloud_off_outlined,
+                      title: 'FRIENDS UNAVAILABLE',
+                      subtitle: 'Connect your online player profile and try again.',
+                      color: ReactColors.coral,
+                      action: TextButton(
+                        onPressed: () => setState(_reload),
+                        child: const Text('RETRY'),
+                      ),
+                    )
                   else
-                    const _OverviewLoading(),
-                  const SizedBox(height: 18),
-                  _SectionTitle(label: 'FIND A PLAYER', color: ReactColors.electricBlueBright),
+                    const SizedBox(
+                      height: 90,
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  const SizedBox(height: 20),
+                  const _SectionTitle('FIND A PLAYER', ReactColors.electricBlueBright),
                   const SizedBox(height: 9),
-                  _SearchPanel(
+                  _SearchBar(
                     controller: _searchController,
-                    searching: _searching,
-                    enabled: !_busy,
+                    busy: _busy || _searching,
                     onSearch: _search,
                   ),
                   if (_searchResult != null || _searchMessage != null) ...[
                     const SizedBox(height: 10),
                     if (_searchResult != null)
-                      _SearchResultCard(
+                      _SearchResult(
                         player: _searchResult!,
                         busy: _busy,
-                        onAdd: () => _runAction(
+                        onAdd: () => _act(
                           () => widget.repository.sendRequest(_searchResult!.playerCode),
-                          successMessage: 'Friend request sent.',
+                          'Friend request sent.',
                         ),
-                        onAccept: _searchResult!.relationshipId == null
-                            ? null
-                            : () => _runAction(
-                                  () => widget.repository.accept(_searchResult!.relationshipId!),
-                                  successMessage: 'Friend request accepted.',
-                                ),
-                        onDecline: _searchResult!.relationshipId == null
-                            ? null
-                            : () => _runAction(
-                                  () => widget.repository.decline(_searchResult!.relationshipId!),
-                                  successMessage: 'Friend request declined.',
-                                ),
-                        onCancel: _searchResult!.relationshipId == null
-                            ? null
-                            : () => _runAction(
-                                  () => widget.repository.cancel(_searchResult!.relationshipId!),
-                                  successMessage: 'Friend request cancelled.',
-                                ),
-                        onRemove: () => _confirmRemove(_searchResult!),
+                        onAccept: (id) => _act(
+                          () => widget.repository.accept(id),
+                          'Friend request accepted.',
+                        ),
+                        onDecline: (id) => _act(
+                          () => widget.repository.decline(id),
+                          'Friend request declined.',
+                        ),
+                        onCancel: (id) => _act(
+                          () => widget.repository.cancel(id),
+                          'Friend request cancelled.',
+                        ),
+                        onRemove: () => _removeFriend(_searchResult!),
                       )
                     else
-                      _SearchMessage(message: _searchMessage!),
+                      _StatusCard(
+                        icon: Icons.search_off_rounded,
+                        title: _searchMessage!,
+                        subtitle: 'Player codes look like RX-1A2B3C4D5E.',
+                        color: ReactColors.textSecondary,
+                      ),
                   ],
-                  const SizedBox(height: 20),
-                  if (snapshot.hasData) ..._sections(snapshot.requireData),
+                  if (snapshot.hasData) ...[
+                    const SizedBox(height: 20),
+                    ..._relationshipSections(snapshot.data!),
+                  ],
                 ],
               ),
             );
@@ -197,90 +201,87 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  List<Widget> _sections(FriendsSnapshot data) {
-    return [
-      _SectionTitle(
-        label: 'REQUESTS ${data.incoming.isEmpty ? '' : '(${data.incoming.length})'}',
-        color: ReactColors.coral,
-      ),
-      const SizedBox(height: 9),
-      if (data.incoming.isEmpty)
-        const _EmptyCard(
-          icon: Icons.mark_email_read_outlined,
-          title: 'NO INCOMING REQUESTS',
-          subtitle: 'New friend requests will appear here.',
-        )
-      else
-        for (final player in data.incoming) ...[
-          _PlayerCard(
-            player: player,
-            primaryLabel: 'ACCEPT',
-            primaryColor: ReactColors.lime,
-            onPrimary: player.relationshipId == null
-                ? null
-                : () => _runAction(
-                      () => widget.repository.accept(player.relationshipId!),
-                      successMessage: 'Friend request accepted.',
-                    ),
-            secondaryLabel: 'DECLINE',
-            onSecondary: player.relationshipId == null
-                ? null
-                : () => _runAction(
-                      () => widget.repository.decline(player.relationshipId!),
-                      successMessage: 'Friend request declined.',
-                    ),
-          ),
-          const SizedBox(height: 9),
-        ],
-      const SizedBox(height: 18),
-      _SectionTitle(label: 'FRIENDS (${data.friendCount})', color: ReactColors.lime),
-      const SizedBox(height: 9),
-      if (data.friends.isEmpty)
-        const _EmptyCard(
-          icon: Icons.group_outlined,
-          title: 'NO FRIENDS YET',
-          subtitle: 'Search an RX player code to start building your list.',
-        )
-      else
-        for (final player in data.friends) ...[
-          _PlayerCard(
-            player: player,
-            primaryLabel: 'FRIEND',
-            primaryColor: ReactColors.lime,
-            onPrimary: null,
-            secondaryLabel: 'REMOVE',
-            onSecondary: () => _confirmRemove(player),
-          ),
-          const SizedBox(height: 9),
-        ],
-      const SizedBox(height: 18),
-      _SectionTitle(label: 'SENT REQUESTS', color: ReactColors.purple),
-      const SizedBox(height: 9),
-      if (data.outgoing.isEmpty)
-        const _EmptyCard(
-          icon: Icons.send_outlined,
-          title: 'NOTHING PENDING',
-          subtitle: 'Requests you send will stay here until accepted or cancelled.',
-        )
-      else
-        for (final player in data.outgoing) ...[
-          _PlayerCard(
-            player: player,
-            primaryLabel: 'PENDING',
-            primaryColor: ReactColors.purple,
-            onPrimary: null,
-            secondaryLabel: 'CANCEL',
-            onSecondary: player.relationshipId == null
-                ? null
-                : () => _runAction(
-                      () => widget.repository.cancel(player.relationshipId!),
-                      successMessage: 'Friend request cancelled.',
-                    ),
-          ),
-          const SizedBox(height: 9),
-        ],
-    ];
-  }
+  List<Widget> _relationshipSections(FriendsSnapshot data) => [
+        _SectionTitle(
+          'REQUESTS${data.incoming.isEmpty ? '' : ' (${data.incoming.length})'}',
+          ReactColors.coral,
+        ),
+        const SizedBox(height: 9),
+        if (data.incoming.isEmpty)
+          const _EmptyRelationship(
+            icon: Icons.mark_email_read_outlined,
+            title: 'NO INCOMING REQUESTS',
+            subtitle: 'New requests will appear here.',
+          )
+        else
+          for (final player in data.incoming) ...[
+            _RelationshipCard(
+              player: player,
+              status: 'REQUEST',
+              statusColor: ReactColors.coral,
+              primary: 'ACCEPT',
+              onPrimary: player.relationshipId == null
+                  ? null
+                  : () => _act(
+                        () => widget.repository.accept(player.relationshipId!),
+                        'Friend request accepted.',
+                      ),
+              secondary: 'DECLINE',
+              onSecondary: player.relationshipId == null
+                  ? null
+                  : () => _act(
+                        () => widget.repository.decline(player.relationshipId!),
+                        'Friend request declined.',
+                      ),
+            ),
+            const SizedBox(height: 9),
+          ],
+        const SizedBox(height: 18),
+        _SectionTitle('FRIENDS (${data.friendCount})', ReactColors.lime),
+        const SizedBox(height: 9),
+        if (data.friends.isEmpty)
+          const _EmptyRelationship(
+            icon: Icons.group_outlined,
+            title: 'NO FRIENDS YET',
+            subtitle: 'Search an RX player code to build your list.',
+          )
+        else
+          for (final player in data.friends) ...[
+            _RelationshipCard(
+              player: player,
+              status: 'FRIEND',
+              statusColor: ReactColors.lime,
+              secondary: 'REMOVE',
+              onSecondary: () => _removeFriend(player),
+            ),
+            const SizedBox(height: 9),
+          ],
+        const SizedBox(height: 18),
+        const _SectionTitle('SENT REQUESTS', ReactColors.purple),
+        const SizedBox(height: 9),
+        if (data.outgoing.isEmpty)
+          const _EmptyRelationship(
+            icon: Icons.send_outlined,
+            title: 'NOTHING PENDING',
+            subtitle: 'Requests you send will appear here.',
+          )
+        else
+          for (final player in data.outgoing) ...[
+            _RelationshipCard(
+              player: player,
+              status: 'PENDING',
+              statusColor: ReactColors.purple,
+              secondary: 'CANCEL',
+              onSecondary: player.relationshipId == null
+                  ? null
+                  : () => _act(
+                        () => widget.repository.cancel(player.relationshipId!),
+                        'Friend request cancelled.',
+                      ),
+            ),
+            const SizedBox(height: 9),
+          ],
+      ];
 }
 
 class _Header extends StatelessWidget {
@@ -300,10 +301,8 @@ class _Header extends StatelessWidget {
           ),
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
         ),
-        const SizedBox(width: 8),
         const Expanded(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 'FRIENDS',
@@ -314,14 +313,13 @@ class _Header extends StatelessWidget {
                   letterSpacing: 1.8,
                 ),
               ),
-              SizedBox(height: 2),
               Text(
                 'YOUR RE△CT NETWORK',
                 style: TextStyle(
                   color: ReactColors.electricBlueBright,
                   fontSize: 8,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 1.4,
+                  letterSpacing: 1.3,
                 ),
               ),
             ],
@@ -334,230 +332,67 @@ class _Header extends StatelessWidget {
 }
 
 class _Overview extends StatelessWidget {
-  const _Overview({required this.snapshot});
+  const _Overview({required this.data});
 
-  final FriendsSnapshot snapshot;
+  final FriendsSnapshot data;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: ReactColors.electricBlue.withValues(alpha: .35)),
-        boxShadow: [
-          BoxShadow(
-            color: ReactColors.electricBlue.withValues(alpha: .08),
-            blurRadius: 24,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const _OverviewIcon(),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'SOCIAL LINK',
-                  style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  '${snapshot.friendCount} FRIEND${snapshot.friendCount == 1 ? '' : 'S'}',
-                  style: const TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 21,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  snapshot.pendingCount == 0
-                      ? 'No requests waiting'
-                      : '${snapshot.pendingCount} request${snapshot.pendingCount == 1 ? '' : 's'} waiting',
-                  style: TextStyle(
-                    color: snapshot.pendingCount == 0
-                        ? ReactColors.textSecondary
-                        : ReactColors.coral,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return _StatusCard(
+      icon: Icons.group_rounded,
+      title: '${data.friendCount} FRIEND${data.friendCount == 1 ? '' : 'S'}',
+      subtitle: data.pendingCount == 0
+          ? 'No requests waiting'
+          : '${data.pendingCount} incoming request${data.pendingCount == 1 ? '' : 's'}',
+      color: ReactColors.electricBlueBright,
     );
   }
 }
 
-class _OverviewIcon extends StatelessWidget {
-  const _OverviewIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: ReactColors.electricBlue.withValues(alpha: .11),
-        border: Border.all(color: ReactColors.electricBlueBright.withValues(alpha: .7)),
-      ),
-      child: const Icon(Icons.group_rounded, color: ReactColors.electricBlueBright, size: 27),
-    );
-  }
-}
-
-class _OverviewLoading extends StatelessWidget {
-  const _OverviewLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      height: 88,
-      child: Center(child: CircularProgressIndicator()),
-    );
-  }
-}
-
-class _OfflineCard extends StatelessWidget {
-  const _OfflineCard({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: ReactColors.coral.withValues(alpha: .38)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.cloud_off_outlined, color: ReactColors.coral, size: 28),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'FRIENDS UNAVAILABLE',
-                  style: TextStyle(color: ReactColors.textPrimary, fontWeight: FontWeight.w900),
-                ),
-                SizedBox(height: 3),
-                Text(
-                  'Connect your player profile to load friends and requests.',
-                  style: TextStyle(color: ReactColors.textSecondary, fontSize: 9, height: 1.3),
-                ),
-              ],
-            ),
-          ),
-          TextButton(onPressed: onRetry, child: const Text('RETRY')),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.25,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Divider(color: color.withValues(alpha: .28))),
-      ],
-    );
-  }
-}
-
-class _SearchPanel extends StatelessWidget {
-  const _SearchPanel({
-    required this.controller,
-    required this.searching,
-    required this.enabled,
-    required this.onSearch,
-  });
+class _SearchBar extends StatelessWidget {
+  const _SearchBar({required this.controller, required this.busy, required this.onSearch});
 
   final TextEditingController controller;
-  final bool searching;
-  final bool enabled;
+  final bool busy;
   final VoidCallback onSearch;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(13, 10, 10, 10),
+      padding: const EdgeInsets.fromLTRB(13, 8, 8, 8),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: ReactColors.electricBlue.withValues(alpha: .32)),
+        border: Border.all(color: ReactColors.electricBlue.withValues(alpha: .35)),
       ),
       child: Row(
         children: [
           const Icon(Icons.person_search_rounded, color: ReactColors.electricBlueBright),
-          const SizedBox(width: 10),
+          const SizedBox(width: 9),
           Expanded(
             child: TextField(
               controller: controller,
-              enabled: enabled,
-              textCapitalization: TextCapitalization.characters,
+              enabled: !busy,
               autocorrect: false,
               enableSuggestions: false,
+              textCapitalization: TextCapitalization.characters,
               onSubmitted: (_) => onSearch(),
-              style: const TextStyle(
-                color: ReactColors.textPrimary,
-                fontWeight: FontWeight.w800,
-                letterSpacing: .7,
-              ),
               decoration: const InputDecoration(
-                border: InputBorder.none,
                 isDense: true,
+                border: InputBorder.none,
                 hintText: 'RX-XXXXXXXXXX',
-                hintStyle: TextStyle(color: ReactColors.textSecondary),
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          SizedBox(
-            height: 38,
-            child: FilledButton(
-              onPressed: enabled && !searching ? onSearch : null,
-              child: searching
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('FIND'),
-            ),
+          FilledButton(
+            onPressed: busy ? null : onSearch,
+            child: busy
+                ? const SizedBox(
+                    width: 15,
+                    height: 15,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('FIND'),
           ),
         ],
       ),
@@ -565,167 +400,93 @@ class _SearchPanel extends StatelessWidget {
   }
 }
 
-class _SearchResultCard extends StatelessWidget {
-  const _SearchResultCard({
+class _SearchResult extends StatelessWidget {
+  const _SearchResult({
     required this.player,
     required this.busy,
     required this.onAdd,
+    required this.onAccept,
+    required this.onDecline,
+    required this.onCancel,
     required this.onRemove,
-    this.onAccept,
-    this.onDecline,
-    this.onCancel,
   });
 
   final FriendPlayer player;
   final bool busy;
   final VoidCallback onAdd;
+  final ValueChanged<String> onAccept;
+  final ValueChanged<String> onDecline;
+  final ValueChanged<String> onCancel;
   final VoidCallback onRemove;
-  final VoidCallback? onAccept;
-  final VoidCallback? onDecline;
-  final VoidCallback? onCancel;
 
   @override
   Widget build(BuildContext context) {
-    String primary;
-    VoidCallback? action;
-    Color color;
-    switch (player.relationshipState) {
-      case FriendRelationshipState.none:
-        primary = 'ADD FRIEND';
-        action = onAdd;
-        color = ReactColors.electricBlueBright;
-      case FriendRelationshipState.self:
-        primary = 'THIS IS YOU';
-        action = null;
-        color = ReactColors.textSecondary;
-      case FriendRelationshipState.incoming:
-        primary = 'ACCEPT';
-        action = onAccept;
-        color = ReactColors.lime;
-      case FriendRelationshipState.outgoing:
-        primary = 'REQUEST SENT';
-        action = null;
-        color = ReactColors.purple;
-      case FriendRelationshipState.friend:
-        primary = 'FRIEND';
-        action = null;
-        color = ReactColors.lime;
-    }
-
-    return _PlayerShell(
-      player: player,
-      trailing: Wrap(
-        spacing: 7,
-        runSpacing: 6,
-        alignment: WrapAlignment.end,
-        children: [
-          if (player.relationshipState == FriendRelationshipState.incoming && onDecline != null)
-            TextButton(onPressed: busy ? null : onDecline, child: const Text('DECLINE')),
-          if (player.relationshipState == FriendRelationshipState.outgoing && onCancel != null)
-            TextButton(onPressed: busy ? null : onCancel, child: const Text('CANCEL')),
-          if (player.relationshipState == FriendRelationshipState.friend)
-            TextButton(onPressed: busy ? null : onRemove, child: const Text('REMOVE')),
-          FilledButton(
-            onPressed: busy ? null : action,
-            style: FilledButton.styleFrom(
-              backgroundColor: color.withValues(alpha: action == null ? .16 : 1),
-              foregroundColor: action == null ? color : ReactColors.background,
-            ),
-            child: Text(primary),
-          ),
+    final id = player.relationshipId;
+    final buttons = switch (player.relationshipState) {
+      FriendRelationshipState.none => <Widget>[
+          FilledButton(onPressed: busy ? null : onAdd, child: const Text('ADD FRIEND')),
         ],
-      ),
-    );
+      FriendRelationshipState.self => const <Widget>[
+          _StatePill(label: 'THIS IS YOU', color: ReactColors.textSecondary),
+        ],
+      FriendRelationshipState.incoming => <Widget>[
+          TextButton(onPressed: busy || id == null ? null : () => onDecline(id), child: const Text('DECLINE')),
+          FilledButton(onPressed: busy || id == null ? null : () => onAccept(id), child: const Text('ACCEPT')),
+        ],
+      FriendRelationshipState.outgoing => <Widget>[
+          TextButton(onPressed: busy || id == null ? null : () => onCancel(id), child: const Text('CANCEL')),
+          const _StatePill(label: 'REQUEST SENT', color: ReactColors.purple),
+        ],
+      FriendRelationshipState.friend => <Widget>[
+          TextButton(onPressed: busy ? null : onRemove, child: const Text('REMOVE')),
+          const _StatePill(label: 'FRIEND', color: ReactColors.lime),
+        ],
+    };
+
+    return _PlayerShell(player: player, actions: buttons);
   }
 }
 
-class _SearchMessage extends StatelessWidget {
-  const _SearchMessage({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: ReactColors.border),
-      ),
-      child: Text(
-        message,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: ReactColors.textSecondary,
-          fontSize: 9,
-          fontWeight: FontWeight.w900,
-          letterSpacing: .9,
-        ),
-      ),
-    );
-  }
-}
-
-class _PlayerCard extends StatelessWidget {
-  const _PlayerCard({
+class _RelationshipCard extends StatelessWidget {
+  const _RelationshipCard({
     required this.player,
-    required this.primaryLabel,
-    required this.primaryColor,
-    required this.onPrimary,
-    required this.secondaryLabel,
-    required this.onSecondary,
+    required this.status,
+    required this.statusColor,
+    this.primary,
+    this.onPrimary,
+    this.secondary,
+    this.onSecondary,
   });
 
   final FriendPlayer player;
-  final String primaryLabel;
-  final Color primaryColor;
+  final String status;
+  final Color statusColor;
+  final String? primary;
   final VoidCallback? onPrimary;
-  final String secondaryLabel;
+  final String? secondary;
   final VoidCallback? onSecondary;
 
   @override
   Widget build(BuildContext context) {
     return _PlayerShell(
       player: player,
-      trailing: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-            decoration: BoxDecoration(
-              color: primaryColor.withValues(alpha: .10),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: primaryColor.withValues(alpha: .35)),
-            ),
-            child: Text(
-              primaryLabel,
-              style: TextStyle(
-                color: primaryColor,
-                fontSize: 8,
-                fontWeight: FontWeight.w900,
-                letterSpacing: .8,
-              ),
-            ),
-          ),
-          const SizedBox(height: 5),
-          if (onPrimary != null)
-            TextButton(onPressed: onPrimary, child: Text(primaryLabel))
-          else if (onSecondary != null)
-            TextButton(onPressed: onSecondary, child: Text(secondaryLabel)),
-          if (onPrimary != null && onSecondary != null)
-            TextButton(onPressed: onSecondary, child: Text(secondaryLabel)),
-        ],
-      ),
+      actions: [
+        if (secondary != null)
+          TextButton(onPressed: onSecondary, child: Text(secondary!)),
+        if (primary != null)
+          FilledButton(onPressed: onPrimary, child: Text(primary!))
+        else
+          _StatePill(label: status, color: statusColor),
+      ],
     );
   }
 }
 
 class _PlayerShell extends StatelessWidget {
-  const _PlayerShell({required this.player, required this.trailing});
+  const _PlayerShell({required this.player, required this.actions});
 
   final FriendPlayer player;
-  final Widget trailing;
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -767,8 +528,15 @@ class _PlayerShell extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          trailing,
+          const SizedBox(width: 7),
+          Flexible(
+            child: Wrap(
+              spacing: 5,
+              runSpacing: 4,
+              alignment: WrapAlignment.end,
+              children: actions,
+            ),
+          ),
         ],
       ),
     );
@@ -782,41 +550,71 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = player.avatarUrl;
     return Container(
-      width: 48,
-      height: 48,
+      width: 46,
+      height: 46,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: ReactColors.panel,
         border: Border.all(color: ReactColors.electricBlue.withValues(alpha: .45)),
       ),
-      child: url == null
-          ? const Icon(Icons.person_rounded, color: ReactColors.textSecondary, size: 26)
+      child: player.avatarUrl == null
+          ? const Icon(Icons.person_rounded, color: ReactColors.textSecondary)
           : Image.network(
-              url,
+              player.avatarUrl!,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => const Icon(
                 Icons.person_rounded,
                 color: ReactColors.textSecondary,
-                size: 26,
               ),
             ),
     );
   }
 }
 
-class _EmptyCard extends StatelessWidget {
-  const _EmptyCard({
+class _StatePill extends StatelessWidget {
+  const _StatePill({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: .4)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 8,
+          fontWeight: FontWeight.w900,
+          letterSpacing: .7,
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.color,
+    this.action,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final Color color;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -824,13 +622,13 @@ class _EmptyCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF07111D),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: ReactColors.border),
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: color.withValues(alpha: .32)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: ReactColors.textSecondary, size: 25),
-          const SizedBox(width: 11),
+          Icon(icon, color: color, size: 28),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -839,7 +637,7 @@ class _EmptyCard extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     color: ReactColors.textPrimary,
-                    fontSize: 11,
+                    fontSize: 13,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -855,8 +653,51 @@ class _EmptyCard extends StatelessWidget {
               ],
             ),
           ),
+          if (action != null) action!,
         ],
       ),
+    );
+  }
+}
+
+class _EmptyRelationship extends StatelessWidget {
+  const _EmptyRelationship({required this.icon, required this.title, required this.subtitle});
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => _StatusCard(
+        icon: icon,
+        title: title,
+        subtitle: subtitle,
+        color: ReactColors.textSecondary,
+      );
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.label, this.color);
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(width: 11),
+        Expanded(child: Divider(color: color.withValues(alpha: .28))),
+      ],
     );
   }
 }
