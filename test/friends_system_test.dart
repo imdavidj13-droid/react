@@ -58,7 +58,7 @@ void main() {
 
     expect(find.text('FRIENDS'), findsOneWidget);
     expect(find.text('FIND A PLAYER'), findsOneWidget);
-    expect(find.textContaining('REQUESTS'), findsOneWidget);
+    expect(find.text('REQUESTS (1)'), findsOneWidget);
     expect(find.text('FRIENDS (1)'), findsOneWidget);
     expect(find.text('SENT REQUESTS'), findsOneWidget);
     expect(find.text('FRIEND ONE'), findsOneWidget);
