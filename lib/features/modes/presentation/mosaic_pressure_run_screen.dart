@@ -340,17 +340,19 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
                 ],
               ),
             ),
-            if (!_running && !_finished) _CountdownOverlay(
-              count: _countdown,
-              go: _go,
-            ),
-            if (_finished) _ResultOverlay(
-              score: _score,
-              peakActive: _peakActive,
-              newBest: _newBest,
-              onRestart: _restart,
-              onExit: () => Navigator.of(context).pop(),
-            ),
+            if (!_running && !_finished)
+              _CountdownOverlay(
+                count: _countdown,
+                go: _go,
+              ),
+            if (_finished)
+              _ResultOverlay(
+                score: _score,
+                peakActive: _peakActive,
+                newBest: _newBest,
+                onRestart: _restart,
+                onExit: () => Navigator.of(context).pop(),
+              ),
           ],
         ),
       ),
@@ -366,7 +368,7 @@ class _Metric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        minWidth: 62,
+        constraints: const BoxConstraints(minWidth: 62),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: ReactColors.coral.withValues(alpha: .06),
