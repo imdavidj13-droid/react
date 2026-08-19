@@ -21,9 +21,7 @@ class _SeasonScreenState extends State<SeasonScreen> {
     _reload();
   }
 
-  void _reload() {
-    _season = _repository.loadActiveSeason();
-  }
+  void _reload() => _season = _repository.loadActiveSeason();
 
   Future<void> _refresh() async {
     setState(_reload);
@@ -41,12 +39,10 @@ class _SeasonScreenState extends State<SeasonScreen> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-
             final season = snapshot.data;
             if (season == null) {
               return _NoSeason(onBack: () => Navigator.of(context).pop());
             }
-
             return DefaultTabController(
               length: 3,
               child: Column(
@@ -101,7 +97,7 @@ class _SeasonHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final days = (season.remaining.inHours / 24).ceil();
-    final next = season.nextTierCharge;
+    final nextCharge = season.nextTierCharge;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 18, 12),
       child: Column(
@@ -110,8 +106,8 @@ class _SeasonHeader extends StatelessWidget {
             children: [
               IconButton(
                 onPressed: onBack,
-                icon: const Icon(Icons.arrow_back_rounded),
                 color: ReactColors.textPrimary,
+                icon: const Icon(Icons.arrow_back_rounded),
               ),
               const SizedBox(width: 4),
               Expanded(
@@ -172,7 +168,7 @@ class _SeasonHeader extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                next == null ? 'MAX' : '$next CHARGE',
+                nextCharge == null ? 'MAX' : '$nextCharge CHARGE',
                 style: const TextStyle(
                   color: ReactColors.textSecondary,
                   fontSize: 9,
@@ -205,8 +201,10 @@ class _PassTab extends StatelessWidget {
           if (index == 0) {
             return _TrackLegend(premiumOwned: season.premiumOwned);
           }
-          final tier = season.tiers[index - 1];
-          return _TierCard(season: season, tier: tier);
+          return _TierCard(
+            season: season,
+            tier: season.tiers[index - 1],
+          );
         },
       ),
     );
@@ -222,11 +220,7 @@ class _TrackLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF09121E),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: .07)),
-      ),
+      decoration: _panelDecoration(),
       child: Row(
         children: [
           const Expanded(
@@ -268,25 +262,27 @@ class _LegendItem extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      Icon(icon, size: 17, color: color),
-      const SizedBox(width: 7),
-      Flexible(
-        child: Text(
-          label,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: color,
-            fontSize: 9.5,
-            fontWeight: FontWeight.w900,
-            letterSpacing: .9,
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 17, color: color),
+        const SizedBox(width: 7),
+        Flexible(
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontSize: 9.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .9,
+            ),
           ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class _TierCard extends StatelessWidget {
@@ -303,7 +299,6 @@ class _TierCard extends StatelessWidget {
         : reached
         ? ReactColors.electricBlueBright.withValues(alpha: .38)
         : Colors.white.withValues(alpha: .07);
-
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -401,7 +396,9 @@ class _RewardLane extends StatelessWidget {
     if (rewards.isEmpty) return const SizedBox.shrink();
     final reward = rewards.first;
     final unlocked = season.isUnlocked(reward);
-
+    final description = premiumLocked && reached
+        ? 'UNLOCKS RETROACTIVELY WITH PREMIUM'
+        : reward.description.toUpperCase();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -441,9 +438,7 @@ class _RewardLane extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  premiumLocked && reached
-                      ? 'UNLOCKS RETROACTIVELY WITH PREMIUM'
-                      : reward.description.toUpperCase(),
+                  description,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -623,7 +618,7 @@ class _SeasonInfoTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 30),
       children: [
-        _InfoCard(
+        const _InfoCard(
           icon: Icons.calendar_month_rounded,
           title: '21-DAY SEASON',
           body:
@@ -667,10 +662,21 @@ class _SeasonInfoTab extends StatelessWidget {
 
   static String _date(DateTime value) {
     const months = <String>[
-      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
     ];
-    return '${value.day.toString().padLeft(2, '0')} ${months[value.month - 1]} ${value.year}';
+    return '${value.day.toString().padLeft(2, '0')} '
+        '${months[value.month - 1]} ${value.year}';
   }
 }
 
@@ -686,47 +692,45 @@ class _InfoCard extends StatelessWidget {
   final String body;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(15),
-    decoration: BoxDecoration(
-      color: const Color(0xFF08111C),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withValues(alpha: .07)),
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: ReactColors.electricBlueBright, size: 22),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: ReactColors.textPrimary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .7,
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: _panelDecoration(),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: ReactColors.electricBlueBright, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .7,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                body,
-                style: const TextStyle(
-                  color: ReactColors.textSecondary,
-                  fontSize: 10,
-                  height: 1.45,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(height: 6),
+                Text(
+                  body,
+                  style: const TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 10,
+                    height: 1.45,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 class _ChargePill extends StatelessWidget {
@@ -735,35 +739,37 @@ class _ChargePill extends StatelessWidget {
   final int value;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-    decoration: BoxDecoration(
-      color: ReactColors.electricBlueBright.withValues(alpha: .09),
-      borderRadius: BorderRadius.circular(99),
-      border: Border.all(
-        color: ReactColors.electricBlueBright.withValues(alpha: .3),
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: ReactColors.electricBlueBright.withValues(alpha: .09),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(
+          color: ReactColors.electricBlueBright.withValues(alpha: .3),
+        ),
       ),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(
-          Icons.bolt_rounded,
-          size: 15,
-          color: ReactColors.electricBlueBright,
-        ),
-        const SizedBox(width: 3),
-        Text(
-          '$value',
-          style: const TextStyle(
-            color: ReactColors.textPrimary,
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.bolt_rounded,
+            size: 15,
+            color: ReactColors.electricBlueBright,
           ),
-        ),
-      ],
-    ),
-  );
+          const SizedBox(width: 3),
+          Text(
+            '$value',
+            style: const TextStyle(
+              color: ReactColors.textPrimary,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _NoSeason extends StatelessWidget {
@@ -772,32 +778,42 @@ class _NoSeason extends StatelessWidget {
   final VoidCallback onBack;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(18),
-    child: Column(
-      children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: IconButton(
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_rounded),
-            color: ReactColors.textPrimary,
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+              onPressed: onBack,
+              color: ReactColors.textPrimary,
+              icon: const Icon(Icons.arrow_back_rounded),
+            ),
           ),
-        ),
-        const Expanded(
-          child: Center(
-            child: Text(
-              'NO ACTIVE SEASON',
-              style: TextStyle(
-                color: ReactColors.textSecondary,
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.4,
+          const Expanded(
+            child: Center(
+              child: Text(
+                'NO ACTIVE SEASON',
+                style: TextStyle(
+                  color: ReactColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.4,
+                ),
               ),
             ),
           ),
-        ),
-      ],
-    ),
+        ],
+      ),
+    );
+  }
+}
+
+BoxDecoration _panelDecoration() {
+  return BoxDecoration(
+    color: const Color(0xFF08111C),
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(color: Colors.white.withValues(alpha: .07)),
   );
 }
