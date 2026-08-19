@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/react_colors.dart';
 import '../data/season_repository.dart';
 import '../domain/season_models.dart';
+import 'season_locker_screen.dart';
 import 'season_screen.dart';
 
 class HomeSeasonStrip extends StatefulWidget {
@@ -34,6 +35,14 @@ class _HomeSeasonStripState extends State<HomeSeasonStrip> {
     setState(_reload);
   }
 
+  Future<void> _openLocker() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const SeasonLockerScreen()),
+    );
+    if (!mounted) return;
+    setState(_reload);
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<SeasonSnapshot?>(
@@ -53,7 +62,7 @@ class _HomeSeasonStripState extends State<HomeSeasonStrip> {
               borderRadius: BorderRadius.circular(14),
               child: Container(
                 height: 49,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.only(left: 12, right: 4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
@@ -138,7 +147,13 @@ class _HomeSeasonStripState extends State<HomeSeasonStrip> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 5),
+                    IconButton(
+                      tooltip: 'Season locker',
+                      onPressed: _openLocker,
+                      visualDensity: VisualDensity.compact,
+                      color: ReactColors.purple,
+                      icon: const Icon(Icons.checkroom_rounded, size: 18),
+                    ),
                     const Icon(
                       Icons.chevron_right_rounded,
                       color: ReactColors.textSecondary,
