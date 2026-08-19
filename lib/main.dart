@@ -9,6 +9,7 @@ import 'core/backend/react_supabase.dart';
 import 'core/settings/react_settings.dart';
 import 'features/leaderboard/data/remote_leaderboard_submission_sync.dart';
 import 'features/player/data/local_player_profile.dart';
+import 'features/season/data/season_cosmetic_state.dart';
 import 'features/season/data/season_repository.dart';
 import 'features/shop/data/local_shop_state.dart';
 
@@ -39,6 +40,7 @@ Future<void> main() async {
 
   try {
     await LocalShopState.load();
+    await SeasonCosmeticState.load();
   } catch (error) {
     debugPrint('RE△CT cosmetics load failed; using defaults: $error');
   }
