@@ -37,9 +37,35 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
   int get _activeCount => _active.where((value) => value).length;
 
   int get _spawnIntervalMs {
-    final timePressure = (_elapsedMs ~/ 1000) * 5;
-    final scorePressure = _score * 18;
-    return max(220, 1150 - timePressure - scorePressure);
+    final seconds = _elapsedMs ~/ 1000;
+    final timePressure = seconds * 8;
+    final scorePressure = _score * 5;
+    final occupiedPressure = max(0, _activeCount - 3) * 18;
+    return max(
+      90,
+      1050 - timePressure - scorePressure - occupiedPressure,
+    );
+  }
+
+  int get _burstSize {
+    final seconds = _elapsedMs ~/ 1000;
+
+    if (seconds >= 180 || _score >= 180) {
+      return 2 + _random.nextInt(2);
+    }
+    if (seconds >= 120 || _score >= 120) {
+      final roll = _random.nextDouble();
+      if (roll < .22) return 3;
+      if (roll < .72) return 2;
+      return 1;
+    }
+    if (seconds >= 60 || _score >= 50) {
+      return _random.nextDouble() < .42 ? 2 : 1;
+    }
+    if (seconds >= 30 || _score >= 25) {
+      return _random.nextDouble() < .20 ? 2 : 1;
+    }
+    return 1;
   }
 
   @override
@@ -68,7 +94,7 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
       } else {
         _countdownTimer?.cancel();
         setState(() => _running = true);
-        _activateRandomTile();
+        _activateBurst(forceSingle: true);
         _ticker = Timer.periodic(_tick, _onTick);
       }
     });
@@ -81,12 +107,13 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
 
     while (_spawnClockMs >= _spawnIntervalMs && !_finished) {
       _spawnClockMs -= _spawnIntervalMs;
-      _activateRandomTile();
+      _activateBurst();
     }
   }
 
-  void _activateRandomTile() {
+  void _activateBurst({bool forceSingle = false}) {
     if (_finished) return;
+
     final available = <int>[
       for (var i = 0; i < _active.length; i++)
         if (!_active[i]) i,
@@ -97,9 +124,14 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
       return;
     }
 
-    final index = available[_random.nextInt(available.length)];
+    available.shuffle(_random);
+    final requested = forceSingle ? 1 : _burstSize;
+    final amount = min(requested, available.length);
+
     setState(() {
-      _active[index] = true;
+      for (var i = 0; i < amount; i++) {
+        _active[available[i]] = true;
+      }
       _peakActive = max(_peakActive, _activeCount);
     });
     ReactAudio.play(ReactSoundCue.command);
@@ -325,7 +357,7 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(99),
                             child: LinearProgressIndicator(
-                              value: ((1150 - _spawnIntervalMs) / 930)
+                              value: ((1050 - _spawnIntervalMs) / 960)
                                   .clamp(0.0, 1.0),
                               minHeight: 7,
                               backgroundColor: accent.withValues(alpha: .08),
