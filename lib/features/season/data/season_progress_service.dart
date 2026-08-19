@@ -26,6 +26,7 @@ class SeasonProgressService {
         successfulCommands: result.successfulCommands,
         isPersonalBest: isPersonalBest,
         isDaily: result.mode == ReactGameMode.daily,
+        completedAt: completedAt,
       );
 
       await LocalSeasonProgressQueue.enqueue(event);
@@ -49,6 +50,7 @@ class SeasonProgressService {
         successfulCommands: event.successfulCommands,
         isPersonalBest: event.isPersonalBest,
         isDaily: event.isDaily,
+        completedAt: event.completedAt,
       );
       if (snapshot == null) break;
       completed.add(event.eventId);
