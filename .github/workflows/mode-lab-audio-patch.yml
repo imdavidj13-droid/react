@@ -6,18 +6,24 @@ on:
       - mode-lab-audio-pass
     paths:
       - .github/workflows/mode-lab-audio-patch.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/mode-lab-audio-patch.yml
 
 permissions:
   contents: write
 
 jobs:
   patch:
-    if: ${{ !contains(github.event.head_commit.message, 'Remove temporary Mode Lab audio patch workflow') }}
+    if: ${{ github.event_name == 'pull_request' || !contains(github.event.head_commit.message, 'Remove temporary Mode Lab audio patch workflow') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Apply Mode Lab audio wiring
         shell: python
