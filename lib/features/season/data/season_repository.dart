@@ -21,7 +21,7 @@ class SeasonRepository {
       final data = _asMap(response);
       if (data == null) return null;
       final snapshot = _parseSnapshot(data);
-      LocalShopState.setSeasonOwnedPackIds(snapshot.unlockedRewardKeys);
+      await LocalShopState.setSeasonOwnedPackIds(snapshot.unlockedRewardKeys);
       return snapshot;
     } catch (error) {
       debugPrint('RE△CT season load failed: $error');
@@ -53,7 +53,7 @@ class SeasonRepository {
       final data = _asMap(response);
       if (data == null) return null;
       final snapshot = _parseSnapshot(data);
-      LocalShopState.setSeasonOwnedPackIds(snapshot.unlockedRewardKeys);
+      await LocalShopState.setSeasonOwnedPackIds(snapshot.unlockedRewardKeys);
       return snapshot;
     } catch (error) {
       debugPrint('RE△CT season run progress failed: $error');
