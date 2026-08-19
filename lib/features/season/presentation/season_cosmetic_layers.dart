@@ -15,7 +15,7 @@ abstract final class SeasonCosmeticLayers {
   static Widget home({required Widget child}) {
     final theme = SeasonCosmeticState.equippedReward('home_theme');
     if (theme == null) return child;
-    final accent = _accentFor(theme);
+    final accent = accentForReward(theme);
 
     return Stack(
       fit: StackFit.expand,
@@ -30,94 +30,7 @@ abstract final class SeasonCosmeticLayers {
     );
   }
 
-  static Widget profile({required Widget child}) {
-    final frame = SeasonCosmeticState.equippedReward('profile_frame');
-    final badge = SeasonCosmeticState.equippedReward('profile_badge');
-    final title = SeasonCosmeticState.equippedReward('title');
-    final emblem = SeasonCosmeticState.equippedReward('emblem');
-    if (frame == null && badge == null && title == null && emblem == null) {
-      return child;
-    }
-
-    final accent = _accentFor(frame ?? badge ?? title ?? emblem!);
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        child,
-        if (frame != null)
-          IgnorePointer(
-            child: SafeArea(
-              child: Container(
-                margin: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: accent.withValues(alpha: .75), width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: accent.withValues(alpha: .12),
-                      blurRadius: 18,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        if (badge != null || title != null || emblem != null)
-          Positioned(
-            left: 60,
-            right: 60,
-            top: MediaQuery.paddingOf(_rootContext(child)) + 8,
-            child: IgnorePointer(
-              child: Center(
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 230),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xE607111D),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: accent.withValues(alpha: .42)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (emblem != null) ...[
-                        Icon(Icons.bolt_rounded, color: accent, size: 14),
-                        const SizedBox(width: 5),
-                      ],
-                      Flexible(
-                        child: Text(
-                          title?.name ?? badge?.name ?? emblem?.name ?? '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: accent,
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: .8,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  // A cosmetic layer should not require a BuildContext to be passed through
-  // every navigation helper. This returns a harmless context-less top inset
-  // fallback through the widget tree's media query when rendered.
-  static BuildContext _rootContext(Widget child) => throw UnsupportedError(
-        'SeasonCosmeticLayers.profile must use SeasonProfileLayer instead.',
-      );
-
-  static Color accentForReward(SeasonReward reward) => _accentFor(reward);
-
-  static Color _accentFor(SeasonReward reward) {
+  static Color accentForReward(SeasonReward reward) {
     final hash = reward.rewardKey.codeUnits.fold<int>(0, (value, unit) {
       return ((value * 31) + unit) & 0x7fffffff;
     });
@@ -162,7 +75,10 @@ class SeasonProfileLayer extends StatelessWidget {
                 margin: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: accent.withValues(alpha: .75), width: 2),
+                  border: Border.all(
+                    color: accent.withValues(alpha: .75),
+                    width: 2,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: accent.withValues(alpha: .12),
@@ -183,7 +99,10 @@ class SeasonProfileLayer extends StatelessWidget {
               child: Center(
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 230),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xE607111D),
                     borderRadius: BorderRadius.circular(99),
