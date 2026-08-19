@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/audio/react_audio.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../gameplay/domain/react_command.dart';
 import '../../gameplay/presentation/react_gesture_surface.dart';
@@ -89,14 +90,17 @@ class _EnhancedVariantRunScreenState extends State<EnhancedVariantRunScreen> {
   }
 
   void _startCountdown() {
+    unawaited(ReactAudio.play(ReactSoundCue.countdownTick));
     _countdownTimer = Timer.periodic(const Duration(milliseconds: 650), (_) {
       if (!mounted || _finished) return;
       if (_countdown > 1) {
         setState(() => _countdown -= 1);
+        unawaited(ReactAudio.play(ReactSoundCue.countdownTick));
         return;
       }
       if (!_go) {
         setState(() => _go = true);
+        unawaited(ReactAudio.play(ReactSoundCue.countdownGo));
         return;
       }
       _countdownTimer?.cancel();
@@ -214,6 +218,7 @@ class _EnhancedVariantRunScreenState extends State<EnhancedVariantRunScreen> {
       ..reset()
       ..start();
     setState(() => _accepting = true);
+    unawaited(ReactAudio.play(ReactSoundCue.command));
   }
 
   void _handleCommand(ReactCommand performed) {
@@ -235,6 +240,7 @@ class _EnhancedVariantRunScreenState extends State<EnhancedVariantRunScreen> {
     _score += 1;
     _streak += 1;
     _maxStreak = max(_maxStreak, _streak);
+    unawaited(ReactAudio.play(ReactSoundCue.success));
     setState(() => _feedback = '+1 CLEAR');
     _phaseTimer = Timer(const Duration(milliseconds: 170), () {
       if (mounted && !_finished) _startCommandRound();
@@ -247,6 +253,7 @@ class _EnhancedVariantRunScreenState extends State<EnhancedVariantRunScreen> {
     _accepting = false;
     _streak = 0;
     _lives -= 1;
+    unawaited(ReactAudio.play(ReactSoundCue.lifeLost));
     if (_lives <= 0) {
       _finish(reason);
       return;
@@ -289,6 +296,7 @@ class _EnhancedVariantRunScreenState extends State<EnhancedVariantRunScreen> {
     }
 
     setState(() => _memoryFlash = _memorySequence[index]);
+    unawaited(ReactAudio.play(ReactSoundCue.command));
     _phaseTimer = Timer(const Duration(milliseconds: 420), () {
       if (!mounted || _finished) return;
       setState(() => _memoryFlash = -1);
@@ -317,6 +325,7 @@ class _EnhancedVariantRunScreenState extends State<EnhancedVariantRunScreen> {
     _streak += 1;
     _maxStreak = max(_maxStreak, _streak);
     _memorySequence.add(_random.nextInt(4));
+    unawaited(ReactAudio.play(ReactSoundCue.success));
     setState(() => _feedback = 'CHAIN +1');
     _phaseTimer = Timer(const Duration(milliseconds: 620), () {
       if (mounted && !_finished) _startMemoryPlayback();
@@ -330,6 +339,7 @@ class _EnhancedVariantRunScreenState extends State<EnhancedVariantRunScreen> {
     _phaseTimer?.cancel();
     _countdownTimer?.cancel();
     _roundClock.stop();
+    unawaited(ReactAudio.play(ReactSoundCue.completed));
     final newBest = await LocalVariantModeStats.record(mode, _score);
     if (!mounted) return;
     Navigator.of(context).pushReplacement(

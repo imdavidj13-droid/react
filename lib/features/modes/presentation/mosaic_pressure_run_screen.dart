@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/audio/react_audio.dart';
 import '../../../core/theme/react_colors.dart';
 
 class MosaicPressureRunScreen extends StatefulWidget {
@@ -35,15 +36,19 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
   void initState() {
     super.initState();
     _randomizeRates();
+    unawaited(ReactAudio.play(ReactSoundCue.countdownTick));
     _countdownTimer = Timer.periodic(const Duration(milliseconds: 650), (_) {
       if (!mounted || _finished) return;
       if (_countdown > 1) {
         setState(() => _countdown -= 1);
+        unawaited(ReactAudio.play(ReactSoundCue.countdownTick));
       } else if (!_go) {
         setState(() => _go = true);
+        unawaited(ReactAudio.play(ReactSoundCue.countdownGo));
       } else {
         _countdownTimer?.cancel();
         setState(() => _running = true);
+        unawaited(ReactAudio.play(ReactSoundCue.command));
         _ticker = Timer.periodic(_tick, _onTick);
       }
     });
@@ -86,12 +91,14 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
       _rates[index] = .0018 + _random.nextDouble() * .0038;
       _score += 1;
     });
+    unawaited(ReactAudio.play(ReactSoundCue.success));
   }
 
   Future<void> _finish() async {
     if (_finished) return;
     _finished = true;
     _ticker?.cancel();
+    unawaited(ReactAudio.play(ReactSoundCue.completed));
     final prefs = await SharedPreferences.getInstance();
     final oldBest = prefs.getInt(_bestKey) ?? 0;
     final newBest = _score > oldBest;
