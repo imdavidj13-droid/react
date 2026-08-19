@@ -9,6 +9,7 @@ import 'core/backend/react_supabase.dart';
 import 'core/settings/react_settings.dart';
 import 'features/leaderboard/data/remote_leaderboard_submission_sync.dart';
 import 'features/player/data/local_player_profile.dart';
+import 'features/season/data/season_repository.dart';
 import 'features/shop/data/local_shop_state.dart';
 
 Future<void> main() async {
@@ -78,4 +79,5 @@ Future<void> _startOnlineServices() async {
   );
   if (!sessionReady) return;
   await RemoteLeaderboardSubmissionSync.flushPending();
+  await const SeasonRepository().loadActiveSeason();
 }
