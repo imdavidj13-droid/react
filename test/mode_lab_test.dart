@@ -161,7 +161,8 @@ void main() {
     await tester.ensureVisible(startButton);
     await tester.pump();
     await tester.tap(startButton);
-    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.byType(WaveTwoVariantRunScreen), findsOneWidget);
   });
