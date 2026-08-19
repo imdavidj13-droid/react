@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../core/backend/react_supabase.dart';
 import '../../shop/data/local_shop_state.dart';
 import '../domain/season_models.dart';
+import 'season_cosmetic_state.dart';
 
 class SeasonRepository {
   const SeasonRepository();
@@ -21,7 +22,7 @@ class SeasonRepository {
       final data = _asMap(response);
       if (data == null) return null;
       final snapshot = _parseSnapshot(data);
-      await LocalShopState.setSeasonOwnedPackIds(snapshot.unlockedRewardKeys);
+      await _syncCosmetics(snapshot);
       return snapshot;
     } catch (error) {
       debugPrint('RE△CT season load failed: $error');
@@ -53,12 +54,17 @@ class SeasonRepository {
       final data = _asMap(response);
       if (data == null) return null;
       final snapshot = _parseSnapshot(data);
-      await LocalShopState.setSeasonOwnedPackIds(snapshot.unlockedRewardKeys);
+      await _syncCosmetics(snapshot);
       return snapshot;
     } catch (error) {
       debugPrint('RE△CT season run progress failed: $error');
       return null;
     }
+  }
+
+  static Future<void> _syncCosmetics(SeasonSnapshot snapshot) async {
+    await LocalShopState.setSeasonOwnedPackIds(snapshot.unlockedRewardKeys);
+    await SeasonCosmeticState.syncSnapshot(snapshot);
   }
 
   static Map<String, dynamic>? _asMap(dynamic value) {
