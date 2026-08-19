@@ -9,6 +9,7 @@ class SeasonProgressEvent {
     required this.successfulCommands,
     required this.isPersonalBest,
     required this.isDaily,
+    required this.completedAt,
   });
 
   final String eventId;
@@ -16,6 +17,7 @@ class SeasonProgressEvent {
   final int successfulCommands;
   final bool isPersonalBest;
   final bool isDaily;
+  final DateTime completedAt;
 
   String encode() => jsonEncode(<String, dynamic>{
         'event_id': eventId,
@@ -23,13 +25,15 @@ class SeasonProgressEvent {
         'successful_commands': successfulCommands,
         'is_personal_best': isPersonalBest,
         'is_daily': isDaily,
+        'completed_at': completedAt.toUtc().toIso8601String(),
       });
 
   static SeasonProgressEvent? tryDecode(String raw) {
     try {
       final json = jsonDecode(raw) as Map<String, dynamic>;
       final eventId = '${json['event_id'] ?? ''}'.trim();
-      if (eventId.length < 8) return null;
+      final completedAt = DateTime.tryParse('${json['completed_at'] ?? ''}');
+      if (eventId.length < 8 || completedAt == null) return null;
       return SeasonProgressEvent(
         eventId: eventId,
         score: (json['score'] as num?)?.round() ?? 0,
@@ -37,6 +41,7 @@ class SeasonProgressEvent {
             (json['successful_commands'] as num?)?.round() ?? 0,
         isPersonalBest: json['is_personal_best'] == true,
         isDaily: json['is_daily'] == true,
+        completedAt: completedAt.toUtc(),
       );
     } catch (_) {
       return null;
