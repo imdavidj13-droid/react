@@ -60,8 +60,16 @@ void main() {
     expect(find.text('FIND A PLAYER'), findsOneWidget);
     expect(find.text('REQUESTS (1)'), findsOneWidget);
     expect(find.text('FRIENDS (1)'), findsOneWidget);
-    expect(find.text('SENT REQUESTS'), findsOneWidget);
     expect(find.text('FRIEND ONE'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('SENT REQUESTS'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('SENT REQUESTS'), findsOneWidget);
   });
 }
 
