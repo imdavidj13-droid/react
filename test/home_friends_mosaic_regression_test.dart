@@ -24,7 +24,7 @@ void main() {
       'lib/features/modes/presentation/mosaic_pressure_run_screen.dart',
     ).readAsStringSync();
     expect(source, contains('List<bool>.filled(9, false)'));
-    expect(source, contains('_activateRandomTile'));
+    expect(source, contains('_activateBurst'));
     expect(source, contains('if (_activeCount >= 9)'));
     expect(source, contains('Icons.grid_view_rounded'));
     expect(source, isNot(contains('_fill[')));
