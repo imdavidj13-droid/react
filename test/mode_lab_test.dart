@@ -157,8 +157,11 @@ void main() {
     expect(find.text('PULL LINE'), findsOneWidget);
     expect(find.textContaining('drag it into the glowing capture ring'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(FilledButton, 'START MODE'));
+    final startButton = find.widgetWithText(FilledButton, 'START MODE');
+    await tester.ensureVisible(startButton);
     await tester.pump();
+    await tester.tap(startButton);
+    await tester.pump(const Duration(milliseconds: 250));
 
     expect(find.byType(WaveTwoVariantRunScreen), findsOneWidget);
   });
