@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/cosmetics/react_cosmetics.dart';
 
 /// Local cosmetic ownership/equipment state.
 ///
-/// Release builds only own CORE until future verified store entitlements grant
-/// paid cosmetics. Debug builds deliberately unlock implemented cosmetics so
-/// every pack can be tested end-to-end before billing exists.
+/// CORE is always owned. Verified seasonal unlocks are cached locally so an
+/// earned cosmetic remains usable offline. Debug builds deliberately unlock
+/// every implemented cosmetic so packs can still be tested end-to-end.
 abstract final class LocalShopState {
   static const corePackId = 'core';
   static const redlinePackId = 'redline';
@@ -35,6 +36,7 @@ abstract final class LocalShopState {
   static const impactCommandsPackId = 'impact_commands';
 
   static const proShareCardsPackId = 'pro_share_cards';
+  static const _seasonOwnedPacksKey = 'shop_season_owned_packs';
 
   static const Set<String> _builtInOwnedPacks = {corePackId};
   static const Set<String> _implementedVisualPacks = {
@@ -71,10 +73,15 @@ abstract final class LocalShopState {
     proShareCardsPackId,
   };
 
+  static Set<String> _seasonOwnedPackIds = <String>{};
+
   static bool get debugUnlocksEnabled => kDebugMode;
   static bool get debugVisualUnlocksEnabled => kDebugMode;
 
   static Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    _seasonOwnedPackIds =
+        (prefs.getStringList(_seasonOwnedPacksKey) ?? const <String>[]).toSet();
     await ReactCosmetics.load();
 
     if (!isOwned(ReactCosmetics.currentReactionPack.packId)) {
@@ -96,6 +103,13 @@ abstract final class LocalShopState {
         !isOwned(ReactCosmetics.currentShareStyle.packId)) {
       await ReactCosmetics.equipShareStyle(ReactShareStyle.core);
     }
+  }
+
+  static Future<void> setSeasonOwnedPackIds(Iterable<String> packIds) async {
+    _seasonOwnedPackIds = packIds.where(isImplemented).toSet();
+    final prefs = await SharedPreferences.getInstance();
+    final sorted = _seasonOwnedPackIds.toList()..sort();
+    await prefs.setStringList(_seasonOwnedPacksKey, sorted);
   }
 
   static Future<String> equippedPack() async =>
@@ -120,7 +134,10 @@ abstract final class LocalShopState {
   }
 
   static bool isOwned(String packId) {
-    if (_builtInOwnedPacks.contains(packId)) return true;
+    if (_builtInOwnedPacks.contains(packId) ||
+        _seasonOwnedPackIds.contains(packId)) {
+      return true;
+    }
     return kDebugMode && isImplemented(packId);
   }
 
