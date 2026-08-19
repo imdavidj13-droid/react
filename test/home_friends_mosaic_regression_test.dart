@@ -28,6 +28,6 @@ void main() {
     expect(source, contains('if (_activeCount >= 9)'));
     expect(source, contains('Icons.grid_view_rounded'));
     expect(source, isNot(contains('_fill[')));
-    expect(source, isNot(contains("'${(fill * 100).round()}'")));
+    expect(source, isNot(contains(r"'${(fill * 100).round()}'")));
   });
 }
