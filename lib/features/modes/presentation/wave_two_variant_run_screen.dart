@@ -20,6 +20,8 @@ class WaveTwoVariantRunScreen extends StatefulWidget {
 
 class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
   static const _tick = Duration(milliseconds: 32);
+  static const _orange = Color(0xFFFF8A35);
+
   final Random _random = Random();
 
   Timer? _ticker;
@@ -198,10 +200,10 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
     _secondary = Offset(.15 + _random.nextDouble() * .70, .15 + _random.nextDouble() * .70);
     _harpoonDrag = _target;
     _ghost = _random.nextBool();
-    _blockedLanes = <int>[
+    _blockedLanes = <int>{
       _random.nextInt(3),
       if (_score > 8) _random.nextInt(3),
-    ].toSet().where((lane) => lane != _activeLane).toList(growable: false);
+    }.where((lane) => lane != _activeLane).toList(growable: false);
     _fragments = List<Offset>.generate(
       min(6, 3 + _score ~/ 5),
       (_) => Offset(.12 + _random.nextDouble() * .76, .18 + _random.nextDouble() * .64),
@@ -430,7 +432,10 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
     _phaseTimer = Timer(const Duration(milliseconds: 410), () {
       if (!mounted || _finished) return;
       setState(() => _memoryFlash = -1);
-      _phaseTimer = Timer(const Duration(milliseconds: 170), () => _playMemoryStep(index + 1));
+      _phaseTimer = Timer(
+        const Duration(milliseconds: 170),
+        () => _playMemoryStep(index + 1),
+      );
     });
   }
 
@@ -461,18 +466,36 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
     return switch (mode) {
       ReactVariantMode.railrun => Offset(.06 + p * .88, .25 + _activeLane * .25),
       ReactVariantMode.skyhook => Offset(_target.dx, .05 + p * .9),
-      ReactVariantMode.corridor => Offset(.5 + sin(p * pi * 2 + _target.dx * 5) * (.30 * (1 - p)), .08 + p * .84),
-      ReactVariantMode.sidewinder => Offset(.05 + p * .90, .5 + sin((p * (3 + _target.dx * 4)) * pi * 2) * (.18 + _target.dy * .12)),
-      ReactVariantMode.hinge => Offset(.5 + cos(p * pi * 5) * .33, .5 + sin(p * pi * 5) * .33),
-      ReactVariantMode.monoline => Offset(.08 + p * .84, .5 + sin(p * pi * 2 + _target.dy * 5) * .23),
-      ReactVariantMode.riftstep => Offset(_activeSide == 0 ? .25 : .75, .20 + _target.dy * .60),
+      ReactVariantMode.corridor => Offset(
+          .5 + sin(p * pi * 2 + _target.dx * 5) * (.30 * (1 - p)),
+          .08 + p * .84,
+        ),
+      ReactVariantMode.sidewinder => Offset(
+          .05 + p * .90,
+          .5 + sin((p * (3 + _target.dx * 4)) * pi * 2) * (.18 + _target.dy * .12),
+        ),
+      ReactVariantMode.hinge => Offset(
+          .5 + cos(p * pi * 5) * .33,
+          .5 + sin(p * pi * 5) * .33,
+        ),
+      ReactVariantMode.monoline => Offset(
+          .08 + p * .84,
+          .5 + sin(p * pi * 2 + _target.dy * 5) * .23,
+        ),
+      ReactVariantMode.riftstep => Offset(
+          _activeSide == 0 ? .25 : .75,
+          .20 + _target.dy * .60,
+        ),
       ReactVariantMode.barricade => Offset(.12 + p * .76, .25 + _activeLane * .25),
-      ReactVariantMode.vantage => Offset(.5 + cos(p * pi * 4 + _target.dx * 6) * .30, .5 + sin(p * pi * 4 + _target.dx * 6) * .30),
+      ReactVariantMode.vantage => Offset(
+          .5 + cos(p * pi * 4 + _target.dx * 6) * .30,
+          .5 + sin(p * pi * 4 + _target.dx * 6) * .30,
+        ),
       _ => _target,
     };
   }
 
-  bool _isMovingTargetMode => const {
+  bool get _isMovingTargetMode => const {
         ReactVariantMode.railrun,
         ReactVariantMode.skyhook,
         ReactVariantMode.corridor,
@@ -484,7 +507,7 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
         ReactVariantMode.vantage,
       }.contains(mode);
 
-  bool _isCommandMode => const {
+  bool get _isCommandMode => const {
         ReactVariantMode.dualcast,
         ReactVariantMode.hush,
         ReactVariantMode.phaseshift,
@@ -498,7 +521,7 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
         ReactVariantMode.fadeout,
       }.contains(mode);
 
-  bool _isTimingTapMode => const {
+  bool get _isTimingTapMode => const {
         ReactVariantMode.sentry,
         ReactVariantMode.shockwave,
         ReactVariantMode.gateline,
@@ -728,18 +751,49 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
         if (mode == ReactVariantMode.dualcast)
           Text(
             _activeSide == 0 ? 'LEFT SIDE' : 'RIGHT SIDE',
-            style: TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.4),
+            style: TextStyle(
+              color: accent,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.4,
+            ),
           ),
         if (mode == ReactVariantMode.barrage)
-          Text('VOLLEY  $_volleyRemaining', style: TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.w900)),
+          Text(
+            'VOLLEY  $_volleyRemaining',
+            style: TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.w900),
+          ),
         if (mode == ReactVariantMode.catalyst)
-          Text(catalystLabel, style: TextStyle(color: _catalystState == 0 ? ReactColors.textSecondary : ReactColors.lime, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.4)),
+          Text(
+            catalystLabel,
+            style: TextStyle(
+              color: _catalystState == 0 ? ReactColors.textSecondary : ReactColors.lime,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.4,
+            ),
+          ),
         if (mode == ReactVariantMode.phaseshift)
-          Text(_ghost ? 'GHOST — WAIT' : 'SOLID — ACT', style: TextStyle(color: _ghost ? ReactColors.textSecondary : ReactColors.lime, fontSize: 13, fontWeight: FontWeight.w900)),
+          Text(
+            _ghost ? 'GHOST — WAIT' : 'SOLID — ACT',
+            style: TextStyle(
+              color: _ghost ? ReactColors.textSecondary : ReactColors.lime,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         if (mode == ReactVariantMode.waveline)
           _PulseTrack(progress: phase, active: pulseOpen, color: accent),
         if (mode == ReactVariantMode.splice)
-          Text(phase < .55 ? '‹  ${_command.title}  ›' : _command.title, style: const TextStyle(color: ReactColors.textPrimary, fontSize: 26, fontWeight: FontWeight.w900), textAlign: TextAlign.center)
+          Text(
+            phase < .55 ? '‹  ${_command.title}  ›' : _command.title,
+            style: const TextStyle(
+              color: ReactColors.textPrimary,
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+            ),
+            textAlign: TextAlign.center,
+          )
         else
           Opacity(
             opacity: opacity.clamp(0.0, 1.0),
@@ -750,7 +804,11 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
                 Text(
                   _command.title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: ReactColors.textPrimary, fontSize: 30, fontWeight: FontWeight.w900),
+                  style: const TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ],
             ),
@@ -770,7 +828,15 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
                 onCommand: _handleCommand,
                 child: Container(
                   color: active ? accent.withValues(alpha: .09) : Colors.transparent,
-                  child: Center(child: active ? face : Icon(Icons.block_rounded, color: ReactColors.textSecondary.withValues(alpha: .18), size: 44)),
+                  child: Center(
+                    child: active
+                        ? face
+                        : Icon(
+                            Icons.block_rounded,
+                            color: ReactColors.textSecondary.withValues(alpha: .18),
+                            size: 44,
+                          ),
+                  ),
                 ),
               ),
             );
@@ -800,30 +866,95 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
           alignment: Alignment.center,
           children: [
             if (mode == ReactVariantMode.shockwave) ...[
-              Container(width: 250, height: 250, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: accent.withValues(alpha: .25), width: 3))),
-              Container(width: 40 + p * 230, height: 40 + p * 230, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: active ? ReactColors.lime : accent, width: 4))),
+              Container(
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: accent.withValues(alpha: .25), width: 3),
+                ),
+              ),
+              Container(
+                width: 40 + p * 230,
+                height: 40 + p * 230,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: active ? ReactColors.lime : accent, width: 4),
+                ),
+              ),
             ] else if (mode == ReactVariantMode.sentry) ...[
               Transform.rotate(
                 angle: p * pi * 4,
                 child: Container(width: 245, height: 3, color: active ? ReactColors.lime : accent),
               ),
-              Container(width: 220, height: 220, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: active ? ReactColors.lime : accent.withValues(alpha: .35), width: 3))),
+              Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: active ? ReactColors.lime : accent.withValues(alpha: .35),
+                    width: 3,
+                  ),
+                ),
+              ),
             ] else if (mode == ReactVariantMode.gateline) ...[
-              Positioned(left: 35 + sin(p * pi * 4).abs() * 95, top: 45, bottom: 45, child: Container(width: 16, color: active ? ReactColors.lime : accent)),
-              Positioned(right: 35 + sin(p * pi * 4).abs() * 95, top: 45, bottom: 45, child: Container(width: 16, color: active ? ReactColors.lime : accent)),
+              Positioned(
+                left: 35 + sin(p * pi * 4).abs() * 95,
+                top: 45,
+                bottom: 45,
+                child: Container(width: 16, color: active ? ReactColors.lime : accent),
+              ),
+              Positioned(
+                right: 35 + sin(p * pi * 4).abs() * 95,
+                top: 45,
+                bottom: 45,
+                child: Container(width: 16, color: active ? ReactColors.lime : accent),
+              ),
             ] else if (mode == ReactVariantMode.parallax) ...[
-              Transform.translate(offset: Offset(sin(p * pi * 4) * 70, 0), child: Icon(Icons.adjust_rounded, color: accent, size: 90)),
-              Transform.translate(offset: Offset(-sin(p * pi * 4) * 70, 0), child: Icon(Icons.adjust_rounded, color: ReactColors.textPrimary.withValues(alpha: .35), size: 55)),
+              Transform.translate(
+                offset: Offset(sin(p * pi * 4) * 70, 0),
+                child: Icon(Icons.adjust_rounded, color: accent, size: 90),
+              ),
+              Transform.translate(
+                offset: Offset(-sin(p * pi * 4) * 70, 0),
+                child: Icon(
+                  Icons.adjust_rounded,
+                  color: ReactColors.textPrimary.withValues(alpha: .35),
+                  size: 55,
+                ),
+              ),
             ] else if (mode == ReactVariantMode.pendulum) ...[
               Transform.rotate(
                 alignment: Alignment.topCenter,
                 angle: sin(p * pi * 4) * 1.05,
-                child: Column(mainAxisSize: MainAxisSize.min, children: [Container(width: 3, height: 150, color: accent), Container(width: 42, height: 42, decoration: BoxDecoration(shape: BoxShape.circle, color: active ? ReactColors.lime : accent))]),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(width: 3, height: 150, color: accent),
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: active ? ReactColors.lime : accent,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
             Positioned(
               bottom: 28,
-              child: Text(active ? 'NOW' : 'WAIT', style: TextStyle(color: active ? ReactColors.lime : ReactColors.textSecondary, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2)),
+              child: Text(
+                active ? 'NOW' : 'WAIT',
+                style: TextStyle(
+                  color: active ? ReactColors.lime : ReactColors.textSecondary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                ),
+              ),
             ),
           ],
         ),
@@ -846,10 +977,24 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
                     left: 12,
                     right: 12,
                     top: box.maxHeight * (.25 + lane * .25),
-                    child: Container(height: 2, color: blocked && _blockedLanes.contains(lane) ? ReactColors.coral.withValues(alpha: .65) : accent.withValues(alpha: .22)),
+                    child: Container(
+                      height: 2,
+                      color: blocked && _blockedLanes.contains(lane)
+                          ? ReactColors.coral.withValues(alpha: .65)
+                          : accent.withValues(alpha: .22),
+                    ),
                   ),
               if (mode == ReactVariantMode.corridor)
-                Center(child: Container(width: 80 + (1 - phase) * 230, height: box.maxHeight * .9, decoration: BoxDecoration(border: Border.all(color: accent.withValues(alpha: .25)), borderRadius: BorderRadius.circular(18)))),
+                Center(
+                  child: Container(
+                    width: 80 + (1 - phase) * 230,
+                    height: box.maxHeight * .9,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: accent.withValues(alpha: .25)),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                ),
               Positioned(
                 left: pos.dx * max(1, box.maxWidth - size),
                 top: pos.dy * max(1, box.maxHeight - size),
@@ -892,10 +1037,16 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 120),
                   decoration: BoxDecoration(
-                    color: active ? accent.withValues(alpha: .16) : accent.withValues(alpha: .025 + lane * .025),
-                    border: Border(bottom: BorderSide(color: accent.withValues(alpha: .18))),
+                    color: active
+                        ? accent.withValues(alpha: .16)
+                        : accent.withValues(alpha: .025 + lane * .025),
+                    border: Border(
+                      bottom: BorderSide(color: accent.withValues(alpha: .18)),
+                    ),
                   ),
-                  child: Center(child: active ? Icon(Icons.touch_app_rounded, color: accent, size: 50) : null),
+                  child: Center(
+                    child: active ? Icon(Icons.touch_app_rounded, color: accent, size: 50) : null,
+                  ),
                 ),
               ),
             );
@@ -919,7 +1070,11 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
                     child: Container(
                       width: 48,
                       height: 48,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: active ? accent : accent.withValues(alpha: .12), border: Border.all(color: accent, width: active ? 3 : 1)),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: active ? accent : accent.withValues(alpha: .12),
+                        border: Border.all(color: accent, width: active ? 3 : 1),
+                      ),
                     ),
                   ),
                 );
@@ -940,17 +1095,50 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
                 Positioned(
                   left: _target.dx * max(1, box.maxWidth - 58),
                   top: _target.dy * max(1, box.maxHeight - 58),
-                  child: Container(width: 58, height: 58, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: accent, width: 3)), child: Icon(mode.icon, color: accent)),
+                  child: Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: accent, width: 3),
+                    ),
+                    child: Icon(mode.icon, color: accent),
+                  ),
                 ),
                 Positioned(
                   left: truePos.dx * max(1, box.maxWidth - 58),
                   top: truePos.dy * max(1, box.maxHeight - 58),
                   child: GestureDetector(
                     onTap: _complete,
-                    child: Container(width: 58, height: 58, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.transparent, border: Border.all(color: mode == ReactVariantMode.offset ? ReactColors.textSecondary.withValues(alpha: .28) : Colors.transparent, width: 2))),
+                    child: Container(
+                      width: 58,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.transparent,
+                        border: Border.all(
+                          color: mode == ReactVariantMode.offset
+                              ? ReactColors.textSecondary.withValues(alpha: .28)
+                              : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                Center(child: Text(mode == ReactVariantMode.shadowlink ? 'HIT THE MIRRORED SHADOW' : 'HIT THE TRUE CROSSHAIR', style: const TextStyle(color: ReactColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.1))),
+                Center(
+                  child: Text(
+                    mode == ReactVariantMode.shadowlink
+                        ? 'HIT THE MIRRORED SHADOW'
+                        : 'HIT THE TRUE CROSSHAIR',
+                    style: const TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                ),
               ],
             );
           },
@@ -979,9 +1167,22 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
                   Container(
                     width: 230 - layer * 60,
                     height: 230 - layer * 60,
-                    decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: layer < _breakerLayer ? ReactColors.textSecondary.withValues(alpha: .10) : layer == _breakerLayer ? accent : accent.withValues(alpha: .22), width: layer == _breakerLayer ? 5 : 2)),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: layer < _breakerLayer
+                            ? ReactColors.textSecondary.withValues(alpha: .10)
+                            : layer == _breakerLayer
+                                ? accent
+                                : accent.withValues(alpha: .22),
+                        width: layer == _breakerLayer ? 5 : 2,
+                      ),
+                    ),
                   ),
-                Text('${_breakerLayer + 1}', style: TextStyle(color: accent, fontSize: 42, fontWeight: FontWeight.w900)),
+                Text(
+                  '${_breakerLayer + 1}',
+                  style: TextStyle(color: accent, fontSize: 42, fontWeight: FontWeight.w900),
+                ),
               ],
             ),
           ),
@@ -1000,8 +1201,23 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
           child: Container(
             width: diameter,
             height: diameter,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: accent.withValues(alpha: .10), border: Border.all(color: accent, width: 4)),
-            child: Center(child: Container(width: 14, height: 14, decoration: BoxDecoration(shape: BoxShape.circle, color: ReactColors.lime))),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: accent.withValues(alpha: .10),
+              border: Border.all(color: accent, width: 4),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 14,
+                height: 14,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: ReactColors.lime,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -1013,7 +1229,11 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
           padding: const EdgeInsets.all(18),
           child: GridView.builder(
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 10, mainAxisSpacing: 10),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
             itemCount: 9,
             itemBuilder: (context, index) {
               final charge = _gridCharge[index].clamp(0.0, 1.0);
@@ -1025,13 +1245,32 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
                     borderRadius: BorderRadius.circular(18),
                     color: mode == ReactVariantMode.sparkgrid
                         ? Color.lerp(const Color(0xFF07111D), accent, charge * .35)
-                        : rampartActive ? ReactColors.coral.withValues(alpha: .20) : accent.withValues(alpha: .035),
-                    border: Border.all(color: mode == ReactVariantMode.sparkgrid ? (charge >= .72 ? accent : accent.withValues(alpha: .20)) : (rampartActive ? ReactColors.coral : accent.withValues(alpha: .20)), width: charge >= .72 || rampartActive ? 3 : 1),
+                        : rampartActive
+                            ? ReactColors.coral.withValues(alpha: .20)
+                            : accent.withValues(alpha: .035),
+                    border: Border.all(
+                      color: mode == ReactVariantMode.sparkgrid
+                          ? (charge >= .72 ? accent : accent.withValues(alpha: .20))
+                          : (rampartActive ? ReactColors.coral : accent.withValues(alpha: .20)),
+                      width: charge >= .72 || rampartActive ? 3 : 1,
+                    ),
                   ),
                   child: Center(
                     child: mode == ReactVariantMode.sparkgrid
-                        ? Text('${(charge * 100).round()}%', style: TextStyle(color: charge >= .72 ? accent : ReactColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w900))
-                        : Icon(rampartActive ? Icons.warning_rounded : Icons.security_rounded, color: rampartActive ? ReactColors.coral : accent.withValues(alpha: .28)),
+                        ? Text(
+                            '${(charge * 100).round()}%',
+                            style: TextStyle(
+                              color: charge >= .72 ? accent : ReactColors.textSecondary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          )
+                        : Icon(
+                            rampartActive ? Icons.warning_rounded : Icons.security_rounded,
+                            color: rampartActive
+                                ? ReactColors.coral
+                                : accent.withValues(alpha: .28),
+                          ),
                   ),
                 ),
               );
@@ -1045,12 +1284,24 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              Text(_memoryPlaying ? 'WATCH' : 'YOUR TURN — REVERSE', style: TextStyle(color: _memoryPlaying ? accent : ReactColors.lime, fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 1.4)),
+              Text(
+                _memoryPlaying ? 'WATCH' : 'YOUR TURN — REVERSE',
+                style: TextStyle(
+                  color: _memoryPlaying ? accent : ReactColors.lime,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.4,
+                ),
+              ),
               const SizedBox(height: 20),
               Expanded(
                 child: GridView.builder(
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 14, mainAxisSpacing: 14),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
+                  ),
                   itemCount: 4,
                   itemBuilder: (context, index) {
                     final lit = index == _memoryFlash;
@@ -1058,8 +1309,26 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
                       onTap: () => _tapMemory(index),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 100),
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: lit ? accent.withValues(alpha: .42) : accent.withValues(alpha: .055), border: Border.all(color: lit ? accent : accent.withValues(alpha: .28), width: lit ? 4 : 2)),
-                        child: Center(child: Text('${index + 1}', style: TextStyle(color: lit ? ReactColors.textPrimary : accent, fontSize: 30, fontWeight: FontWeight.w900))),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          color: lit
+                              ? accent.withValues(alpha: .42)
+                              : accent.withValues(alpha: .055),
+                          border: Border.all(
+                            color: lit ? accent : accent.withValues(alpha: .28),
+                            width: lit ? 4 : 2,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              color: lit ? ReactColors.textPrimary : accent,
+                              fontSize: 30,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
                       ),
                     );
                   },
@@ -1081,7 +1350,10 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
                   );
             return Listener(
               onPointerDown: (event) {
-                final norm = Offset(event.localPosition.dx / box.maxWidth, event.localPosition.dy / box.maxHeight);
+                final norm = Offset(
+                  event.localPosition.dx / box.maxWidth,
+                  event.localPosition.dy / box.maxHeight,
+                );
                 if ((norm - moving).distance < .12) {
                   _harpoonPointer = event.pointer;
                   _harpoonDragging = true;
@@ -1091,7 +1363,10 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
               },
               onPointerMove: (event) {
                 if (event.pointer != _harpoonPointer) return;
-                _harpoonDrag = Offset((event.localPosition.dx / box.maxWidth).clamp(0, 1), (event.localPosition.dy / box.maxHeight).clamp(0, 1));
+                _harpoonDrag = Offset(
+                  (event.localPosition.dx / box.maxWidth).clamp(0, 1),
+                  (event.localPosition.dy / box.maxHeight).clamp(0, 1),
+                );
                 setState(() {});
               },
               onPointerUp: (event) {
@@ -1099,12 +1374,39 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
                 final success = (_harpoonDrag - const Offset(.5, .5)).distance < .13;
                 _harpoonPointer = null;
                 _harpoonDragging = false;
-                success ? _complete() : _fail('LINE SNAPPED');
+                if (success) {
+                  _complete();
+                } else {
+                  _fail('LINE SNAPPED');
+                }
               },
               child: Stack(
                 children: [
-                  Center(child: Container(width: 105, height: 105, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: ReactColors.lime, width: 3), color: ReactColors.lime.withValues(alpha: .05)))),
-                  Positioned(left: moving.dx * max(1, box.maxWidth - 58), top: moving.dy * max(1, box.maxHeight - 58), child: Container(width: 58, height: 58, decoration: BoxDecoration(shape: BoxShape.circle, color: accent.withValues(alpha: .18), border: Border.all(color: accent, width: 3)), child: Icon(Icons.north_east_rounded, color: accent))),
+                  Center(
+                    child: Container(
+                      width: 105,
+                      height: 105,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: ReactColors.lime, width: 3),
+                        color: ReactColors.lime.withValues(alpha: .05),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: moving.dx * max(1, box.maxWidth - 58),
+                    top: moving.dy * max(1, box.maxHeight - 58),
+                    child: Container(
+                      width: 58,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: accent.withValues(alpha: .18),
+                        border: Border.all(color: accent, width: 3),
+                      ),
+                      child: Icon(Icons.north_east_rounded, color: accent),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -1116,10 +1418,16 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
         child: LayoutBuilder(
           builder: (context, box) {
             const anchorCenter = Offset(.18, .82);
-            final moving = Offset(.55 + sin(elapsedMs / 430) * .25, .38 + cos(elapsedMs / 520) * .18);
+            final moving = Offset(
+              .55 + sin(elapsedMs / 430) * .25,
+              .38 + cos(elapsedMs / 520) * .18,
+            );
             return Listener(
               onPointerDown: (event) {
-                final norm = Offset(event.localPosition.dx / box.maxWidth, event.localPosition.dy / box.maxHeight);
+                final norm = Offset(
+                  event.localPosition.dx / box.maxWidth,
+                  event.localPosition.dy / box.maxHeight,
+                );
                 if ((norm - anchorCenter).distance < .13 && _anchorPointer == null) {
                   _anchorPointer = event.pointer;
                   _anchorHeld = true;
@@ -1147,8 +1455,41 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
               },
               child: Stack(
                 children: [
-                  Positioned(left: anchorCenter.dx * box.maxWidth - 44, top: anchorCenter.dy * box.maxHeight - 44, child: Container(width: 88, height: 88, decoration: BoxDecoration(shape: BoxShape.circle, color: (_anchorHeld ? ReactColors.lime : accent).withValues(alpha: .13), border: Border.all(color: _anchorHeld ? ReactColors.lime : accent, width: 3)), child: Icon(Icons.anchor_rounded, color: _anchorHeld ? ReactColors.lime : accent, size: 38))),
-                  Positioned(left: moving.dx * box.maxWidth - 31, top: moving.dy * box.maxHeight - 31, child: Container(width: 62, height: 62, decoration: BoxDecoration(shape: BoxShape.circle, color: accent.withValues(alpha: .18), border: Border.all(color: accent, width: 3)), child: Icon(Icons.touch_app_rounded, color: accent))),
+                  Positioned(
+                    left: anchorCenter.dx * box.maxWidth - 44,
+                    top: anchorCenter.dy * box.maxHeight - 44,
+                    child: Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: (_anchorHeld ? ReactColors.lime : accent).withValues(alpha: .13),
+                        border: Border.all(
+                          color: _anchorHeld ? ReactColors.lime : accent,
+                          width: 3,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.anchor_rounded,
+                        color: _anchorHeld ? ReactColors.lime : accent,
+                        size: 38,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: moving.dx * box.maxWidth - 31,
+                    top: moving.dy * box.maxHeight - 31,
+                    child: Container(
+                      width: 62,
+                      height: 62,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: accent.withValues(alpha: .18),
+                        border: Border.all(color: accent, width: 3),
+                      ),
+                      child: Icon(Icons.touch_app_rounded, color: accent),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -1177,17 +1518,60 @@ class _WaveTwoVariantRunScreenState extends State<WaveTwoVariantRunScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(_newBest ? Icons.workspace_premium_rounded : mode.icon, color: _newBest ? ReactColors.lime : accent, size: 64),
+                  Icon(
+                    _newBest ? Icons.workspace_premium_rounded : mode.icon,
+                    color: _newBest ? ReactColors.lime : accent,
+                    size: 64,
+                  ),
                   const SizedBox(height: 16),
-                  Text(_newBest ? 'NEW BEST' : 'RUN OVER', style: TextStyle(color: _newBest ? ReactColors.lime : ReactColors.textPrimary, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                  Text(
+                    _newBest ? 'NEW BEST' : 'RUN OVER',
+                    style: TextStyle(
+                      color: _newBest ? ReactColors.lime : ReactColors.textPrimary,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  Text('$_score', style: TextStyle(color: accent, fontSize: 64, fontWeight: FontWeight.w900)),
+                  Text(
+                    '$_score',
+                    style: TextStyle(color: accent, fontSize: 64, fontWeight: FontWeight.w900),
+                  ),
                   const SizedBox(height: 4),
-                  Text(_feedback, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1)),
+                  Text(
+                    _feedback,
+                    style: const TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
+                  ),
                   const SizedBox(height: 24),
-                  SizedBox(width: 240, height: 54, child: FilledButton(onPressed: _restart, style: FilledButton.styleFrom(backgroundColor: accent, foregroundColor: Colors.black), child: const Text('PLAY AGAIN', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)))),
+                  SizedBox(
+                    width: 240,
+                    height: 54,
+                    child: FilledButton(
+                      onPressed: _restart,
+                      style: FilledButton.styleFrom(backgroundColor: accent, foregroundColor: Colors.black),
+                      child: const Text(
+                        'PLAY AGAIN',
+                        style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 10),
-                  TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('BACK TO MODE', style: TextStyle(color: ReactColors.textSecondary, fontWeight: FontWeight.w800))),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text(
+                      'BACK TO MODE',
+                      style: TextStyle(
+                        color: ReactColors.textSecondary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1207,12 +1591,27 @@ class _HudValue extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         width: 58,
         padding: const EdgeInsets.symmetric(vertical: 6),
-        decoration: BoxDecoration(color: color.withValues(alpha: .055), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withValues(alpha: .20))),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .055),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: .20)),
+        ),
         child: Column(
           children: [
-            Text(label, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 6.5, fontWeight: FontWeight.w900, letterSpacing: .7)),
+            Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 6.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .7,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(value, style: TextStyle(color: color, fontSize: 17, fontWeight: FontWeight.w900)),
+            Text(
+              value,
+              style: TextStyle(color: color, fontSize: 17, fontWeight: FontWeight.w900),
+            ),
           ],
         ),
       );
@@ -1233,8 +1632,25 @@ class _PulseTrack extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             Container(height: 3, color: color.withValues(alpha: .25)),
-            Container(width: 42, height: 32, decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: active ? ReactColors.lime : color, width: 2))),
-            Align(alignment: Alignment(-1 + progress * 2, 0), child: Container(width: 14, height: 14, decoration: BoxDecoration(shape: BoxShape.circle, color: active ? ReactColors.lime : color))),
+            Container(
+              width: 42,
+              height: 32,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: active ? ReactColors.lime : color, width: 2),
+              ),
+            ),
+            Align(
+              alignment: Alignment(-1 + progress * 2, 0),
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: active ? ReactColors.lime : color,
+                ),
+              ),
+            ),
           ],
         ),
       );
