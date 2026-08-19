@@ -117,7 +117,6 @@ class ReactVariantSpec {
 const _orange = Color(0xFFFF8A35);
 const _cyan = Color(0xFF37D6E8);
 const _pink = Color(0xFFFF4F91);
-const _yellow = Color(0xFFFFD33D);
 
 const Map<ReactVariantMode, ReactVariantSpec> _activeSpecs = {
   ReactVariantMode.phantom: ReactVariantSpec(
