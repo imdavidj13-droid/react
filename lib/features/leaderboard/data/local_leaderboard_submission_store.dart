@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../gameplay/domain/react_run_result.dart';
+import '../../season/data/season_progress_service.dart';
 import '../domain/leaderboard_submission.dart';
 import '../domain/leaderboard_submission_eligibility.dart';
 
@@ -19,6 +21,12 @@ class LocalLeaderboardSubmissionStore {
     if (result.isDailyDevRun) {
       return null;
     }
+
+    // Seasonal progression is deliberately independent from leaderboard
+    // eligibility so Pass It and other valid completed runs still count toward
+    // CHARGE. It is fire-and-forget and cannot block the existing Results flow.
+    unawaited(SeasonProgressService.recordResult(result));
+
     if (!LeaderboardSubmissionEligibility.isEligibleResult(result)) {
       return null;
     }
