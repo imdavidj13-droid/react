@@ -63,7 +63,7 @@ void main() {
 
   test('season migration is cosmetic only and config driven', () {
     final source = File(
-      'supabase/migrations/20260819073000_create_season_pass_system.sql',
+      'supabase/migrations/20260819072621_create_season_pass_system.sql',
     ).readAsStringSync();
 
     for (final table in <String>[
