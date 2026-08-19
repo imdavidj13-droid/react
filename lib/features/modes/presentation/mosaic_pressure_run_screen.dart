@@ -20,38 +20,32 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
   static const _tick = Duration(milliseconds: 50);
 
   final Random _random = Random();
-  final List<double> _fill = List<double>.filled(9, 0);
-  final List<double> _rates = List<double>.filled(9, 0);
+  final List<bool> _active = List<bool>.filled(9, false);
 
   Timer? _ticker;
   Timer? _countdownTimer;
   int _countdown = 3;
   int _score = 0;
-  int _maxDanger = 0;
+  int _elapsedMs = 0;
+  int _spawnClockMs = 0;
+  int _peakActive = 0;
   bool _go = false;
   bool _running = false;
   bool _finished = false;
+  bool _newBest = false;
+
+  int get _activeCount => _active.where((value) => value).length;
+
+  int get _spawnIntervalMs {
+    final timePressure = (_elapsedMs ~/ 1000) * 5;
+    final scorePressure = _score * 18;
+    return max(220, 1150 - timePressure - scorePressure);
+  }
 
   @override
   void initState() {
     super.initState();
-    _randomizeRates();
-    unawaited(ReactAudio.play(ReactSoundCue.countdownTick));
-    _countdownTimer = Timer.periodic(const Duration(milliseconds: 650), (_) {
-      if (!mounted || _finished) return;
-      if (_countdown > 1) {
-        setState(() => _countdown -= 1);
-        unawaited(ReactAudio.play(ReactSoundCue.countdownTick));
-      } else if (!_go) {
-        setState(() => _go = true);
-        unawaited(ReactAudio.play(ReactSoundCue.countdownGo));
-      } else {
-        _countdownTimer?.cancel();
-        setState(() => _running = true);
-        unawaited(ReactAudio.play(ReactSoundCue.command));
-        _ticker = Timer.periodic(_tick, _onTick);
-      }
-    });
+    _startCountdown();
   }
 
   @override
@@ -61,59 +55,104 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
     super.dispose();
   }
 
-  void _randomizeRates() {
-    for (var i = 0; i < _rates.length; i++) {
-      _rates[i] = .0018 + _random.nextDouble() * .0034;
-    }
+  void _startCountdown() {
+    ReactAudio.play(ReactSoundCue.countdownTick);
+    _countdownTimer = Timer.periodic(const Duration(milliseconds: 650), (_) {
+      if (!mounted || _finished) return;
+      if (_countdown > 1) {
+        setState(() => _countdown -= 1);
+        ReactAudio.play(ReactSoundCue.countdownTick);
+      } else if (!_go) {
+        setState(() => _go = true);
+        ReactAudio.play(ReactSoundCue.countdownGo);
+      } else {
+        _countdownTimer?.cancel();
+        setState(() => _running = true);
+        _activateRandomTile();
+        _ticker = Timer.periodic(_tick, _onTick);
+      }
+    });
   }
 
   void _onTick(Timer timer) {
     if (!mounted || !_running || _finished) return;
-    final pressure = 1 + min(.85, _score * .012);
-    for (var i = 0; i < _fill.length; i++) {
-      _fill[i] = min(1.0, _fill[i] + _rates[i] * pressure);
+    _elapsedMs += _tick.inMilliseconds;
+    _spawnClockMs += _tick.inMilliseconds;
+
+    while (_spawnClockMs >= _spawnIntervalMs && !_finished) {
+      _spawnClockMs -= _spawnIntervalMs;
+      _activateRandomTile();
     }
-    final fullCount = _fill.where((value) => value >= 1).length;
-    _maxDanger = max(_maxDanger, fullCount);
-    if (fullCount == 9) {
+  }
+
+  void _activateRandomTile() {
+    if (_finished) return;
+    final available = <int>[
+      for (var i = 0; i < _active.length; i++)
+        if (!_active[i]) i,
+    ];
+
+    if (available.isEmpty) {
       _finish();
       return;
     }
-    setState(() {});
+
+    final index = available[_random.nextInt(available.length)];
+    setState(() {
+      _active[index] = true;
+      _peakActive = max(_peakActive, _activeCount);
+    });
+    ReactAudio.play(ReactSoundCue.command);
+
+    if (_activeCount >= 9) {
+      _finish();
+    }
   }
 
   void _tapTile(int index) {
-    if (!_running || _finished) return;
-    final value = _fill[index];
-    if (value < .08) return;
+    if (!_running || _finished || !_active[index]) return;
     setState(() {
-      _fill[index] = 0;
-      _rates[index] = .0018 + _random.nextDouble() * .0038;
+      _active[index] = false;
       _score += 1;
     });
-    unawaited(ReactAudio.play(ReactSoundCue.success));
+    ReactAudio.play(ReactSoundCue.success);
   }
 
   Future<void> _finish() async {
     if (_finished) return;
     _finished = true;
+    _running = false;
     _ticker?.cancel();
-    unawaited(ReactAudio.play(ReactSoundCue.completed));
+    _countdownTimer?.cancel();
+    ReactAudio.play(ReactSoundCue.completed);
+
     final prefs = await SharedPreferences.getInstance();
     final oldBest = prefs.getInt(_bestKey) ?? 0;
     final newBest = _score > oldBest;
     await prefs.setInt(_bestKey, max(oldBest, _score));
     await prefs.setInt(_runsKey, (prefs.getInt(_runsKey) ?? 0) + 1);
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => _MosaicPressureResultScreen(
-          score: _score,
-          danger: _maxDanger,
-          newBest: newBest,
-        ),
-      ),
-    );
+    setState(() => _newBest = newBest);
+  }
+
+  void _restart() {
+    _ticker?.cancel();
+    _countdownTimer?.cancel();
+    setState(() {
+      for (var i = 0; i < _active.length; i++) {
+        _active[i] = false;
+      }
+      _countdown = 3;
+      _score = 0;
+      _elapsedMs = 0;
+      _spawnClockMs = 0;
+      _peakActive = 0;
+      _go = false;
+      _running = false;
+      _finished = false;
+      _newBest = false;
+    });
+    _startCountdown();
   }
 
   @override
@@ -134,9 +173,11 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
                         onPressed: () => Navigator.of(context).pop(),
                         style: IconButton.styleFrom(
                           foregroundColor: ReactColors.textPrimary,
-                          side: BorderSide(color: accent.withValues(alpha: .35)),
+                          side: BorderSide(
+                            color: accent.withValues(alpha: .35),
+                          ),
                         ),
-                        icon: const Icon(Icons.close_rounded),
+                        icon: const Icon(Icons.pause_rounded),
                       ),
                       const SizedBox(width: 8),
                       const Expanded(
@@ -147,7 +188,7 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
                               'MOSAIC',
                               style: TextStyle(
                                 color: ReactColors.textPrimary,
-                                fontSize: 18,
+                                fontSize: 20,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1,
                               ),
@@ -156,7 +197,7 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
                               'PRESSURE GRID',
                               style: TextStyle(
                                 color: accent,
-                                fontSize: 8,
+                                fontSize: 9,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1.4,
                               ),
@@ -165,184 +206,156 @@ class _MosaicPressureRunScreenState extends State<MosaicPressureRunScreen> {
                         ),
                       ),
                       _Metric(label: 'SCORE', value: '$_score'),
+                      const SizedBox(width: 8),
+                      _Metric(label: 'ACTIVE', value: '$_activeCount/9'),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  const _PressureHint(),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: Center(
-                      child: Container(
-                        constraints: const BoxConstraints(maxWidth: 380),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF050A13),
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(
-                            color: accent.withValues(alpha: .45),
-                            width: 2,
-                          ),
+                  const Spacer(),
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 390),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF050A13),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: accent.withValues(alpha: .48),
+                        width: 2,
+                      ),
+                    ),
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: GridView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: 9,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
                         ),
-                        child: GridView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: 9,
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 9,
-                            mainAxisSpacing: 9,
-                          ),
-                          itemBuilder: (context, index) {
-                            final fill = _fill[index];
-                            final color = _tileColor(fill);
-                            return GestureDetector(
-                              onTap: () => _tapTile(index),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(18),
-                                  color: const Color(0xFF07111D),
-                                  border: Border.all(
-                                    color: color.withValues(alpha: .78),
-                                    width: 1.5,
-                                  ),
+                        itemBuilder: (context, index) {
+                          final active = _active[index];
+                          return GestureDetector(
+                            onTap: () => _tapTile(index),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 90),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(22),
+                                color: active
+                                    ? accent.withValues(alpha: .20)
+                                    : const Color(0xFF07101A),
+                                border: Border.all(
+                                  color: active
+                                      ? accent
+                                      : accent.withValues(alpha: .24),
+                                  width: active ? 3.2 : 1.2,
                                 ),
-                                clipBehavior: Clip.antiAlias,
-                                child: Stack(
-                                  alignment: Alignment.bottomCenter,
-                                  children: [
-                                    FractionallySizedBox(
-                                      heightFactor: fill,
-                                      widthFactor: 1,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: color.withValues(alpha: .32),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: color.withValues(alpha: .30),
-                                              blurRadius: 22,
-                                            ),
-                                          ],
+                                boxShadow: active
+                                    ? [
+                                        BoxShadow(
+                                          color: accent.withValues(alpha: .20),
+                                          blurRadius: 18,
                                         ),
-                                      ),
-                                    ),
-                                    Center(
-                                      child: Text(
-                                        '${(fill * 100).round()}',
-                                        style: TextStyle(
-                                          color: fill > .72
-                                              ? Colors.white
-                                              : color,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ),
-                                    if (fill >= 1)
-                                      const Positioned(
-                                        top: 8,
-                                        right: 8,
-                                        child: Icon(
-                                          Icons.warning_rounded,
-                                          color: ReactColors.coral,
-                                          size: 18,
-                                        ),
-                                      ),
-                                  ],
-                                ),
+                                      ]
+                                    : null,
                               ),
-                            );
-                          },
-                        ),
+                              child: Center(
+                                child: active
+                                    ? const Icon(
+                                        Icons.grid_view_rounded,
+                                        color: accent,
+                                        size: 34,
+                                      )
+                                    : Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: ReactColors.textSecondary
+                                                .withValues(alpha: .28),
+                                            width: 2,
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  Text(
-                    '${_fill.where((value) => value >= 1).length}/9 TILES FULL',
-                    style: const TextStyle(
-                      color: ReactColors.textSecondary,
-                      fontSize: 10,
+                  const Spacer(),
+                  const Text(
+                    'CLEAR THE GRID',
+                    style: TextStyle(
+                      color: accent,
+                      fontSize: 16,
                       fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
+                      letterSpacing: 1.5,
                     ),
                   ),
-                ],
-              ),
-            ),
-            if (!_running)
-              Positioned.fill(
-                child: ColoredBox(
-                  color: ReactColors.background.withValues(alpha: .96),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: .05),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: accent.withValues(alpha: .24),
+                      ),
+                    ),
+                    child: Row(
                       children: [
                         const Text(
-                          'PRESSURE GRID',
+                          'PRESSURE',
                           style: TextStyle(
-                            color: accent,
-                            fontSize: 12,
+                            color: ReactColors.textSecondary,
+                            fontSize: 8,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
+                            letterSpacing: 1.1,
                           ),
                         ),
-                        const SizedBox(height: 18),
-                        Text(
-                          _go ? 'GO' : '$_countdown',
-                          style: TextStyle(
-                            color: _go ? accent : ReactColors.textPrimary,
-                            fontSize: _go ? 86 : 112,
-                            fontWeight: FontWeight.w900,
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(99),
+                            child: LinearProgressIndicator(
+                              value: ((1150 - _spawnIntervalMs) / 930)
+                                  .clamp(0.0, 1.0),
+                              minHeight: 7,
+                              backgroundColor: accent.withValues(alpha: .08),
+                              valueColor:
+                                  const AlwaysStoppedAnimation<Color>(accent),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
+                ],
               ),
+            ),
+            if (!_running && !_finished) _CountdownOverlay(
+              count: _countdown,
+              go: _go,
+            ),
+            if (_finished) _ResultOverlay(
+              score: _score,
+              peakActive: _peakActive,
+              newBest: _newBest,
+              onRestart: _restart,
+              onExit: () => Navigator.of(context).pop(),
+            ),
           ],
         ),
       ),
     );
   }
-
-  Color _tileColor(double fill) {
-    if (fill >= .82) return ReactColors.coral;
-    if (fill >= .55) return const Color(0xFFFFD33D);
-    if (fill >= .28) return ReactColors.purple;
-    return ReactColors.electricBlueBright;
-  }
-}
-
-class _PressureHint extends StatelessWidget {
-  const _PressureHint();
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          color: ReactColors.coral.withValues(alpha: .07),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: ReactColors.coral.withValues(alpha: .30)),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.grid_view_rounded, color: ReactColors.coral, size: 22),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'TAP TILES TO DRAIN THEM. IF ALL 9 FILL, THE RUN ENDS.',
-                style: TextStyle(
-                  color: ReactColors.textPrimary,
-                  fontSize: 9,
-                  height: 1.35,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .7,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
 }
 
 class _Metric extends StatelessWidget {
@@ -353,11 +366,14 @@ class _Metric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        minWidth: 62,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: ReactColors.coral.withValues(alpha: .06),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: ReactColors.coral.withValues(alpha: .25)),
+          border: Border.all(
+            color: ReactColors.coral.withValues(alpha: .25),
+          ),
         ),
         child: Column(
           children: [
@@ -369,11 +385,12 @@ class _Metric extends StatelessWidget {
                 fontWeight: FontWeight.w900,
               ),
             ),
+            const SizedBox(height: 2),
             Text(
               value,
               style: const TextStyle(
                 color: ReactColors.coral,
-                fontSize: 18,
+                fontSize: 17,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -382,93 +399,112 @@ class _Metric extends StatelessWidget {
       );
 }
 
-class _MosaicPressureResultScreen extends StatelessWidget {
-  const _MosaicPressureResultScreen({
+class _CountdownOverlay extends StatelessWidget {
+  const _CountdownOverlay({required this.count, required this.go});
+
+  final int count;
+  final bool go;
+
+  @override
+  Widget build(BuildContext context) => Positioned.fill(
+        child: ColoredBox(
+          color: ReactColors.background.withValues(alpha: .96),
+          child: Center(
+            child: Text(
+              go ? 'GO' : '$count',
+              style: TextStyle(
+                color: go ? ReactColors.coral : ReactColors.textPrimary,
+                fontSize: go ? 86 : 112,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+class _ResultOverlay extends StatelessWidget {
+  const _ResultOverlay({
     required this.score,
-    required this.danger,
+    required this.peakActive,
     required this.newBest,
+    required this.onRestart,
+    required this.onExit,
   });
 
   final int score;
-  final int danger;
+  final int peakActive;
   final bool newBest;
+  final VoidCallback onRestart;
+  final VoidCallback onExit;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: ReactColors.background,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              children: [
-                const Spacer(),
-                const Icon(Icons.grid_view_rounded, color: ReactColors.coral, size: 66),
-                const SizedBox(height: 14),
-                const Text(
-                  'GRID SATURATED',
-                  style: TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  '$score',
-                  style: const TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 92,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  newBest ? 'NEW PRESSURE BEST' : 'TILES DRAINED',
-                  style: TextStyle(
-                    color: newBest ? ReactColors.lime : ReactColors.textSecondary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  'PEAK DANGER  $danger/9',
-                  style: const TextStyle(
+  Widget build(BuildContext context) => Positioned.fill(
+        child: ColoredBox(
+          color: ReactColors.background.withValues(alpha: .97),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.grid_view_rounded,
                     color: ReactColors.coral,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
+                    size: 64,
                   ),
-                ),
-                const Spacer(),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: FilledButton(
-                    onPressed: () => Navigator.of(context).pushReplacement(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const MosaicPressureRunScreen(),
+                  const SizedBox(height: 14),
+                  Text(
+                    newBest ? 'NEW BEST' : 'GRID FULL',
+                    style: TextStyle(
+                      color: newBest
+                          ? ReactColors.lime
+                          : ReactColors.textPrimary,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '$score',
+                    style: const TextStyle(
+                      color: ReactColors.coral,
+                      fontSize: 76,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  Text(
+                    'PEAK PRESSURE  $peakActive/9',
+                    style: const TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: 240,
+                    height: 54,
+                    child: FilledButton(
+                      onPressed: onRestart,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: ReactColors.coral,
+                        foregroundColor: Colors.black,
+                      ),
+                      child: const Text(
+                        'PLAY AGAIN',
+                        style: TextStyle(fontWeight: FontWeight.w900),
                       ),
                     ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: ReactColors.coral,
-                      foregroundColor: Colors.black,
-                    ),
-                    child: const Text(
-                      'PLAY AGAIN',
-                      style: TextStyle(fontWeight: FontWeight.w900),
-                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: onExit,
                     child: const Text('BACK TO MOSAIC'),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
