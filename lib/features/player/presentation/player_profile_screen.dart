@@ -9,6 +9,8 @@ import '../../gameplay/domain/react_run_result.dart';
 import '../../leaderboard/data/local_leaderboard_repository.dart';
 import '../../leaderboard/domain/leaderboard_query.dart';
 import '../../leaderboard/domain/leaderboard_snapshot.dart';
+import '../../season/data/season_cosmetic_state.dart';
+import '../../season/presentation/season_cosmetic_layers.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../data/local_player_profile.dart';
 import '../data/player_profile_repository.dart';
@@ -503,6 +505,23 @@ class _IdentityHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final badge = SeasonCosmeticState.equippedReward('profile_badge');
+    final title = SeasonCosmeticState.equippedReward('title');
+    final emblem = SeasonCosmeticState.equippedReward('emblem');
+    final codeStyle = SeasonCosmeticState.equippedReward('player_code_style');
+    final badgeAccent = badge == null
+        ? ReactColors.electricBlueBright
+        : SeasonCosmeticLayers.accentForReward(badge);
+    final titleAccent = title == null
+        ? ReactColors.electricBlueBright
+        : SeasonCosmeticLayers.accentForReward(title);
+    final emblemAccent = emblem == null
+        ? ReactColors.electricBlueBright
+        : SeasonCosmeticLayers.accentForReward(emblem);
+    final codeAccent = codeStyle == null
+        ? ReactColors.electricBlueBright
+        : SeasonCosmeticLayers.accentForReward(codeStyle);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
       decoration: BoxDecoration(
@@ -546,7 +565,15 @@ class _IdentityHero extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          if (badge != null) ...[
+            const SizedBox(height: 13),
+            _SeasonIdentityPill(
+              icon: Icons.workspace_premium_rounded,
+              label: badge.name,
+              color: badgeAccent,
+            ),
+          ] else
+            const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -571,15 +598,73 @@ class _IdentityHero extends StatelessWidget {
               ),
             ],
           ),
-          Text(
-            profile.playerCode,
-            style: const TextStyle(
-              color: ReactColors.electricBlueBright,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.4,
+          if (title != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              title.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: titleAccent,
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.25,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ] else
+            const SizedBox(height: 2),
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: codeStyle == null ? 0 : 10,
+              vertical: codeStyle == null ? 0 : 6,
+            ),
+            decoration: codeStyle == null
+                ? null
+                : BoxDecoration(
+                    color: codeAccent.withValues(alpha: .075),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: codeAccent.withValues(alpha: .42),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: codeAccent.withValues(alpha: .08),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (emblem != null) ...[
+                  Icon(Icons.bolt_rounded, color: emblemAccent, size: 15),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  profile.playerCode,
+                  style: TextStyle(
+                    color: codeAccent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: codeStyle == null ? 1.4 : 1.8,
+                  ),
+                ),
+              ],
             ),
           ),
+          if (emblem != null) ...[
+            const SizedBox(height: 5),
+            Text(
+              emblem.name,
+              style: TextStyle(
+                color: emblemAccent.withValues(alpha: .9),
+                fontSize: 7.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .9,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           _StatusPill(profile: profile),
           if (onRemovePhoto != null) ...[
@@ -594,6 +679,51 @@ class _IdentityHero extends StatelessWidget {
             const SizedBox(height: 8),
             const LinearProgressIndicator(minHeight: 2),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SeasonIdentityPill extends StatelessWidget {
+  const _SeasonIdentityPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 210),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: color.withValues(alpha: .42)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 13),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .75,
+              ),
+            ),
+          ),
         ],
       ),
     );
