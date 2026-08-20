@@ -101,10 +101,15 @@ void main() {
       'lib/features/season/presentation/home_season_strip.dart',
     ).readAsStringSync();
 
+    // Assert the stable feature contract rather than exact marketing copy so
+    // harmless visual/copy iterations do not break this regression test.
     expect(screen, contains("Tab(text: 'PASS')"));
     expect(screen, contains("Tab(text: 'MISSIONS')"));
     expect(screen, contains("Tab(text: 'SEASON INFO')"));
-    expect(screen, contains('UNLOCKS RETROACTIVELY WITH PREMIUM'));
+    expect(screen, contains("title: 'FREE + PREMIUM'"));
+    expect(screen, contains('unlock retroactively'));
+    expect(screen, contains("title: 'NO PAY-TO-WIN'"));
+    expect(screen, contains('SeasonRewardPreview'));
     expect(homeStrip, contains('CHARGE'));
     expect(homeStrip, contains('SeasonScreen'));
   });
