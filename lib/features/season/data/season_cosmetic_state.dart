@@ -25,8 +25,12 @@ abstract final class SeasonCosmeticState {
   /// report it as EQUIPPED.
   static const Set<String> equippableKinds = <String>{
     'profile_frame',
+    'profile_badge',
+    'player_code_style',
     'home_theme',
     'mode_card_skin',
+    'title',
+    'emblem',
   };
 
   static Future<void> load() async {
@@ -54,9 +58,6 @@ abstract final class SeasonCosmeticState {
       }
     }
 
-    // Remove legacy selections for kinds that once appeared equippable before
-    // they had a real renderer. This prevents stale invisible equipment from
-    // surviving an app upgrade.
     for (final key in prefs.getKeys()) {
       if (!key.startsWith(_equippedPrefix)) continue;
       final kind = key.substring(_equippedPrefix.length);
