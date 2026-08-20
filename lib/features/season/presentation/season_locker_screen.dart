@@ -6,6 +6,7 @@ import '../data/season_cosmetic_state.dart';
 import '../data/season_repository.dart';
 import '../domain/season_models.dart';
 import 'season_cosmetic_layers.dart';
+import 'season_reward_preview.dart';
 
 class SeasonLockerScreen extends StatefulWidget {
   const SeasonLockerScreen({super.key});
@@ -63,34 +64,34 @@ class _SeasonLockerScreenState extends State<SeasonLockerScreen> {
                   child: data == null
                       ? const Center(child: CircularProgressIndicator())
                       : data.rewards.isEmpty
-                      ? const _EmptyLocker()
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(18, 8, 18, 30),
-                          itemCount: data.rewards.length + 1,
-                          separatorBuilder: (_, _) => const SizedBox(height: 9),
-                          itemBuilder: (context, index) {
-                            if (index == 0) return _LockerSummary(data: data);
-                            final reward = data.rewards[index - 1];
-                            final seasonEquippable =
-                                SeasonCosmeticState.isEquippable(reward);
-                            final implementedPack =
-                                LocalShopState.isImplemented(reward.rewardKey);
-                            final equipped = seasonEquippable
-                                ? SeasonCosmeticState.isEquipped(reward)
-                                : data.equippedPackIds.contains(reward.rewardKey);
-                            final usable = seasonEquippable || implementedPack;
-                            return _LockerRewardCard(
-                              reward: reward,
-                              equipped: equipped,
-                              usable: usable,
-                              busy: _busyKey == reward.rewardKey,
-                              onEquip: () => _equip(reward),
-                              onClear: equipped && seasonEquippable
-                                  ? () => _clear(reward)
-                                  : null,
-                            );
-                          },
-                        ),
+                          ? const _EmptyLocker()
+                          : ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(18, 8, 18, 30),
+                              itemCount: data.rewards.length + 1,
+                              separatorBuilder: (_, _) => const SizedBox(height: 9),
+                              itemBuilder: (context, index) {
+                                if (index == 0) return _LockerSummary(data: data);
+                                final reward = data.rewards[index - 1];
+                                final seasonEquippable =
+                                    SeasonCosmeticState.isEquippable(reward);
+                                final implementedPack =
+                                    LocalShopState.isImplemented(reward.rewardKey);
+                                final equipped = seasonEquippable
+                                    ? SeasonCosmeticState.isEquipped(reward)
+                                    : data.equippedPackIds.contains(reward.rewardKey);
+                                final usable = seasonEquippable || implementedPack;
+                                return _LockerRewardCard(
+                                  reward: reward,
+                                  equipped: equipped,
+                                  usable: usable,
+                                  busy: _busyKey == reward.rewardKey,
+                                  onEquip: () => _equip(reward),
+                                  onClear: equipped && seasonEquippable
+                                      ? () => _clear(reward)
+                                      : null,
+                                );
+                              },
+                            ),
                 ),
               ],
             );
@@ -107,47 +108,45 @@ class _LockerHeader extends StatelessWidget {
   final VoidCallback onBack;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 6, 18, 8),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onBack,
-            color: ReactColors.textPrimary,
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-          ),
-          const SizedBox(width: 4),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'SEASON LOCKER',
-                  style: TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'OWNED IS NOT THE SAME AS EQUIPPED',
-                  style: TextStyle(
-                    color: ReactColors.electricBlueBright,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .9,
-                  ),
-                ),
-              ],
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(8, 6, 18, 8),
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: onBack,
+              color: ReactColors.textPrimary,
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+            const SizedBox(width: 4),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'SEASON LOCKER',
+                    style: TextStyle(
+                      color: ReactColors.textPrimary,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'PREVIEW IT • SEE WHERE IT APPEARS • EQUIP IT',
+                    style: TextStyle(
+                      color: ReactColors.electricBlueBright,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .9,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _LockerData {
@@ -157,11 +156,11 @@ class _LockerData {
   final Set<String> equippedPackIds;
 
   Iterable<SeasonReward> get equippedRewards => rewards.where((reward) {
-    if (SeasonCosmeticState.isEquippable(reward)) {
-      return SeasonCosmeticState.isEquipped(reward);
-    }
-    return equippedPackIds.contains(reward.rewardKey);
-  });
+        if (SeasonCosmeticState.isEquippable(reward)) {
+          return SeasonCosmeticState.isEquipped(reward);
+        }
+        return equippedPackIds.contains(reward.rewardKey);
+      });
 
   static Future<_LockerData> load() async {
     final season = await const SeasonRepository().loadActiveSeason();
@@ -238,13 +237,13 @@ class _LockerSummary extends StatelessWidget {
           const SizedBox(height: 7),
           Text(
             equipped.isEmpty
-                ? 'Tap EQUIP on an available reward below. A reward only shows EQUIPPED when the game has a real destination for it.'
+                ? 'Tap EQUIP on an available reward below. The preview shows what the cosmetic is intended to look like before you equip it.'
                 : equipped
-                      .map(
-                        (reward) =>
-                            '• ${reward.name} — ${_kindDestination(reward.kind)}',
-                      )
-                      .join('\n'),
+                    .map(
+                      (reward) =>
+                          '• ${reward.name} — ${_kindDestination(reward.kind)}',
+                    )
+                    .join('\n'),
             style: const TextStyle(
               color: ReactColors.textSecondary,
               fontSize: 9,
@@ -278,7 +277,10 @@ class _LockerRewardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = SeasonCosmeticLayers.accentForReward(reward);
-    final trackColor = reward.isPremium ? ReactColors.purple : ReactColors.electricBlueBright;
+    final trackColor = reward.isPremium
+        ? ReactColors.purple
+        : ReactColors.electricBlueBright;
+
     return Container(
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
@@ -391,6 +393,8 @@ class _LockerRewardCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 11),
+          SeasonRewardPreview(reward: reward, height: 92),
+          const SizedBox(height: 11),
           _InfoLine(label: 'WHAT IT DOES', value: _kindEffect(reward.kind)),
           const SizedBox(height: 5),
           _InfoLine(label: 'YOU SEE IT', value: _kindDestination(reward.kind)),
@@ -400,13 +404,13 @@ class _LockerRewardCard extends StatelessWidget {
             value: equipped
                 ? 'Equipped now.'
                 : usable
-                ? 'Owned and ready to equip.'
-                : 'Owned, but this renderer is still being connected.',
+                    ? 'Owned and ready to equip.'
+                    : 'Owned, but this renderer is still being connected.',
             valueColor: equipped
                 ? ReactColors.lime
                 : usable
-                ? ReactColors.textPrimary
-                : ReactColors.textSecondary,
+                    ? ReactColors.textPrimary
+                    : ReactColors.textSecondary,
           ),
           if (reward.description.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -451,36 +455,34 @@ class _InfoLine extends StatelessWidget {
   final Color valueColor;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 82,
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 7.5,
-              fontWeight: FontWeight.w900,
-              letterSpacing: .5,
+  Widget build(BuildContext context) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 82,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 7.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .5,
+              ),
             ),
           ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              color: valueColor,
-              fontSize: 8.8,
-              height: 1.28,
-              fontWeight: FontWeight.w700,
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: valueColor,
+                fontSize: 8.8,
+                height: 1.28,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
-        ),
-      ],
-    );
-  }
+        ],
+      );
 }
 
 class _StatusPill extends StatelessWidget {
@@ -495,56 +497,52 @@ class _StatusPill extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .09),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: color.withValues(alpha: .28)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 12),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 7.3,
-              fontWeight: FontWeight.w900,
-              letterSpacing: .35,
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .09),
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: color.withValues(alpha: .28)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 12),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 7.3,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .35,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+      );
 }
 
 class _EmptyLocker extends StatelessWidget {
   const _EmptyLocker();
 
   @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(32),
-        child: Text(
-          'REACH PASS TIERS TO ADD\nCOSMETICS TO YOUR LOCKER',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 10,
-            height: 1.5,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.1,
+  Widget build(BuildContext context) => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text(
+            'REACH PASS TIERS TO ADD\nCOSMETICS TO YOUR LOCKER',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 10,
+              height: 1.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.1,
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
 }
 
 String _kindLabel(String kind) => switch (kind) {
