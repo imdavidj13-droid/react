@@ -91,6 +91,81 @@ class SeasonProfileLayer extends StatelessWidget {
   }
 }
 
+/// Makes an equipped player-code cosmetic visibly affect the Friends surface.
+///
+/// The treatment is deliberately limited to the local player's networking
+/// screen so another player's identity never inherits this device's cosmetic.
+class SeasonFriendsLayer extends StatelessWidget {
+  const SeasonFriendsLayer({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = SeasonCosmeticState.equippedReward('player_code_style');
+    if (style == null) return child;
+
+    final accent = SeasonCosmeticLayers.accentForReward(style);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        child,
+        IgnorePointer(
+          child: SafeArea(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CustomPaint(
+                  painter: _PlayerCodeTracePainter(accent: accent),
+                ),
+                Positioned(
+                  right: 14,
+                  top: 72,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF040914).withValues(alpha: .88),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: accent.withValues(alpha: .58),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accent.withValues(alpha: .12),
+                          blurRadius: 14,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.memory_rounded, color: accent, size: 12),
+                        const SizedBox(width: 5),
+                        Text(
+                          style.name.toUpperCase(),
+                          style: TextStyle(
+                            color: accent,
+                            fontSize: 6.8,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: .8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SeasonGridPainter extends CustomPainter {
   const _SeasonGridPainter({required this.accent});
 
@@ -124,5 +199,58 @@ class _SeasonGridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SeasonGridPainter oldDelegate) =>
+      oldDelegate.accent != accent;
+}
+
+class _PlayerCodeTracePainter extends CustomPainter {
+  const _PlayerCodeTracePainter({required this.accent});
+
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final trace = Paint()
+      ..color = accent.withValues(alpha: .19)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final glow = Paint()
+      ..color = accent.withValues(alpha: .08)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5;
+
+    final left = Path()
+      ..moveTo(8, 118)
+      ..lineTo(24, 118)
+      ..lineTo(34, 128)
+      ..lineTo(34, size.height * .42)
+      ..lineTo(18, size.height * .42)
+      ..lineTo(8, size.height * .42 + 10);
+    final right = Path()
+      ..moveTo(size.width - 8, size.height * .60)
+      ..lineTo(size.width - 24, size.height * .60)
+      ..lineTo(size.width - 34, size.height * .60 + 10)
+      ..lineTo(size.width - 34, size.height - 78)
+      ..lineTo(size.width - 18, size.height - 78)
+      ..lineTo(size.width - 8, size.height - 68);
+
+    canvas
+      ..drawPath(left, glow)
+      ..drawPath(right, glow)
+      ..drawPath(left, trace)
+      ..drawPath(right, trace);
+
+    final node = Paint()..color = accent.withValues(alpha: .68);
+    for (final point in <Offset>[
+      const Offset(24, 118),
+      Offset(34, size.height * .42),
+      Offset(size.width - 24, size.height * .60),
+      Offset(size.width - 34, size.height - 78),
+    ]) {
+      canvas.drawCircle(point, 2.2, node);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PlayerCodeTracePainter oldDelegate) =>
       oldDelegate.accent != accent;
 }
