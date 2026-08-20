@@ -36,6 +36,7 @@ abstract final class LocalShopState {
   static const impactCommandsPackId = 'impact_commands';
 
   static const proShareCardsPackId = 'pro_share_cards';
+  static const overdriveShareCardsPackId = 'share_style_overdrive';
   static const _seasonOwnedPacksKey = 'shop_season_owned_packs';
 
   static const Set<String> _builtInOwnedPacks = {corePackId};
@@ -71,6 +72,7 @@ abstract final class LocalShopState {
   };
   static const Set<String> _implementedShareStyles = {
     proShareCardsPackId,
+    overdriveShareCardsPackId,
   };
 
   static Set<String> _seasonOwnedPackIds = <String>{};
@@ -190,8 +192,9 @@ abstract final class LocalShopState {
       return;
     }
 
-    if (packId == proShareCardsPackId) {
-      await ReactCosmetics.equipShareStyle(ReactShareStyle.pro);
+    if (isImplementedShareStyle(packId)) {
+      final style = ReactShareStyle.fromPackId(packId);
+      if (style != null) await ReactCosmetics.equipShareStyle(style);
     }
   }
 
