@@ -115,7 +115,7 @@ class _HomeSeasonStripState extends State<HomeSeasonStrip> {
                 ),
                 TextButton(
                   onPressed: _retry,
-                  child: Text(
+                  child: const Text(
                     'RETRY',
                     style: TextStyle(
                       fontSize: 8,
