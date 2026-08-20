@@ -27,6 +27,8 @@ class _HomeSeasonStripState extends State<HomeSeasonStrip> {
     _season = _repository.loadActiveSeason();
   }
 
+  void _retry() => setState(_reload);
+
   Future<void> _openSeason() async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const SeasonScreen()),
@@ -48,8 +50,84 @@ class _HomeSeasonStripState extends State<HomeSeasonStrip> {
     return FutureBuilder<SeasonSnapshot?>(
       future: _season,
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _SeasonStripShell(
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'LOADING SEASON PASS…',
+                    style: TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .8,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         final season = snapshot.data;
-        if (season == null) return const SizedBox.shrink();
+        if (season == null) {
+          return _SeasonStripShell(
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.cloud_off_outlined,
+                  size: 19,
+                  color: ReactColors.coral,
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'SEASON PASS UNAVAILABLE',
+                        style: TextStyle(
+                          color: ReactColors.textPrimary,
+                          fontSize: 8.8,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .65,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Could not load the active season.',
+                        style: TextStyle(
+                          color: ReactColors.textSecondary,
+                          fontSize: 7.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: _retry,
+                  child: Text(
+                    'RETRY',
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
 
         final days = (season.remaining.inHours / 24).ceil();
         return Padding(
@@ -166,6 +244,29 @@ class _HomeSeasonStripState extends State<HomeSeasonStrip> {
           ),
         );
       },
+    );
+  }
+}
+
+class _SeasonStripShell extends StatelessWidget {
+  const _SeasonStripShell({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 5, 18, 8),
+      child: Container(
+        height: 49,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF07111D),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: .08)),
+        ),
+        child: child,
+      ),
     );
   }
 }
