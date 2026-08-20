@@ -46,6 +46,10 @@ abstract final class SeasonCosmeticLayers {
   }
 }
 
+/// Screen-level profile cosmetics belong here only when they genuinely affect
+/// the whole profile surface. Identity cosmetics such as badges, titles and
+/// emblems must be rendered inside the profile identity card instead of being
+/// floated over the page header.
 class SeasonProfileLayer extends StatelessWidget {
   const SeasonProfileLayer({required this.child, super.key});
 
@@ -54,86 +58,34 @@ class SeasonProfileLayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final frame = SeasonCosmeticState.equippedReward('profile_frame');
-    final badge = SeasonCosmeticState.equippedReward('profile_badge');
-    final title = SeasonCosmeticState.equippedReward('title');
-    final emblem = SeasonCosmeticState.equippedReward('emblem');
-    if (frame == null && badge == null && title == null && emblem == null) {
-      return child;
-    }
-    final accent = SeasonCosmeticLayers.accentForReward(
-      frame ?? badge ?? title ?? emblem!,
-    );
+    if (frame == null) return child;
 
+    final accent = SeasonCosmeticLayers.accentForReward(frame);
     return Stack(
       fit: StackFit.expand,
       children: [
         child,
-        if (frame != null)
-          IgnorePointer(
-            child: SafeArea(
-              child: Container(
-                margin: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: accent.withValues(alpha: .75),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: accent.withValues(alpha: .12),
-                      blurRadius: 18,
-                      spreadRadius: 1,
-                    ),
-                  ],
+        IgnorePointer(
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: accent.withValues(alpha: .75),
+                  width: 2,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(alpha: .12),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
             ),
           ),
-        if (badge != null || title != null || emblem != null)
-          Positioned(
-            left: 60,
-            right: 60,
-            top: MediaQuery.paddingOf(context).top + 8,
-            child: IgnorePointer(
-              child: Center(
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 230),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xE607111D),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: accent.withValues(alpha: .42)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (emblem != null) ...[
-                        Icon(Icons.bolt_rounded, color: accent, size: 14),
-                        const SizedBox(width: 5),
-                      ],
-                      Flexible(
-                        child: Text(
-                          title?.name ?? badge?.name ?? emblem?.name ?? '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: accent,
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: .8,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+        ),
       ],
     );
   }
