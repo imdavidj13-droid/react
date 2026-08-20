@@ -35,8 +35,7 @@ class _SeasonLockerScreenState extends State<SeasonLockerScreen> {
       } else if (LocalShopState.isImplemented(reward.rewardKey)) {
         await LocalShopState.equip(reward.rewardKey);
       }
-      if (!mounted) return;
-      setState(_reload);
+      if (mounted) setState(_reload);
     } finally {
       if (mounted) setState(() => _busyKey = null);
     }
@@ -59,45 +58,7 @@ class _SeasonLockerScreenState extends State<SeasonLockerScreen> {
             final data = snapshot.data;
             return Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 6, 18, 8),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        color: ReactColors.textPrimary,
-                        icon: const Icon(Icons.arrow_back_rounded),
-                      ),
-                      const SizedBox(width: 4),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'SEASON LOCKER',
-                              style: TextStyle(
-                                color: ReactColors.textPrimary,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'SEE WHAT EACH REWARD CHANGES AND WHERE IT APPEARS',
-                              style: TextStyle(
-                                color: ReactColors.textSecondary,
-                                fontSize: 8.2,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: .65,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _LockerHeader(onBack: () => Navigator.of(context).pop()),
                 Expanded(
                   child: data == null
                       ? const Center(child: CircularProgressIndicator())
@@ -135,6 +96,55 @@ class _SeasonLockerScreenState extends State<SeasonLockerScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _LockerHeader extends StatelessWidget {
+  const _LockerHeader({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 6, 18, 8),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: onBack,
+            color: ReactColors.textPrimary,
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          ),
+          const SizedBox(width: 4),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SEASON LOCKER',
+                  style: TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'OWNED IS NOT THE SAME AS EQUIPPED',
+                  style: TextStyle(
+                    color: ReactColors.electricBlueBright,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .9,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -185,14 +195,16 @@ class _LockerSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final equipped = data.equippedRewards.toList();
+    final equipped = data.equippedRewards.toList(growable: false);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: ReactColors.electricBlueBright.withValues(alpha: .055),
-        borderRadius: BorderRadius.circular(17),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF07182B), Color(0xFF0D0A1F)],
+        ),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: ReactColors.electricBlueBright.withValues(alpha: .22),
+          color: ReactColors.electricBlueBright.withValues(alpha: .25),
         ),
       ),
       child: Column(
@@ -207,33 +219,36 @@ class _LockerSummary extends StatelessWidget {
                 color: equipped.isEmpty
                     ? ReactColors.electricBlueBright
                     : ReactColors.lime,
-                size: 19,
+                size: 20,
               ),
               const SizedBox(width: 8),
               Text(
                 equipped.isEmpty
-                    ? 'NOTHING EQUIPPED'
-                    : '${equipped.length} EQUIPPED',
+                    ? 'NOTHING EQUIPPED RIGHT NOW'
+                    : '${equipped.length} COSMETIC${equipped.length == 1 ? '' : 'S'} EQUIPPED',
                 style: const TextStyle(
                   color: ReactColors.textPrimary,
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: .7,
+                  letterSpacing: .65,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 7),
           Text(
             equipped.isEmpty
-                ? 'Only rewards with a live visual renderer can be equipped. Owned rewards that are not wired yet are clearly marked below.'
+                ? 'Tap EQUIP on an available reward below. A reward only shows EQUIPPED when the game has a real destination for it.'
                 : equipped
-                      .map((reward) => '${reward.name} → ${_kindDestination(reward.kind)}')
+                      .map(
+                        (reward) =>
+                            '• ${reward.name} — ${_kindDestination(reward.kind)}',
+                      )
                       .join('\n'),
             style: const TextStyle(
               color: ReactColors.textSecondary,
               fontSize: 9,
-              height: 1.4,
+              height: 1.45,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -263,17 +278,16 @@ class _LockerRewardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = SeasonCosmeticLayers.accentForReward(reward);
-    final destination = _kindDestination(reward.kind);
-    final effect = _kindEffect(reward.kind);
+    final trackColor = reward.isPremium ? ReactColors.purple : ReactColors.electricBlueBright;
     return Container(
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: const Color(0xFF08111C),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(17),
         border: Border.all(
           color: equipped
-              ? ReactColors.lime.withValues(alpha: .55)
-              : Colors.white.withValues(alpha: .07),
+              ? ReactColors.lime.withValues(alpha: .52)
+              : accent.withValues(alpha: .13),
         ),
       ),
       child: Column(
@@ -287,7 +301,7 @@ class _LockerRewardCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: .09),
                   borderRadius: BorderRadius.circular(13),
-                  border: Border.all(color: accent.withValues(alpha: .28)),
+                  border: Border.all(color: accent.withValues(alpha: .27)),
                 ),
                 child: Icon(_kindIcon(reward.kind), color: accent, size: 21),
               ),
@@ -298,22 +312,41 @@ class _LockerRewardCard extends StatelessWidget {
                   children: [
                     Text(
                       reward.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: ReactColors.textPrimary,
                         fontSize: 11,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: .45,
+                        letterSpacing: .4,
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Text(
-                      '${_kindLabel(reward.kind)}  •  TIER ${reward.tier}',
-                      style: TextStyle(
-                        color: accent,
-                        fontSize: 8.3,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: .7,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _kindLabel(reward.kind),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: accent,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: .65,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          '${reward.isPremium ? 'PREMIUM' : 'FREE'} • T${reward.tier}',
+                          style: TextStyle(
+                            color: trackColor,
+                            fontSize: 7.3,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -321,8 +354,8 @@ class _LockerRewardCard extends StatelessWidget {
               const SizedBox(width: 8),
               if (busy)
                 const SizedBox(
-                  width: 28,
-                  height: 28,
+                  width: 27,
+                  height: 27,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               else if (equipped)
@@ -357,37 +390,38 @@ class _LockerRewardCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 10),
-          _InfoLine(label: 'CHANGES', value: effect),
-          const SizedBox(height: 4),
-          _InfoLine(label: 'VISIBLE IN', value: destination),
+          const SizedBox(height: 11),
+          _InfoLine(label: 'WHAT IT DOES', value: _kindEffect(reward.kind)),
+          const SizedBox(height: 5),
+          _InfoLine(label: 'YOU SEE IT', value: _kindDestination(reward.kind)),
+          const SizedBox(height: 5),
+          _InfoLine(
+            label: 'STATUS',
+            value: equipped
+                ? 'Equipped now.'
+                : usable
+                ? 'Owned and ready to equip.'
+                : 'Owned, but this renderer is still being connected.',
+            valueColor: equipped
+                ? ReactColors.lime
+                : usable
+                ? ReactColors.textPrimary
+                : ReactColors.textSecondary,
+          ),
           if (reward.description.isNotEmpty) ...[
-            const SizedBox(height: 7),
+            const SizedBox(height: 8),
             Text(
               reward.description,
               style: const TextStyle(
                 color: ReactColors.textSecondary,
-                fontSize: 8.8,
+                fontSize: 8.5,
                 height: 1.35,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ],
-          if (!usable) ...[
-            const SizedBox(height: 8),
-            const Text(
-              'OWNED, BUT NOT EQUIPPABLE YET — THIS VISUAL SURFACE IS NOT WIRED TO THE GAME YET.',
-              style: TextStyle(
-                color: ReactColors.textSecondary,
-                fontSize: 8,
-                height: 1.35,
-                fontWeight: FontWeight.w900,
-                letterSpacing: .35,
-              ),
-            ),
-          ],
           if (equipped && onClear != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
@@ -406,10 +440,15 @@ class _LockerRewardCard extends StatelessWidget {
 }
 
 class _InfoLine extends StatelessWidget {
-  const _InfoLine({required this.label, required this.value});
+  const _InfoLine({
+    required this.label,
+    required this.value,
+    this.valueColor = ReactColors.textPrimary,
+  });
 
   final String label;
   final String value;
+  final Color valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -417,24 +456,24 @@ class _InfoLine extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 70,
+          width: 82,
           child: Text(
             label,
             style: const TextStyle(
               color: ReactColors.textSecondary,
-              fontSize: 7.8,
+              fontSize: 7.5,
               fontWeight: FontWeight.w900,
-              letterSpacing: .55,
+              letterSpacing: .5,
             ),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              color: ReactColors.textPrimary,
+            style: TextStyle(
+              color: valueColor,
               fontSize: 8.8,
-              height: 1.25,
+              height: 1.28,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -473,9 +512,9 @@ class _StatusPill extends StatelessWidget {
             label,
             style: TextStyle(
               color: color,
-              fontSize: 7.5,
+              fontSize: 7.3,
               fontWeight: FontWeight.w900,
-              letterSpacing: .4,
+              letterSpacing: .35,
             ),
           ),
         ],
@@ -516,34 +555,34 @@ String _kindLabel(String kind) => switch (kind) {
       'share_style' => 'SHARE / RESULT CARD',
       'profile_frame' => 'PROFILE FRAME',
       'profile_badge' => 'PROFILE BADGE',
-      'player_code_style' => 'PLAYER CODE',
+      'player_code_style' => 'PLAYER CODE STYLE',
       'home_theme' => 'HOME THEME',
       'score_effect' => 'SCORE EFFECT',
       'success_effect' => 'SUCCESS EFFECT',
       'failure_effect' => 'FAILURE EFFECT',
       'mode_card_skin' => 'MODE CARD SKIN',
-      'title' => 'TITLE',
-      'emblem' => 'ICON / EMBLEM',
+      'title' => 'PLAYER TITLE',
+      'emblem' => 'PLAYER EMBLEM',
       _ => kind.replaceAll('_', ' ').toUpperCase(),
     };
 
 String _kindDestination(String kind) => switch (kind) {
-      'reaction_pack' => 'All gameplay modes',
-      'command_style' => 'Gameplay command text',
-      'countdown_style' => '3–2–1 launch countdown',
-      'sound_pack' => 'Gameplay audio cues',
-      'share_style' => 'Result sharing screen',
-      'profile_frame' => 'Player Profile screen border',
-      'profile_badge' => 'Player Profile header',
-      'player_code_style' => 'Player code / Friends UI',
-      'home_theme' => 'Home screen background',
-      'score_effect' => 'Gameplay score presentation',
-      'success_effect' => 'Successful-command feedback',
-      'failure_effect' => 'Miss / failure feedback',
-      'mode_card_skin' => 'Modes catalogue cards',
-      'title' => 'Player Profile header',
-      'emblem' => 'Player Profile header',
-      _ => 'Cosmetic presentation',
+      'reaction_pack' => 'During runs in gameplay modes.',
+      'command_style' => 'On command words during gameplay.',
+      'countdown_style' => 'On the 3–2–1 launch countdown.',
+      'sound_pack' => 'In gameplay sound cues.',
+      'share_style' => 'On the result sharing screen.',
+      'profile_frame' => 'Around the full Player Profile screen.',
+      'profile_badge' => 'Under your avatar in the Player Profile identity card.',
+      'player_code_style' => 'Around your RX code in the Player Profile identity card.',
+      'home_theme' => 'Behind the Home screen.',
+      'score_effect' => 'Around score feedback during/results after a run.',
+      'success_effect' => 'When a command is completed successfully.',
+      'failure_effect' => 'When a command is missed or fails.',
+      'mode_card_skin' => 'On cards in the Modes catalogue.',
+      'title' => 'Directly below your player name in Player Profile.',
+      'emblem' => 'Beside your RX player code in Player Profile.',
+      _ => 'On its connected cosmetic surface.',
     };
 
 String _kindEffect(String kind) => switch (kind) {
@@ -553,15 +592,15 @@ String _kindEffect(String kind) => switch (kind) {
       'sound_pack' => 'Changes the sound set used for gameplay cues.',
       'share_style' => 'Changes the visual style of shared result cards.',
       'profile_frame' => 'Adds a themed frame around your Player Profile.',
-      'profile_badge' => 'Adds a season badge to your Player Profile.',
-      'player_code_style' => 'Changes the presentation of your public player code.',
+      'profile_badge' => 'Adds a named season badge to your identity card.',
+      'player_code_style' => 'Restyles the container, accent and spacing of your RX code.',
       'home_theme' => 'Adds a season visual treatment behind the Home screen.',
-      'score_effect' => 'Changes the visual treatment around score updates.',
+      'score_effect' => 'Changes the visual treatment around score feedback.',
       'success_effect' => 'Changes the feedback shown after a successful input.',
       'failure_effect' => 'Changes the feedback shown after a miss or failure.',
-      'mode_card_skin' => 'Changes the appearance of mode cards.',
-      'title' => 'Displays a season title on your Player Profile.',
-      'emblem' => 'Displays a season emblem on your Player Profile.',
+      'mode_card_skin' => 'Restyles Modes cards with a themed gradient, border and glow.',
+      'title' => 'Adds an equippable season title under your display name.',
+      'emblem' => 'Adds a themed emblem beside your player code.',
       _ => 'Changes a cosmetic presentation only.',
     };
 
@@ -573,12 +612,12 @@ IconData _kindIcon(String kind) => switch (kind) {
       'share_style' => Icons.ios_share_rounded,
       'profile_frame' => Icons.crop_square_rounded,
       'profile_badge' => Icons.workspace_premium_outlined,
-      'player_code_style' => Icons.qr_code_2_rounded,
+      'player_code_style' => Icons.badge_outlined,
       'home_theme' => Icons.home_outlined,
-      'score_effect' => Icons.auto_awesome_rounded,
+      'score_effect' => Icons.auto_graph_rounded,
       'success_effect' => Icons.check_circle_outline_rounded,
-      'failure_effect' => Icons.cancel_outlined,
-      'mode_card_skin' => Icons.dashboard_customize_outlined,
+      'failure_effect' => Icons.flash_off_rounded,
+      'mode_card_skin' => Icons.view_module_outlined,
       'title' => Icons.title_rounded,
       'emblem' => Icons.bolt_rounded,
       _ => Icons.redeem_outlined,
