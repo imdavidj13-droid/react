@@ -26,6 +26,17 @@ void main() {
     milestone: false,
   );
 
+  const modeSkin = SeasonReward(
+    id: 'mode-skin-1',
+    tier: 18,
+    track: SeasonRewardTrack.free,
+    kind: 'mode_card_skin',
+    rewardKey: 'mode_skin_gridline',
+    name: 'GRIDLINE CARDS',
+    description: 'Mode-card skin',
+    milestone: false,
+  );
+
   SeasonSnapshot snapshot(Set<String> unlocked) => SeasonSnapshot(
         id: 'season-1',
         code: 'S01_OVERDRIVE',
@@ -34,7 +45,7 @@ void main() {
         themeKey: 'overdrive',
         startsAt: DateTime.utc(2026, 8, 19),
         endsAt: DateTime.utc(2026, 9, 9),
-        charge: 800,
+        charge: 3400,
         premiumOwned: true,
         tiers: const <SeasonTier>[
           SeasonTier(
@@ -42,6 +53,12 @@ void main() {
             chargeRequired: 800,
             milestone: true,
             rewards: <SeasonReward>[frame, badge],
+          ),
+          SeasonTier(
+            number: 18,
+            chargeRequired: 3400,
+            milestone: false,
+            rewards: <SeasonReward>[modeSkin],
           ),
         ],
         missions: const <SeasonMission>[],
@@ -71,6 +88,20 @@ void main() {
     expect(await SeasonCosmeticState.equip(badge), isFalse);
     expect(SeasonCosmeticState.isEquipped(frame), isTrue);
     expect(SeasonCosmeticState.equippedKey('profile_frame'), frame.rewardKey);
+  });
+
+  test('rendered mode-card skins can be equipped', () async {
+    await SeasonCosmeticState.syncSnapshot(
+      snapshot(<String>{modeSkin.rewardKey}),
+    );
+
+    expect(SeasonCosmeticState.isEquippable(modeSkin), isTrue);
+    expect(await SeasonCosmeticState.equip(modeSkin), isTrue);
+    expect(SeasonCosmeticState.isEquipped(modeSkin), isTrue);
+    expect(
+      SeasonCosmeticState.equippedReward('mode_card_skin')?.rewardKey,
+      modeSkin.rewardKey,
+    );
   });
 
   test('equipped season cosmetics survive reload', () async {
