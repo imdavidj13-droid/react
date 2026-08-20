@@ -18,15 +18,15 @@ abstract final class SeasonCosmeticState {
   static final Map<String, SeasonReward> _catalog = <String, SeasonReward>{};
   static final Map<String, String> _equippedByKind = <String, String>{};
 
+  /// Only cosmetic families with a real, visible renderer belong here.
+  ///
+  /// Do not add a kind simply because the backend can award it. A reward must
+  /// have a connected presentation surface before the locker is allowed to
+  /// report it as EQUIPPED.
   static const Set<String> equippableKinds = <String>{
     'profile_frame',
     'profile_badge',
-    'player_code_style',
     'home_theme',
-    'score_effect',
-    'success_effect',
-    'failure_effect',
-    'mode_card_skin',
     'title',
     'emblem',
   };
@@ -53,6 +53,17 @@ abstract final class SeasonCosmeticState {
       final value = prefs.getString('$_equippedPrefix$kind');
       if (value != null && _ownedKeys.contains(value)) {
         _equippedByKind[kind] = value;
+      }
+    }
+
+    // Remove legacy selections for kinds that once appeared equippable before
+    // they had a real renderer. This prevents stale invisible equipment from
+    // surviving an app upgrade.
+    for (final key in prefs.getKeys()) {
+      if (!key.startsWith(_equippedPrefix)) continue;
+      final kind = key.substring(_equippedPrefix.length);
+      if (!equippableKinds.contains(kind)) {
+        await prefs.remove(key);
       }
     }
   }
