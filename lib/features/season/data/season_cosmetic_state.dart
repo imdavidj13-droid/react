@@ -27,6 +27,7 @@ abstract final class SeasonCosmeticState {
     'profile_frame',
     'profile_badge',
     'home_theme',
+    'mode_card_skin',
     'title',
     'emblem',
   };
