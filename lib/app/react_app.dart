@@ -77,7 +77,11 @@ class _HomeShell extends StatelessWidget {
 
   void _openFriends(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const FriendsScreen()),
+      MaterialPageRoute<void>(
+        builder: (_) => const SeasonFriendsLayer(
+          child: FriendsScreen(),
+        ),
+      ),
     );
   }
 
