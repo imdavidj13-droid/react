@@ -47,9 +47,7 @@ abstract final class SeasonCosmeticLayers {
 }
 
 /// Screen-level profile cosmetics belong here only when they genuinely affect
-/// the whole profile surface. Identity cosmetics such as badges, titles and
-/// emblems must be rendered inside the profile identity card instead of being
-/// floated over the page header.
+/// the player identity surface.
 class SeasonProfileLayer extends StatelessWidget {
   const SeasonProfileLayer({required this.child, super.key});
 
@@ -58,31 +56,57 @@ class SeasonProfileLayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final frame = SeasonCosmeticState.equippedReward('profile_frame');
-    if (frame == null) return child;
+    final codeStyle = SeasonCosmeticState.equippedReward('player_code_style');
+    if (frame == null && codeStyle == null) return child;
 
-    final accent = SeasonCosmeticLayers.accentForReward(frame);
+    final frameAccent = frame == null
+        ? null
+        : SeasonCosmeticLayers.accentForReward(frame);
+    final codeAccent = codeStyle == null
+        ? null
+        : SeasonCosmeticLayers.accentForReward(codeStyle);
+
     return Stack(
       fit: StackFit.expand,
       children: [
         child,
         IgnorePointer(
           child: SafeArea(
-            child: Container(
-              margin: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: accent.withValues(alpha: .75),
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: .12),
-                    blurRadius: 18,
-                    spreadRadius: 1,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (frameAccent != null)
+                  Container(
+                    margin: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: frameAccent.withValues(alpha: .75),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: frameAccent.withValues(alpha: .12),
+                          blurRadius: 18,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                if (codeStyle != null && codeAccent != null) ...[
+                  CustomPaint(
+                    painter: _PlayerCodeTracePainter(accent: codeAccent),
+                  ),
+                  Positioned(
+                    left: 14,
+                    bottom: 14,
+                    child: _CodeStylePill(
+                      reward: codeStyle,
+                      accent: codeAccent,
+                    ),
                   ),
                 ],
-              ),
+              ],
             ),
           ),
         ),
@@ -121,41 +145,7 @@ class SeasonFriendsLayer extends StatelessWidget {
                 Positioned(
                   right: 14,
                   top: 72,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF040914).withValues(alpha: .88),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: accent.withValues(alpha: .58),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: accent.withValues(alpha: .12),
-                          blurRadius: 14,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.memory_rounded, color: accent, size: 12),
-                        const SizedBox(width: 5),
-                        Text(
-                          style.name.toUpperCase(),
-                          style: TextStyle(
-                            color: accent,
-                            fontSize: 6.8,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: .8,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: _CodeStylePill(reward: style, accent: accent),
                 ),
               ],
             ),
@@ -164,6 +154,45 @@ class SeasonFriendsLayer extends StatelessWidget {
       ],
     );
   }
+}
+
+class _CodeStylePill extends StatelessWidget {
+  const _CodeStylePill({required this.reward, required this.accent});
+
+  final SeasonReward reward;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF040914).withValues(alpha: .88),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: accent.withValues(alpha: .58)),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: .12),
+              blurRadius: 14,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.memory_rounded, color: accent, size: 12),
+            const SizedBox(width: 5),
+            Text(
+              reward.name.toUpperCase(),
+              style: TextStyle(
+                color: accent,
+                fontSize: 6.8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .8,
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _SeasonGridPainter extends CustomPainter {
