@@ -4,6 +4,7 @@ import '../../../core/theme/react_colors.dart';
 import '../data/season_repository.dart';
 import '../domain/season_models.dart';
 import 'season_locker_screen.dart';
+import 'season_reward_preview.dart';
 
 class SeasonScreen extends StatefulWidget {
   const SeasonScreen({super.key});
@@ -320,73 +321,69 @@ class _HeroStat extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: .055),
-          borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: color.withValues(alpha: .18)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 15),
-            const SizedBox(height: 3),
-            FittedBox(
-              child: Text(
-                value,
-                style: const TextStyle(
-                  color: ReactColors.textPrimary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) => Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: .055),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: color.withValues(alpha: .18)),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 15),
+              const SizedBox(height: 3),
+              FittedBox(
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 2),
-            FittedBox(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: ReactColors.textSecondary,
-                  fontSize: 6.8,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .55,
+              const SizedBox(height: 2),
+              FittedBox(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 6.8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .55,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
+      );
 }
 
 class _SeasonTabs extends StatelessWidget {
   const _SeasonTabs();
 
   @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 18),
-      child: TabBar(
-        indicatorColor: ReactColors.electricBlueBright,
-        indicatorWeight: 3,
-        labelColor: ReactColors.textPrimary,
-        unselectedLabelColor: ReactColors.textSecondary,
-        labelStyle: TextStyle(
-          fontSize: 9.5,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.2,
+  Widget build(BuildContext context) => const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 18),
+        child: TabBar(
+          indicatorColor: ReactColors.electricBlueBright,
+          indicatorWeight: 3,
+          labelColor: ReactColors.textPrimary,
+          unselectedLabelColor: ReactColors.textSecondary,
+          labelStyle: TextStyle(
+            fontSize: 9.5,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
+          tabs: [
+            Tab(text: 'PASS'),
+            Tab(text: 'MISSIONS'),
+            Tab(text: 'SEASON INFO'),
+          ],
         ),
-        tabs: [
-          Tab(text: 'PASS'),
-          Tab(text: 'MISSIONS'),
-          Tab(text: 'SEASON INFO'),
-        ],
-      ),
-    );
-  }
+      );
 }
 
 class _PassTab extends StatelessWidget {
@@ -401,26 +398,24 @@ class _PassTab extends StatelessWidget {
   final VoidCallback onLocker;
 
   @override
-  Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(18, 14, 18, 30),
-        itemCount: season.tiers.length + 2,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return _PassIntro(season: season, onLocker: onLocker);
-          }
-          if (index == 1) return const _TrackHeader();
-          return _TierRoadCard(
-            season: season,
-            tier: season.tiers[index - 2],
-          );
-        },
-      ),
-    );
-  }
+  Widget build(BuildContext context) => RefreshIndicator(
+        onRefresh: onRefresh,
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 30),
+          itemCount: season.tiers.length + 2,
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _PassIntro(season: season, onLocker: onLocker);
+            }
+            if (index == 1) return const _TrackHeader();
+            return _TierRoadCard(
+              season: season,
+              tier: season.tiers[index - 2],
+            );
+          },
+        ),
+      );
 }
 
 class _PassIntro extends StatelessWidget {
@@ -435,6 +430,7 @@ class _PassIntro extends StatelessWidget {
         .where((tier) => season.charge >= tier.chargeRequired)
         .length;
     final unlocked = season.unlockedRewardKeys.length;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -467,7 +463,7 @@ class _PassIntro extends StatelessWidget {
                     ),
                     SizedBox(height: 3),
                     Text(
-                      'EARN CHARGE. REACH TIERS. EQUIP COSMETICS FROM THE LOCKER.',
+                      'EVERY REWARD NOW SHOWS A LIVE MINI PREVIEW OF WHAT IT CHANGES.',
                       style: TextStyle(
                         color: ReactColors.textSecondary,
                         fontSize: 7.5,
@@ -553,73 +549,69 @@ class _MiniStat extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: .055),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: .16)),
-        ),
-        child: Column(
-          children: [
-            FittedBox(
-              child: Text(
-                value,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) => Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: .055),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withValues(alpha: .16)),
+          ),
+          child: Column(
+            children: [
+              FittedBox(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 3),
-            FittedBox(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: ReactColors.textSecondary,
-                  fontSize: 6.7,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .45,
+              const SizedBox(height: 3),
+              FittedBox(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: ReactColors.textSecondary,
+                    fontSize: 6.7,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .45,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
+      );
 }
 
 class _TrackHeader extends StatelessWidget {
   const _TrackHeader();
 
   @override
-  Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        SizedBox(width: 46),
-        SizedBox(width: 9),
-        Expanded(
-          child: _TrackTitle(
-            icon: Icons.bolt_rounded,
-            label: 'FREE',
-            color: ReactColors.electricBlueBright,
+  Widget build(BuildContext context) => const Row(
+        children: [
+          SizedBox(width: 46),
+          SizedBox(width: 9),
+          Expanded(
+            child: _TrackTitle(
+              icon: Icons.bolt_rounded,
+              label: 'FREE',
+              color: ReactColors.electricBlueBright,
+            ),
           ),
-        ),
-        SizedBox(width: 8),
-        Expanded(
-          child: _TrackTitle(
-            icon: Icons.workspace_premium_rounded,
-            label: 'PREMIUM',
-            color: ReactColors.purple,
+          SizedBox(width: 8),
+          Expanded(
+            child: _TrackTitle(
+              icon: Icons.workspace_premium_rounded,
+              label: 'PREMIUM',
+              color: ReactColors.purple,
+            ),
           ),
-        ),
-      ],
-    );
-  }
+        ],
+      );
 }
 
 class _TrackTitle extends StatelessWidget {
@@ -634,24 +626,22 @@ class _TrackTitle extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, color: color, size: 15),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 8.5,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1,
+  Widget build(BuildContext context) => Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: 15),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 8.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
           ),
-        ),
-      ],
-    );
-  }
+        ],
+      );
 }
 
 class _TierRoadCard extends StatelessWidget {
@@ -673,15 +663,15 @@ class _TierRoadCard extends StatelessWidget {
         color: tier.milestone
             ? ReactColors.lime.withValues(alpha: .035)
             : current
-            ? ReactColors.electricBlueBright.withValues(alpha: .035)
-            : const Color(0xFF07111D),
+                ? ReactColors.electricBlueBright.withValues(alpha: .035)
+                : const Color(0xFF07111D),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: tier.milestone
               ? ReactColors.lime.withValues(alpha: .38)
               : current
-              ? ReactColors.electricBlueBright.withValues(alpha: .42)
-              : Colors.white.withValues(alpha: .065),
+                  ? ReactColors.electricBlueBright.withValues(alpha: .42)
+                  : Colors.white.withValues(alpha: .065),
         ),
       ),
       child: Row(
@@ -788,20 +778,20 @@ class _RewardTile extends StatelessWidget {
     final stateLabel = unlocked
         ? 'OWNED'
         : lockedPremium && reached
-        ? 'REACHED • PREMIUM'
-        : reached
-        ? 'REACHED'
-        : 'LOCKED';
+            ? 'REACHED • PREMIUM'
+            : reached
+                ? 'REACHED'
+                : 'LOCKED';
     final stateColor = unlocked
         ? ReactColors.lime
         : lockedPremium
-        ? ReactColors.purple
-        : reached
-        ? color
-        : ReactColors.textSecondary;
+            ? ReactColors.purple
+            : reached
+                ? color
+                : ReactColors.textSecondary;
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 112),
+      constraints: const BoxConstraints(minHeight: 178),
       padding: const EdgeInsets.all(9),
       decoration: BoxDecoration(
         color: color.withValues(alpha: unlocked ? .075 : .035),
@@ -813,43 +803,37 @@ class _RewardTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SeasonRewardPreview(reward: item, height: 64, compact: true),
+          const SizedBox(height: 8),
           Row(
             children: [
-              Container(
-                width: 27,
-                height: 27,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(9),
-                  color: color.withValues(alpha: .10),
+              Expanded(
+                child: Text(
+                  item.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: ReactColors.textPrimary,
+                    fontSize: 9,
+                    height: 1.1,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .25,
+                  ),
                 ),
-                child: Icon(_rewardIcon(item.kind), color: color, size: 15),
               ),
-              const Spacer(),
+              const SizedBox(width: 4),
               Icon(
                 unlocked
                     ? Icons.check_circle_rounded
                     : lockedPremium
-                    ? Icons.lock_outline_rounded
-                    : reached
-                    ? Icons.redeem_rounded
-                    : Icons.lock_clock_outlined,
+                        ? Icons.lock_outline_rounded
+                        : reached
+                            ? Icons.redeem_rounded
+                            : Icons.lock_clock_outlined,
                 color: stateColor,
                 size: 15,
               ),
             ],
-          ),
-          const SizedBox(height: 7),
-          Text(
-            item.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: ReactColors.textPrimary,
-              fontSize: 9,
-              height: 1.1,
-              fontWeight: FontWeight.w900,
-              letterSpacing: .25,
-            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -889,86 +873,82 @@ class _MissionsTab extends StatelessWidget {
   final Future<void> Function() onRefresh;
 
   @override
-  Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 14, 18, 30),
-        children: [
-          const _MissionIntro(),
-          const SizedBox(height: 16),
-          for (final cadence in SeasonMissionCadence.values) ...[
-            _MissionSectionTitle(cadence: cadence),
-            const SizedBox(height: 8),
-            for (final mission in season.missions.where(
-              (item) => item.cadence == cadence,
-            )) ...[
-              _MissionCard(mission: mission),
+  Widget build(BuildContext context) => RefreshIndicator(
+        onRefresh: onRefresh,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 30),
+          children: [
+            const _MissionIntro(),
+            const SizedBox(height: 16),
+            for (final cadence in SeasonMissionCadence.values) ...[
+              _MissionSectionTitle(cadence: cadence),
+              const SizedBox(height: 8),
+              for (final mission in season.missions.where(
+                (item) => item.cadence == cadence,
+              )) ...[
+                _MissionCard(mission: mission),
+                const SizedBox(height: 9),
+              ],
               const SizedBox(height: 9),
             ],
-            const SizedBox(height: 9),
           ],
-        ],
-      ),
-    );
-  }
+        ),
+      );
 }
 
 class _MissionIntro extends StatelessWidget {
   const _MissionIntro();
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF071A2C), Color(0xFF0E0A20)],
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: ReactColors.electricBlueBright.withValues(alpha: .22),
-        ),
-      ),
-      child: const Row(
-        children: [
-          Icon(
-            Icons.task_alt_rounded,
-            color: ReactColors.electricBlueBright,
-            size: 25,
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF071A2C), Color(0xFF0E0A20)],
           ),
-          SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'MISSIONS = EXTRA CHARGE',
-                  style: TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .65,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'DAILY, WEEKLY AND SEASON GOALS FEED THE SAME PASS PROGRESSION.',
-                  style: TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 7.8,
-                    height: 1.35,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: .35,
-                  ),
-                ),
-              ],
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: ReactColors.electricBlueBright.withValues(alpha: .22),
+          ),
+        ),
+        child: const Row(
+          children: [
+            Icon(
+              Icons.task_alt_rounded,
+              color: ReactColors.electricBlueBright,
+              size: 25,
             ),
-          ),
-        ],
-      ),
-    );
-  }
+            SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'MISSIONS = EXTRA CHARGE',
+                    style: TextStyle(
+                      color: ReactColors.textPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .65,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'DAILY, WEEKLY AND SEASON GOALS FEED THE SAME PASS PROGRESSION.',
+                    style: TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 7.8,
+                      height: 1.35,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: .35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _MissionSectionTitle extends StatelessWidget {
@@ -1050,9 +1030,7 @@ class _MissionCard extends StatelessWidget {
                   color: color.withValues(alpha: .08),
                 ),
                 child: Icon(
-                  mission.completed
-                      ? Icons.check_rounded
-                      : Icons.bolt_rounded,
+                  mission.completed ? Icons.check_rounded : Icons.bolt_rounded,
                   color: mission.completed ? ReactColors.lime : color,
                   size: 20,
                 ),
@@ -1140,46 +1118,44 @@ class _SeasonInfoTab extends StatelessWidget {
   final SeasonSnapshot season;
 
   @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 30),
-      children: [
-        _SeasonWindowCard(season: season),
-        const SizedBox(height: 11),
-        const _InfoCard(
-          icon: Icons.bolt_rounded,
-          title: 'HOW YOU PROGRESS',
-          body:
-              'Runs earn CHARGE. Personal bests, Daily runs, your first play of the day, and mission completions add bonus CHARGE.',
-          color: ReactColors.electricBlueBright,
-        ),
-        const SizedBox(height: 10),
-        const _InfoCard(
-          icon: Icons.workspace_premium_rounded,
-          title: 'FREE + PREMIUM',
-          body:
-              'Both tracks use the same tier progress. If Premium is activated later, Premium rewards from tiers you already reached unlock retroactively.',
-          color: ReactColors.purple,
-        ),
-        const SizedBox(height: 10),
-        const _InfoCard(
-          icon: Icons.shield_outlined,
-          title: 'NO PAY-TO-WIN',
-          body:
-              'Every season reward is cosmetic. Nothing changes score rules, timers, lives, command difficulty, reaction windows, or leaderboard eligibility.',
-          color: ReactColors.lime,
-        ),
-        const SizedBox(height: 10),
-        const _InfoCard(
-          icon: Icons.checkroom_rounded,
-          title: 'WHAT THE LOCKER DOES',
-          body:
-              'The Locker stores unlocked cosmetics. Each item tells you exactly what it changes, where it appears, and whether it is currently equipped.',
-          color: ReactColors.coral,
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => ListView(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 30),
+        children: [
+          _SeasonWindowCard(season: season),
+          const SizedBox(height: 11),
+          const _InfoCard(
+            icon: Icons.bolt_rounded,
+            title: 'HOW YOU PROGRESS',
+            body:
+                'Runs earn CHARGE. Personal bests, Daily runs, your first play of the day, and mission completions add bonus CHARGE.',
+            color: ReactColors.electricBlueBright,
+          ),
+          const SizedBox(height: 10),
+          const _InfoCard(
+            icon: Icons.workspace_premium_rounded,
+            title: 'FREE + PREMIUM',
+            body:
+                'Both tracks use the same tier progress. If Premium is activated later, Premium rewards from tiers you already reached unlock retroactively.',
+            color: ReactColors.purple,
+          ),
+          const SizedBox(height: 10),
+          const _InfoCard(
+            icon: Icons.shield_outlined,
+            title: 'NO PAY-TO-WIN',
+            body:
+                'Every season reward is cosmetic. Nothing changes score rules, timers, lives, command difficulty, reaction windows, or leaderboard eligibility.',
+            color: ReactColors.lime,
+          ),
+          const SizedBox(height: 10),
+          const _InfoCard(
+            icon: Icons.visibility_outlined,
+            title: 'VISUAL REWARD PREVIEWS',
+            body:
+                'Pass rewards show an in-app miniature of the cosmetic before you unlock it. The same preview appears again in the Locker when you choose what to equip.',
+            color: ReactColors.coral,
+          ),
+        ],
+      );
 }
 
 class _SeasonWindowCard extends StatelessWidget {
@@ -1188,56 +1164,54 @@ class _SeasonWindowCard extends StatelessWidget {
   final SeasonSnapshot season;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF08172B), Color(0xFF0D0A1F)],
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: ReactColors.electricBlueBright.withValues(alpha: .24),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.calendar_month_rounded,
-            color: ReactColors.electricBlueBright,
-            size: 28,
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF08172B), Color(0xFF0D0A1F)],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '21-DAY SEASON WINDOW',
-                  style: TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .65,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  '${_date(season.startsAt)}  →  ${_date(season.endsAt)} UTC',
-                  style: const TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: .4,
-                  ),
-                ),
-              ],
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: ReactColors.electricBlueBright.withValues(alpha: .24),
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.calendar_month_rounded,
+              color: ReactColors.electricBlueBright,
+              size: 28,
             ),
-          ),
-        ],
-      ),
-    );
-  }
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '21-DAY SEASON WINDOW',
+                    style: TextStyle(
+                      color: ReactColors.textPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .65,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    '${_date(season.startsAt)}  →  ${_date(season.endsAt)} UTC',
+                    style: const TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: .4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _InfoCard extends StatelessWidget {
@@ -1254,83 +1228,79 @@ class _InfoCard extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: const Color(0xFF08111C),
-        borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: color.withValues(alpha: .16)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: color.withValues(alpha: .08),
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: const Color(0xFF08111C),
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: color.withValues(alpha: .16)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: color.withValues(alpha: .08),
+              ),
+              child: Icon(icon, color: color, size: 21),
             ),
-            child: Icon(icon, color: color, size: 21),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: ReactColors.textPrimary,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .6,
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: ReactColors.textPrimary,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .6,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  body,
-                  style: const TextStyle(
-                    color: ReactColors.textSecondary,
-                    fontSize: 9,
-                    height: 1.42,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 5),
+                  Text(
+                    body,
+                    style: const TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 9,
+                      height: 1.42,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+      );
 }
 
 class _LoadingSeason extends StatelessWidget {
   const _LoadingSeason();
 
   @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 14),
-          Text(
-            'LOADING SEASON PASS',
-            style: TextStyle(
-              color: ReactColors.textSecondary,
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.2,
+  Widget build(BuildContext context) => const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 14),
+            Text(
+              'LOADING SEASON PASS',
+              style: TextStyle(
+                color: ReactColors.textSecondary,
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+      );
 }
 
 class _NoSeason extends StatelessWidget {
@@ -1340,69 +1310,48 @@ class _NoSeason extends StatelessWidget {
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: IconButton(
-              onPressed: onBack,
-              color: ReactColors.textPrimary,
-              icon: const Icon(Icons.arrow_back_rounded),
-            ),
-          ),
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.cloud_off_outlined,
-                    color: ReactColors.coral,
-                    size: 38,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'SEASON PASS UNAVAILABLE',
-                    style: TextStyle(
-                      color: ReactColors.textPrimary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton(onPressed: onRetry, child: const Text('RETRY')),
-                ],
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                onPressed: onBack,
+                color: ReactColors.textPrimary,
+                icon: const Icon(Icons.arrow_back_rounded),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.cloud_off_outlined,
+                      color: ReactColors.coral,
+                      size: 38,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'SEASON PASS UNAVAILABLE',
+                      style: TextStyle(
+                        color: ReactColors.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(onPressed: onRetry, child: const Text('RETRY')),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 }
-
-IconData _rewardIcon(String kind) => switch (kind) {
-      'reaction_pack' => Icons.palette_outlined,
-      'command_style' => Icons.text_fields_rounded,
-      'countdown_style' => Icons.timer_outlined,
-      'sound_pack' => Icons.graphic_eq_rounded,
-      'share_style' => Icons.ios_share_rounded,
-      'profile_frame' => Icons.crop_square_rounded,
-      'profile_badge' => Icons.workspace_premium_outlined,
-      'player_code_style' => Icons.badge_outlined,
-      'home_theme' => Icons.home_outlined,
-      'score_effect' => Icons.auto_graph_rounded,
-      'success_effect' => Icons.check_circle_outline_rounded,
-      'failure_effect' => Icons.flash_off_rounded,
-      'mode_card_skin' => Icons.view_module_outlined,
-      'title' => Icons.title_rounded,
-      'emblem' => Icons.bolt_rounded,
-      _ => Icons.redeem_outlined,
-    };
 
 String _rewardKindLabel(String kind) => switch (kind) {
       'reaction_pack' => 'REACTION COLOUR',
