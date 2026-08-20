@@ -26,6 +26,39 @@ void main() {
     milestone: false,
   );
 
+  const title = SeasonReward(
+    id: 'title-1',
+    tier: 1,
+    track: SeasonRewardTrack.free,
+    kind: 'title',
+    rewardKey: 'title_quick_start',
+    name: 'QUICK START',
+    description: 'Season title',
+    milestone: false,
+  );
+
+  const codeStyle = SeasonReward(
+    id: 'code-1',
+    tier: 2,
+    track: SeasonRewardTrack.premium,
+    kind: 'player_code_style',
+    rewardKey: 'code_style_voltage_trace',
+    name: 'VOLTAGE TRACE',
+    description: 'Player-code styling',
+    milestone: false,
+  );
+
+  const emblem = SeasonReward(
+    id: 'emblem-1',
+    tier: 2,
+    track: SeasonRewardTrack.free,
+    kind: 'emblem',
+    rewardKey: 'emblem_charge_cell',
+    name: 'CHARGE CELL',
+    description: 'Player emblem',
+    milestone: false,
+  );
+
   const modeSkin = SeasonReward(
     id: 'mode-skin-1',
     tier: 18,
@@ -52,7 +85,7 @@ void main() {
             number: 5,
             chargeRequired: 800,
             milestone: true,
-            rewards: <SeasonReward>[frame, badge],
+            rewards: <SeasonReward>[frame, badge, title, codeStyle, emblem],
           ),
           SeasonTier(
             number: 18,
@@ -88,6 +121,32 @@ void main() {
     expect(await SeasonCosmeticState.equip(badge), isFalse);
     expect(SeasonCosmeticState.isEquipped(frame), isTrue);
     expect(SeasonCosmeticState.equippedKey('profile_frame'), frame.rewardKey);
+  });
+
+  test('rendered profile identity cosmetics can be equipped', () async {
+    await SeasonCosmeticState.syncSnapshot(
+      snapshot(<String>{
+        badge.rewardKey,
+        title.rewardKey,
+        codeStyle.rewardKey,
+        emblem.rewardKey,
+      }),
+    );
+
+    for (final reward in <SeasonReward>[badge, title, codeStyle, emblem]) {
+      expect(SeasonCosmeticState.isEquippable(reward), isTrue);
+      expect(await SeasonCosmeticState.equip(reward), isTrue);
+      expect(SeasonCosmeticState.isEquipped(reward), isTrue);
+    }
+
+    expect(
+      SeasonCosmeticState.equippedReward('profile_badge')?.rewardKey,
+      badge.rewardKey,
+    );
+    expect(
+      SeasonCosmeticState.equippedReward('player_code_style')?.rewardKey,
+      codeStyle.rewardKey,
+    );
   });
 
   test('rendered mode-card skins can be equipped', () async {
