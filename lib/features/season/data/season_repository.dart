@@ -21,7 +21,7 @@ class SeasonRepository {
       final response = await client.rpc('get_react_active_season');
       final data = _asMap(response);
       if (data == null) return null;
-      final snapshot = _parseSnapshot(data);
+      final snapshot = _withDebugPremium(_parseSnapshot(data));
       await _syncCosmetics(snapshot);
       return snapshot;
     } catch (error) {
@@ -55,7 +55,7 @@ class SeasonRepository {
       );
       final data = _asMap(response);
       if (data == null) return null;
-      final snapshot = _parseSnapshot(data);
+      final snapshot = _withDebugPremium(_parseSnapshot(data));
       await _syncCosmetics(snapshot);
       return snapshot;
     } catch (error) {
@@ -67,6 +67,38 @@ class SeasonRepository {
   static Future<void> _syncCosmetics(SeasonSnapshot snapshot) async {
     await LocalShopState.setSeasonOwnedPackIds(snapshot.unlockedRewardKeys);
     await SeasonCosmeticState.syncSnapshot(snapshot);
+  }
+
+  /// Debug builds treat Premium as active so the full pass can be tested
+  /// without a store purchase. Only Premium rewards from tiers the player has
+  /// actually reached are added to the local entitlement snapshot.
+  ///
+  /// Release/profile builds always use the server-owned premium entitlement.
+  static SeasonSnapshot _withDebugPremium(SeasonSnapshot snapshot) {
+    if (!kDebugMode) return snapshot;
+
+    final unlocked = <String>{...snapshot.unlockedRewardKeys};
+    for (final tier in snapshot.tiers) {
+      if (snapshot.charge < tier.chargeRequired) continue;
+      for (final reward in tier.rewards) {
+        if (reward.isPremium) unlocked.add(reward.rewardKey);
+      }
+    }
+
+    return SeasonSnapshot(
+      id: snapshot.id,
+      code: snapshot.code,
+      name: snapshot.name,
+      subtitle: snapshot.subtitle,
+      themeKey: snapshot.themeKey,
+      startsAt: snapshot.startsAt,
+      endsAt: snapshot.endsAt,
+      charge: snapshot.charge,
+      premiumOwned: true,
+      tiers: snapshot.tiers,
+      missions: snapshot.missions,
+      unlockedRewardKeys: unlocked,
+    );
   }
 
   static Map<String, dynamic>? _asMap(dynamic value) {
