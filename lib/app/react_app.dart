@@ -10,7 +10,7 @@ import '../features/home/presentation/home_screen.dart';
 import '../features/player/presentation/player_profile_screen.dart';
 import '../features/season/presentation/home_season_strip.dart';
 import '../features/season/presentation/season_cosmetic_layers.dart';
-import '../features/shop/presentation/shop_screen.dart';
+import '../features/season/presentation/season_locker_screen.dart';
 import '../features/tutorial/presentation/how_to_play_screen.dart';
 
 class ReactApp extends StatelessWidget {
@@ -59,9 +59,9 @@ class _FirstRunShellState extends State<_FirstRunShell> {
 class _HomeShell extends StatelessWidget {
   const _HomeShell();
 
-  void _openShop(BuildContext context) {
+  void _openLocker(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ShopScreen()),
+      MaterialPageRoute<void>(builder: (_) => const SeasonLockerScreen()),
     );
   }
 
@@ -103,8 +103,8 @@ class _HomeShell extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: IconButton(
-              tooltip: 'Shop',
-              onPressed: () => _openShop(context),
+              tooltip: 'Locker',
+              onPressed: () => _openLocker(context),
               style: IconButton.styleFrom(
                 backgroundColor: const Color(0xFF07101E),
                 foregroundColor: ReactColors.electricBlueBright,
@@ -112,7 +112,7 @@ class _HomeShell extends StatelessWidget {
                   color: ReactColors.electricBlueBright.withValues(alpha: .75),
                 ),
               ),
-              icon: const Icon(Icons.shopping_bag_outlined, size: 22),
+              icon: const Icon(Icons.inventory_2_outlined, size: 22),
             ),
           ),
         ),
