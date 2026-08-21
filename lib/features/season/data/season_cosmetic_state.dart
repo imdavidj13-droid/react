@@ -2,14 +2,14 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/cosmetics/react_cosmetics.dart';
 import '../domain/season_models.dart';
 
-/// Local ownership/catalog/equipment state for season cosmetics.
+/// Single ownership/catalog/equipment state for RE△CT cosmetics.
 ///
-/// Server-awarded unlock rows are permanent. The local catalog accumulates
-/// every reward metadata row seen from season snapshots and the lifetime
-/// cosmetic RPC so old cosmetics stay browsable/equippable after season
-/// rollover and on a clean reinstall.
+/// Season Pass is the acquisition path and Locker is the equipment UI.
+/// ReactCosmetics remains the low-level renderer/persistence implementation for
+/// built-in gameplay packs, but there is no separate Shop ownership model.
 abstract final class SeasonCosmeticState {
   static const _ownedKey = 'season_cosmetics_owned';
   static const _catalogKey = 'season_cosmetics_catalog';
@@ -19,10 +19,10 @@ abstract final class SeasonCosmeticState {
   static final Map<String, SeasonReward> _catalog = <String, SeasonReward>{};
   static final Map<String, String> _equippedByKind = <String, String>{};
 
-  /// Season-native families with real connected renderers. Legacy gameplay
-  /// packs are still equipped through LocalShopState during migration, but are
-  /// presented in the same Locker.
-  static const Set<String> equippableKinds = <String>{
+  /// Season-native families whose renderer is driven directly from reward
+  /// metadata. Gameplay theme/countdown/audio/command/share families are
+  /// handled through ReactCosmetics in the methods below.
+  static const Set<String> _seasonNativeKinds = <String>{
     'profile_frame',
     'profile_badge',
     'player_code_style',
@@ -43,6 +43,7 @@ abstract final class SeasonCosmeticState {
   };
 
   static Future<void> load() async {
+    await ReactCosmetics.load();
     final prefs = await SharedPreferences.getInstance();
     _ownedKeys
       ..clear()
@@ -66,7 +67,7 @@ abstract final class SeasonCosmeticState {
     }
 
     _equippedByKind.clear();
-    for (final kind in equippableKinds) {
+    for (final kind in _seasonNativeKinds) {
       final prefKey = '$_equippedPrefix$kind';
       final value = prefs.getString(prefKey);
       if (value == null) continue;
@@ -77,20 +78,43 @@ abstract final class SeasonCosmeticState {
       }
     }
 
+    // Remove abandoned season-native equipment keys for unsupported kinds.
     for (final key in prefs.getKeys()) {
       if (!key.startsWith(_equippedPrefix)) continue;
       final kind = key.substring(_equippedPrefix.length);
-      if (!equippableKinds.contains(kind)) {
+      if (!_seasonNativeKinds.contains(kind)) {
         await prefs.remove(key);
       }
+    }
+
+    // If an old gameplay pack is equipped but no longer owned, safely fall
+    // back to CORE. This preserves previous Shop-era preference keys without
+    // preserving a second ownership model.
+    if (ReactCosmetics.currentReactionPack != ReactReactionPack.core &&
+        !_ownedKeys.contains(ReactCosmetics.currentReactionPack.packId)) {
+      await ReactCosmetics.equipReactionPack(ReactReactionPack.core);
+    }
+    if (ReactCosmetics.currentCountdownStyle != ReactCountdownStyle.core &&
+        !_ownedKeys.contains(ReactCosmetics.currentCountdownStyle.packId)) {
+      await ReactCosmetics.equipCountdownStyle(ReactCountdownStyle.core);
+    }
+    if (ReactCosmetics.currentSoundPack != ReactSoundPack.core &&
+        !_ownedKeys.contains(ReactCosmetics.currentSoundPack.packId)) {
+      await ReactCosmetics.equipSoundPack(ReactSoundPack.core);
+    }
+    if (ReactCosmetics.currentCommandStyle != ReactCommandStyle.core &&
+        !_ownedKeys.contains(ReactCosmetics.currentCommandStyle.packId)) {
+      await ReactCosmetics.equipCommandStyle(ReactCommandStyle.core);
+    }
+    if (ReactCosmetics.currentShareStyle != ReactShareStyle.core &&
+        !_ownedKeys.contains(ReactCosmetics.currentShareStyle.packId)) {
+      await ReactCosmetics.equipShareStyle(ReactShareStyle.core);
     }
   }
 
   static Future<void> syncSnapshot(SeasonSnapshot snapshot) async {
     _ownedKeys.addAll(snapshot.unlockedRewardKeys);
 
-    // Cache ALL reward metadata, including locked rows. Once one later appears
-    // in the unlock set its metadata is already available offline.
     for (final tier in snapshot.tiers) {
       for (final reward in tier.rewards) {
         _catalog[reward.rewardKey] = reward;
@@ -101,7 +125,7 @@ abstract final class SeasonCosmeticState {
   }
 
   /// Rehydrates permanent ownership and metadata across every historical
-  /// season. This is what makes Locker a lifetime collection on a new device.
+  /// season. This makes Locker a lifetime collection on a new device.
   static Future<void> syncOwnedRewards(Iterable<SeasonReward> rewards) async {
     for (final reward in rewards) {
       _ownedKeys.add(reward.rewardKey);
@@ -134,13 +158,57 @@ abstract final class SeasonCosmeticState {
     return List<SeasonReward>.unmodifiable(rewards);
   }
 
-  static bool isEquippable(SeasonReward reward) =>
-      equippableKinds.contains(reward.kind);
+  static bool isEquippable(SeasonReward reward) {
+    if (_seasonNativeKinds.contains(reward.kind)) return true;
+    return switch (reward.kind) {
+      'reaction_pack' || 'gameplay_theme' =>
+        ReactReactionPack.fromPackId(reward.rewardKey) != null,
+      'countdown_style' =>
+        ReactCountdownStyle.fromPackId(reward.rewardKey) != null,
+      'sound_pack' => ReactSoundPack.fromPackId(reward.rewardKey) != null,
+      'command_style' || 'command_pack' =>
+        ReactCommandStyle.fromPackId(reward.rewardKey) != null,
+      'share_style' || 'share_card' =>
+        ReactShareStyle.fromPackId(reward.rewardKey) != null,
+      _ => false,
+    };
+  }
 
-  static bool isEquipped(SeasonReward reward) =>
-      _equippedByKind[reward.kind] == reward.rewardKey;
+  static bool isEquipped(SeasonReward reward) => switch (reward.kind) {
+        'reaction_pack' || 'gameplay_theme' =>
+          ReactCosmetics.currentReactionPack.packId == reward.rewardKey,
+        'countdown_style' =>
+          ReactCosmetics.currentCountdownStyle.packId == reward.rewardKey,
+        'sound_pack' => ReactCosmetics.currentSoundPack.packId == reward.rewardKey,
+        'command_style' || 'command_pack' =>
+          ReactCosmetics.currentCommandStyle.packId == reward.rewardKey,
+        'share_style' || 'share_card' =>
+          ReactCosmetics.currentShareStyle.packId == reward.rewardKey,
+        _ => _equippedByKind[reward.kind] == reward.rewardKey,
+      };
 
-  static String? equippedKey(String kind) => _equippedByKind[kind];
+  static String? equippedKey(String kind) => switch (kind) {
+        'reaction_pack' || 'gameplay_theme' =>
+          ReactCosmetics.currentReactionPack == ReactReactionPack.core
+              ? null
+              : ReactCosmetics.currentReactionPack.packId,
+        'countdown_style' =>
+          ReactCosmetics.currentCountdownStyle == ReactCountdownStyle.core
+              ? null
+              : ReactCosmetics.currentCountdownStyle.packId,
+        'sound_pack' => ReactCosmetics.currentSoundPack == ReactSoundPack.core
+            ? null
+            : ReactCosmetics.currentSoundPack.packId,
+        'command_style' || 'command_pack' =>
+          ReactCosmetics.currentCommandStyle == ReactCommandStyle.core
+              ? null
+              : ReactCosmetics.currentCommandStyle.packId,
+        'share_style' || 'share_card' =>
+          ReactCosmetics.currentShareStyle == ReactShareStyle.core
+              ? null
+              : ReactCosmetics.currentShareStyle.packId,
+        _ => _equippedByKind[kind],
+      };
 
   static SeasonReward? equippedReward(String kind) {
     final key = equippedKey(kind);
@@ -148,18 +216,65 @@ abstract final class SeasonCosmeticState {
   }
 
   static Future<bool> equip(SeasonReward reward) async {
-    if (!isEquippable(reward) || !isOwned(reward.rewardKey)) return false;
-    _catalog[reward.rewardKey] = reward;
-    _equippedByKind[reward.kind] = reward.rewardKey;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('$_equippedPrefix${reward.kind}', reward.rewardKey);
-    return true;
+    if (!isOwned(reward.rewardKey) || !isEquippable(reward)) return false;
+
+    switch (reward.kind) {
+      case 'reaction_pack' || 'gameplay_theme':
+        final value = ReactReactionPack.fromPackId(reward.rewardKey);
+        if (value == null) return false;
+        await ReactCosmetics.equipReactionPack(value);
+        return true;
+      case 'countdown_style':
+        final value = ReactCountdownStyle.fromPackId(reward.rewardKey);
+        if (value == null) return false;
+        await ReactCosmetics.equipCountdownStyle(value);
+        return true;
+      case 'sound_pack':
+        final value = ReactSoundPack.fromPackId(reward.rewardKey);
+        if (value == null) return false;
+        await ReactCosmetics.equipSoundPack(value);
+        return true;
+      case 'command_style' || 'command_pack':
+        final value = ReactCommandStyle.fromPackId(reward.rewardKey);
+        if (value == null) return false;
+        await ReactCosmetics.equipCommandStyle(value);
+        return true;
+      case 'share_style' || 'share_card':
+        final value = ReactShareStyle.fromPackId(reward.rewardKey);
+        if (value == null) return false;
+        await ReactCosmetics.equipShareStyle(value);
+        return true;
+      default:
+        _catalog[reward.rewardKey] = reward;
+        _equippedByKind[reward.kind] = reward.rewardKey;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('$_equippedPrefix${reward.kind}', reward.rewardKey);
+        return true;
+    }
   }
 
   static Future<void> clearKind(String kind) async {
-    _equippedByKind.remove(kind);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('$_equippedPrefix$kind');
+    switch (kind) {
+      case 'reaction_pack' || 'gameplay_theme':
+        await ReactCosmetics.equipReactionPack(ReactReactionPack.core);
+        return;
+      case 'countdown_style':
+        await ReactCosmetics.equipCountdownStyle(ReactCountdownStyle.core);
+        return;
+      case 'sound_pack':
+        await ReactCosmetics.equipSoundPack(ReactSoundPack.core);
+        return;
+      case 'command_style' || 'command_pack':
+        await ReactCosmetics.equipCommandStyle(ReactCommandStyle.core);
+        return;
+      case 'share_style' || 'share_card':
+        await ReactCosmetics.equipShareStyle(ReactShareStyle.core);
+        return;
+      default:
+        _equippedByKind.remove(kind);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('$_equippedPrefix$kind');
+    }
   }
 
   static String _encode(SeasonReward reward) => jsonEncode(<String, dynamic>{
