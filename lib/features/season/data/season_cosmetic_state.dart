@@ -4,11 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/season_models.dart';
 
-/// Local equipment state for season-only cosmetic families.
+/// Local ownership/catalog/equipment state for season cosmetics.
 ///
-/// Server-awarded unlock rows are permanent. This cache accumulates verified
-/// unlocks so earned cosmetics remain usable offline and across later seasons,
-/// while equipment choices remain local to the device.
+/// Server-awarded unlock rows are permanent. The local catalog accumulates
+/// every reward metadata row seen from season snapshots so old cosmetics stay
+/// browsable/equippable after season rollover and while offline.
 abstract final class SeasonCosmeticState {
   static const _ownedKey = 'season_cosmetics_owned';
   static const _catalogKey = 'season_cosmetics_catalog';
@@ -18,22 +18,27 @@ abstract final class SeasonCosmeticState {
   static final Map<String, SeasonReward> _catalog = <String, SeasonReward>{};
   static final Map<String, String> _equippedByKind = <String, String>{};
 
-  /// Only cosmetic families with a real, visible renderer belong here.
-  ///
-  /// Do not add a kind simply because the backend can award it. A reward must
-  /// have a connected presentation surface before the locker is allowed to
-  /// report it as EQUIPPED.
+  /// Season-native families with real connected renderers. Legacy gameplay
+  /// packs are still equipped through LocalShopState during migration, but are
+  /// presented in the same Locker.
   static const Set<String> equippableKinds = <String>{
     'profile_frame',
     'profile_badge',
     'player_code_style',
     'home_theme',
+    'home_background',
     'score_effect',
     'success_effect',
+    'success_reaction',
     'failure_effect',
+    'failure_reaction',
     'mode_card_skin',
     'title',
     'emblem',
+    'arena_theme',
+    'hud_style',
+    'particle_pack',
+    'result_card_style',
   };
 
   static Future<void> load() async {
@@ -52,7 +57,7 @@ abstract final class SeasonCosmeticState {
         _catalog[reward.rewardKey] = reward;
         validCatalog.add(raw);
       } catch (_) {
-        // Corrupt cached cosmetic rows are dropped individually.
+        // Drop corrupt cached cosmetic rows individually.
       }
     }
     if (validCatalog.length != rawCatalog.length) {
@@ -61,13 +66,13 @@ abstract final class SeasonCosmeticState {
 
     _equippedByKind.clear();
     for (final kind in equippableKinds) {
-      final key = '$_equippedPrefix$kind';
-      final value = prefs.getString(key);
+      final prefKey = '$_equippedPrefix$kind';
+      final value = prefs.getString(prefKey);
       if (value == null) continue;
       if (_ownedKeys.contains(value)) {
         _equippedByKind[kind] = value;
       } else {
-        await prefs.remove(key);
+        await prefs.remove(prefKey);
       }
     }
 
@@ -84,11 +89,12 @@ abstract final class SeasonCosmeticState {
     final prefs = await SharedPreferences.getInstance();
     _ownedKeys.addAll(snapshot.unlockedRewardKeys);
 
+    // Cache ALL reward metadata, including legacy gameplay packs. Locker needs
+    // their category/name/preview after the originating season is no longer
+    // active even if another adapter owns their equipment state today.
     for (final tier in snapshot.tiers) {
       for (final reward in tier.rewards) {
-        if (equippableKinds.contains(reward.kind)) {
-          _catalog[reward.rewardKey] = reward;
-        }
+        _catalog[reward.rewardKey] = reward;
       }
     }
 
@@ -100,6 +106,19 @@ abstract final class SeasonCosmeticState {
   }
 
   static bool isOwned(String rewardKey) => _ownedKeys.contains(rewardKey);
+
+  static List<SeasonReward> get ownedRewards {
+    final rewards = <SeasonReward>[
+      for (final key in _ownedKeys)
+        if (_catalog[key] case final reward?) reward,
+    ];
+    rewards.sort((a, b) {
+      final tierOrder = a.tier.compareTo(b.tier);
+      if (tierOrder != 0) return tierOrder;
+      return a.name.compareTo(b.name);
+    });
+    return List<SeasonReward>.unmodifiable(rewards);
+  }
 
   static bool isEquippable(SeasonReward reward) =>
       equippableKinds.contains(reward.kind);
