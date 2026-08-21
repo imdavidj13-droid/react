@@ -7,8 +7,9 @@ import '../domain/season_models.dart';
 /// Local ownership/catalog/equipment state for season cosmetics.
 ///
 /// Server-awarded unlock rows are permanent. The local catalog accumulates
-/// every reward metadata row seen from season snapshots so old cosmetics stay
-/// browsable/equippable after season rollover and while offline.
+/// every reward metadata row seen from season snapshots and the lifetime
+/// cosmetic RPC so old cosmetics stay browsable/equippable after season
+/// rollover and on a clean reinstall.
 abstract final class SeasonCosmeticState {
   static const _ownedKey = 'season_cosmetics_owned';
   static const _catalogKey = 'season_cosmetics_catalog';
@@ -86,18 +87,31 @@ abstract final class SeasonCosmeticState {
   }
 
   static Future<void> syncSnapshot(SeasonSnapshot snapshot) async {
-    final prefs = await SharedPreferences.getInstance();
     _ownedKeys.addAll(snapshot.unlockedRewardKeys);
 
-    // Cache ALL reward metadata, including legacy gameplay packs. Locker needs
-    // their category/name/preview after the originating season is no longer
-    // active even if another adapter owns their equipment state today.
+    // Cache ALL reward metadata, including locked rows. Once one later appears
+    // in the unlock set its metadata is already available offline.
     for (final tier in snapshot.tiers) {
       for (final reward in tier.rewards) {
         _catalog[reward.rewardKey] = reward;
       }
     }
 
+    await _persist();
+  }
+
+  /// Rehydrates permanent ownership and metadata across every historical
+  /// season. This is what makes Locker a lifetime collection on a new device.
+  static Future<void> syncOwnedRewards(Iterable<SeasonReward> rewards) async {
+    for (final reward in rewards) {
+      _ownedKeys.add(reward.rewardKey);
+      _catalog[reward.rewardKey] = reward;
+    }
+    await _persist();
+  }
+
+  static Future<void> _persist() async {
+    final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_ownedKey, _ownedKeys.toList()..sort());
     await prefs.setStringList(
       _catalogKey,
