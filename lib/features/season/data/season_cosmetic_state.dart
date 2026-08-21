@@ -20,10 +20,8 @@ abstract final class SeasonCosmeticState {
   static final Map<String, String> _equippedByKind = <String, String>{};
 
   /// Only season-native families with a real connected renderer belong here.
-  /// Future categories such as arena themes, HUD skins, particles and true
-  /// in-run Reaction Packs remain unlockable in backend configuration but are
-  /// intentionally NOT equippable until every intended destination consumes
-  /// them.
+  /// Arena themes and full HUD skins remain intentionally blocked until every
+  /// intended gameplay renderer (including Sequence) consumes them.
   static const Set<String> _seasonNativeKinds = <String>{
     'profile_frame',
     'profile_badge',
@@ -39,6 +37,8 @@ abstract final class SeasonCosmeticState {
     'mode_card_skin',
     'title',
     'emblem',
+    'input_reaction_pack',
+    'particle_pack',
   };
 
   static Future<void> load() async {
