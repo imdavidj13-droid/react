@@ -19,9 +19,11 @@ abstract final class SeasonCosmeticState {
   static final Map<String, SeasonReward> _catalog = <String, SeasonReward>{};
   static final Map<String, String> _equippedByKind = <String, String>{};
 
-  /// Season-native families whose renderer is driven directly from reward
-  /// metadata. Gameplay theme/countdown/audio/command/share families are
-  /// handled through ReactCosmetics in the methods below.
+  /// Only season-native families with a real connected renderer belong here.
+  /// Future categories such as arena themes, HUD skins, particles and true
+  /// in-run Reaction Packs remain unlockable in backend configuration but are
+  /// intentionally NOT equippable until every intended destination consumes
+  /// them.
   static const Set<String> _seasonNativeKinds = <String>{
     'profile_frame',
     'profile_badge',
@@ -29,17 +31,14 @@ abstract final class SeasonCosmeticState {
     'home_theme',
     'home_background',
     'score_effect',
+    'result_score_style',
     'success_effect',
-    'success_reaction',
+    'result_success_style',
     'failure_effect',
-    'failure_reaction',
+    'result_failure_style',
     'mode_card_skin',
     'title',
     'emblem',
-    'arena_theme',
-    'hud_style',
-    'particle_pack',
-    'result_card_style',
   };
 
   static Future<void> load() async {
@@ -87,9 +86,9 @@ abstract final class SeasonCosmeticState {
       }
     }
 
-    // If an old gameplay pack is equipped but no longer owned, safely fall
-    // back to CORE. This preserves previous Shop-era preference keys without
-    // preserving a second ownership model.
+    // If a Shop-era gameplay pack is equipped but no longer owned, safely
+    // fall back to CORE. Existing ReactCosmetics preference keys are retained
+    // only as low-level renderer state, not as a second entitlement system.
     if (ReactCosmetics.currentReactionPack != ReactReactionPack.core &&
         !_ownedKeys.contains(ReactCosmetics.currentReactionPack.packId)) {
       await ReactCosmetics.equipReactionPack(ReactReactionPack.core);
@@ -114,13 +113,11 @@ abstract final class SeasonCosmeticState {
 
   static Future<void> syncSnapshot(SeasonSnapshot snapshot) async {
     _ownedKeys.addAll(snapshot.unlockedRewardKeys);
-
     for (final tier in snapshot.tiers) {
       for (final reward in tier.rewards) {
         _catalog[reward.rewardKey] = reward;
       }
     }
-
     await _persist();
   }
 
@@ -184,7 +181,7 @@ abstract final class SeasonCosmeticState {
           ReactCosmetics.currentCommandStyle.packId == reward.rewardKey,
         'share_style' || 'share_card' =>
           ReactCosmetics.currentShareStyle.packId == reward.rewardKey,
-        _ => _equippedByKind[reward.kind] == reward.rewardKey,
+        _ => equippedKey(reward.kind) == reward.rewardKey,
       };
 
   static String? equippedKey(String kind) => switch (kind) {
@@ -207,6 +204,14 @@ abstract final class SeasonCosmeticState {
           ReactCosmetics.currentShareStyle == ReactShareStyle.core
               ? null
               : ReactCosmetics.currentShareStyle.packId,
+        'home_theme' || 'home_background' =>
+          _equippedByKind['home_background'] ?? _equippedByKind['home_theme'],
+        'score_effect' || 'result_score_style' =>
+          _equippedByKind['result_score_style'] ?? _equippedByKind['score_effect'],
+        'success_effect' || 'result_success_style' =>
+          _equippedByKind['result_success_style'] ?? _equippedByKind['success_effect'],
+        'failure_effect' || 'result_failure_style' =>
+          _equippedByKind['result_failure_style'] ?? _equippedByKind['failure_effect'],
         _ => _equippedByKind[kind],
       };
 
@@ -245,9 +250,13 @@ abstract final class SeasonCosmeticState {
         await ReactCosmetics.equipShareStyle(value);
         return true;
       default:
+        final prefs = await SharedPreferences.getInstance();
+        for (final familyKind in _nativeFamilyKinds(reward.kind)) {
+          _equippedByKind.remove(familyKind);
+          await prefs.remove('$_equippedPrefix$familyKind');
+        }
         _catalog[reward.rewardKey] = reward;
         _equippedByKind[reward.kind] = reward.rewardKey;
-        final prefs = await SharedPreferences.getInstance();
         await prefs.setString('$_equippedPrefix${reward.kind}', reward.rewardKey);
         return true;
     }
@@ -271,11 +280,25 @@ abstract final class SeasonCosmeticState {
         await ReactCosmetics.equipShareStyle(ReactShareStyle.core);
         return;
       default:
-        _equippedByKind.remove(kind);
         final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('$_equippedPrefix$kind');
+        for (final familyKind in _nativeFamilyKinds(kind)) {
+          _equippedByKind.remove(familyKind);
+          await prefs.remove('$_equippedPrefix$familyKind');
+        }
     }
   }
+
+  static Set<String> _nativeFamilyKinds(String kind) => switch (kind) {
+        'home_theme' || 'home_background' =>
+          const <String>{'home_theme', 'home_background'},
+        'score_effect' || 'result_score_style' =>
+          const <String>{'score_effect', 'result_score_style'},
+        'success_effect' || 'result_success_style' =>
+          const <String>{'success_effect', 'result_success_style'},
+        'failure_effect' || 'result_failure_style' =>
+          const <String>{'failure_effect', 'result_failure_style'},
+        _ => <String>{kind},
+      };
 
   static String _encode(SeasonReward reward) => jsonEncode(<String, dynamic>{
         'id': reward.id,
