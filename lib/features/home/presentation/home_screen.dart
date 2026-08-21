@@ -5,10 +5,15 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../classic/presentation/classic_screen.dart';
 import '../../daily/presentation/daily_screen.dart';
+import '../../friends/presentation/friends_screen.dart';
 import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import '../../leaderboard/presentation/leaderboard_screen.dart';
 import '../../modes/presentation/modes_screen.dart';
+import '../../season/presentation/season_locker_screen.dart';
+import '../../season/presentation/season_screen.dart';
+import '../../settings/presentation/settings_screen.dart';
+import '../../tutorial/presentation/how_to_play_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -51,34 +56,34 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (context, constraints) {
                 final compact = constraints.maxHeight < 780;
                 final veryCompact = constraints.maxHeight < 700;
-                final pad = constraints.maxWidth < 380 ? 18.0 : 22.0;
+                final pad = constraints.maxWidth < 380 ? 14.0 : 18.0;
                 final maxDial = constraints.maxWidth.clamp(270.0, 330.0).toDouble();
                 final dialCap = veryCompact
-                    ? 236.0
+                    ? 202.0
                     : compact
-                    ? 270.0
-                    : maxDial;
+                        ? 232.0
+                        : maxDial;
 
                 return Padding(
-                  padding: EdgeInsets.fromLTRB(pad, 8, pad, 12),
+                  padding: EdgeInsets.fromLTRB(pad, 8, pad, compact ? 8 : 12),
                   child: Column(
                     children: [
                       const _TopSection(),
-                      SizedBox(height: compact ? 10 : 14),
+                      SizedBox(height: compact ? 8 : 12),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(child: _BestScore(score: stats.classicBest)),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 12),
                           Padding(
-                            padding: const EdgeInsets.only(right: 10),
+                            padding: const EdgeInsets.only(right: 8),
                             child: _Streak(days: stats.dailyStreak),
                           ),
                         ],
                       ),
-                      SizedBox(height: compact ? 8 : 12),
+                      SizedBox(height: compact ? 7 : 10),
                       _RecordStrip(stats: stats),
-                      SizedBox(height: compact ? 2 : 6),
+                      SizedBox(height: compact ? 1 : 5),
                       Expanded(
                         child: Center(
                           child: LayoutBuilder(
@@ -88,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 dialConstraints.maxHeight,
                               );
                               final dialSize = available
-                                  .clamp(190.0, dialCap)
+                                  .clamp(172.0, dialCap)
                                   .toDouble();
                               return _PlayDial(
                                 size: dialSize,
@@ -98,47 +103,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: compact ? 4 : 8),
+                      SizedBox(height: compact ? 3 : 7),
                       _PlayButton(
+                        compact: compact,
                         onTap: () => _open(context, const ClassicScreen()),
                       ),
-                      SizedBox(height: compact ? 8 : 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _NavTile(
-                              icon: Icons.view_in_ar_rounded,
-                              label: 'MODES',
-                              color: const Color(0xFF27D8F6),
-                              onTap: () => _open(context, const ModesScreen()),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _NavTile(
-                              icon: Icons.calendar_month_rounded,
-                              label: 'DAILY',
-                              color: ReactColors.lime,
-                              status: stats.dailyPlayedToday ? 'PLAY AGAIN' : 'READY',
-                              statusColor: stats.dailyPlayedToday
-                                  ? ReactColors.lime
-                                  : ReactColors.electricBlueBright,
-                              onTap: () => _open(context, const DailyScreen()),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _NavTile(
-                              icon: Icons.leaderboard_rounded,
-                              label: 'SCORES',
-                              color: ReactColors.purple,
-                              onTap: () => _open(
-                                context,
-                                const LeaderboardScreen(),
-                              ),
-                            ),
-                          ),
-                        ],
+                      SizedBox(height: compact ? 7 : 10),
+                      _HomeNavGrid(
+                        compact: compact,
+                        stats: stats,
+                        open: (screen) => _open(context, screen),
                       ),
                     ],
                   ),
@@ -511,7 +485,7 @@ class _PlayDial extends StatelessWidget {
               child: Icon(
                 Icons.play_arrow_rounded,
                 color: const Color(0xFF39D8FF),
-                size: (size * .22).clamp(52.0, 74.0).toDouble(),
+                size: (size * .22).clamp(45.0, 74.0).toDouble(),
               ),
             ),
           ),
@@ -569,8 +543,9 @@ class _DialPainter extends CustomPainter {
 }
 
 class _PlayButton extends StatelessWidget {
-  const _PlayButton({required this.onTap});
+  const _PlayButton({required this.compact, required this.onTap});
 
+  final bool compact;
   final VoidCallback onTap;
 
   @override
@@ -578,7 +553,7 @@ class _PlayButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 60,
+        height: compact ? 52 : 58,
         width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
@@ -589,16 +564,16 @@ class _PlayButton extends StatelessWidget {
           ),
           border: Border.all(color: const Color(0xFF74E8FF), width: 2),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
-            SizedBox(width: 14),
+            const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 27),
+            const SizedBox(width: 12),
             Text(
               'PLAY',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 28,
+                fontSize: compact ? 24 : 27,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 4,
               ),
@@ -610,12 +585,117 @@ class _PlayButton extends StatelessWidget {
   }
 }
 
-class _NavTile extends StatelessWidget {
-  const _NavTile({
+class _HomeNavGrid extends StatelessWidget {
+  const _HomeNavGrid({
+    required this.compact,
+    required this.stats,
+    required this.open,
+  });
+
+  final bool compact;
+  final _HomeStats stats;
+  final ValueChanged<Widget> open;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <_HomeNavItem>[
+      const _HomeNavItem(
+        icon: Icons.view_in_ar_rounded,
+        label: 'MODES',
+        color: Color(0xFF27D8F6),
+        screen: ModesScreen(),
+      ),
+      _HomeNavItem(
+        icon: Icons.calendar_month_rounded,
+        label: 'DAILY',
+        color: ReactColors.lime,
+        screen: const DailyScreen(),
+        status: stats.dailyPlayedToday ? 'AGAIN' : 'READY',
+        statusColor: stats.dailyPlayedToday
+            ? ReactColors.lime
+            : ReactColors.electricBlueBright,
+      ),
+      const _HomeNavItem(
+        icon: Icons.leaderboard_rounded,
+        label: 'LEADERBOARD',
+        color: ReactColors.purple,
+        screen: LeaderboardScreen(),
+      ),
+      const _HomeNavItem(
+        icon: Icons.bolt_rounded,
+        label: 'PASS',
+        color: ReactColors.electricBlueBright,
+        screen: SeasonScreen(),
+      ),
+      const _HomeNavItem(
+        icon: Icons.inventory_2_outlined,
+        label: 'LOCKER',
+        color: Color(0xFFFFB85A),
+        screen: SeasonLockerScreen(),
+      ),
+      const _HomeNavItem(
+        icon: Icons.group_outlined,
+        label: 'FRIENDS',
+        color: ReactColors.lime,
+        screen: FriendsScreen(),
+      ),
+      const _HomeNavItem(
+        icon: Icons.school_outlined,
+        label: 'HOW TO PLAY',
+        color: ReactColors.electricBlueBright,
+        screen: HowToPlayScreen(),
+      ),
+      const _HomeNavItem(
+        icon: Icons.settings_outlined,
+        label: 'SETTINGS',
+        color: ReactColors.textSecondary,
+        screen: SettingsScreen(),
+      ),
+    ];
+
+    final height = compact ? 61.0 : 68.0;
+    return Column(
+      children: [
+        Row(
+          children: [
+            for (var i = 0; i < 4; i++) ...[
+              if (i > 0) const SizedBox(width: 7),
+              Expanded(
+                child: _NavTile(
+                  item: items[i],
+                  height: height,
+                  onTap: () => open(items[i].screen),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 7),
+        Row(
+          children: [
+            for (var i = 4; i < 8; i++) ...[
+              if (i > 4) const SizedBox(width: 7),
+              Expanded(
+                child: _NavTile(
+                  item: items[i],
+                  height: height,
+                  onTap: () => open(items[i].screen),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeNavItem {
+  const _HomeNavItem({
     required this.icon,
     required this.label,
     required this.color,
-    required this.onTap,
+    required this.screen,
     this.status,
     this.statusColor,
   });
@@ -623,64 +703,81 @@ class _NavTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
-  final VoidCallback onTap;
+  final Widget screen;
   final String? status;
   final Color? statusColor;
+}
+
+class _NavTile extends StatelessWidget {
+  const _NavTile({
+    required this.item,
+    required this.height,
+    required this.onTap,
+  });
+
+  final _HomeNavItem item;
+  final double height;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(15),
       child: Container(
-        height: 80,
+        height: height,
         decoration: BoxDecoration(
           color: const Color(0xCC07111D),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(15),
           border: Border.all(color: const Color(0xFF2A3A52)),
         ),
         child: Stack(
           children: [
             Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, color: color, size: 25),
-                  const SizedBox(height: 7),
-                  FittedBox(
-                    child: Text(
-                      label,
-                      style: const TextStyle(
-                        color: ReactColors.textSecondary,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: .7,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(item.icon, color: item.color, size: 21),
+                    const SizedBox(height: 5),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        item.label,
+                        maxLines: 1,
+                        style: const TextStyle(
+                          color: ReactColors.textSecondary,
+                          fontSize: 8.2,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .45,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            if (status != null)
+            if (item.status != null)
               Positioned(
-                top: 7,
-                right: 7,
+                top: 4,
+                right: 4,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
                   decoration: BoxDecoration(
                     color: const Color(0xFF050A13),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(7),
                     border: Border.all(
-                      color: (statusColor ?? color).withValues(alpha: .55),
+                      color: (item.statusColor ?? item.color).withValues(alpha: .55),
                     ),
                   ),
                   child: Text(
-                    status!,
+                    item.status!,
                     style: TextStyle(
-                      color: statusColor ?? color,
-                      fontSize: 6.5,
+                      color: item.statusColor ?? item.color,
+                      fontSize: 5.5,
                       fontWeight: FontWeight.w900,
-                      letterSpacing: .4,
+                      letterSpacing: .25,
                     ),
                   ),
                 ),

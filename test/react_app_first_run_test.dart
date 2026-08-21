@@ -23,9 +23,13 @@ void main() {
     ReactSettings.howToPlayCompleted = true;
 
     await tester.pumpWidget(const ReactApp());
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
 
-    expect(find.text('HOW TO PLAY'), findsNothing);
+    // HOW TO PLAY is now an intentional Home navigation tile. The tutorial's
+    // intro copy must be absent while the actual Home hero is present.
+    expect(find.text('HOW TO PLAY'), findsOneWidget);
+    expect(find.text('9 COMMANDS. ONE SIMPLE RULE.'), findsNothing);
     expect(find.textContaining('FOLLOW THE COMMAND'), findsOneWidget);
   });
 }

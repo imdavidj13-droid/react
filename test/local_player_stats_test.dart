@@ -65,18 +65,27 @@ void main() {
     expect(await LocalPlayerStats.bestFor(ReactGameMode.sequence), 16);
   });
 
-  test('Pass It counts as a run but never creates a personal best', () async {
-    final newBest = await LocalPlayerStats.recordResult(
+  test('Pass It counts as a run and preserves its personal best', () async {
+    final firstBest = await LocalPlayerStats.recordResult(
       result(
         mode: ReactGameMode.passIt,
         score: 30,
         outcome: ReactRunOutcome.winner,
       ),
     );
+    final lowerRun = await LocalPlayerStats.recordResult(
+      result(
+        mode: ReactGameMode.passIt,
+        score: 18,
+        outcome: ReactRunOutcome.winner,
+      ),
+    );
 
-    expect(newBest, isFalse);
-    expect(await LocalPlayerStats.bestFor(ReactGameMode.passIt), 0);
-    expect(await LocalPlayerStats.runsPlayed(), 1);
+    expect(firstBest, isTrue);
+    expect(lowerRun, isFalse);
+    expect(await LocalPlayerStats.bestFor(ReactGameMode.passIt), 30);
+    expect(await LocalPlayerStats.runsPlayed(), 2);
+    expect(await LocalPlayerStats.runsFor(ReactGameMode.passIt), 2);
   });
 
   test('increments total runs and per-mode runs', () async {

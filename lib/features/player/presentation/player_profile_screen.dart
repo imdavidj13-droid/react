@@ -9,6 +9,8 @@ import '../../gameplay/domain/react_run_result.dart';
 import '../../leaderboard/data/local_leaderboard_repository.dart';
 import '../../leaderboard/domain/leaderboard_query.dart';
 import '../../leaderboard/domain/leaderboard_snapshot.dart';
+import '../../season/data/season_cosmetic_state.dart';
+import '../../season/presentation/season_cosmetic_layers.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../data/local_player_profile.dart';
 import '../data/player_profile_repository.dart';
@@ -503,6 +505,24 @@ class _IdentityHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final badge = SeasonCosmeticState.equippedReward('profile_badge');
+    final title = SeasonCosmeticState.equippedReward('title');
+    final emblem = SeasonCosmeticState.equippedReward('emblem');
+    final codeStyle = SeasonCosmeticState.equippedReward('player_code_style');
+    final badgeAccent = badge == null
+        ? ReactColors.electricBlueBright
+        : SeasonCosmeticLayers.accentForReward(badge);
+    final titleAccent = title == null
+        ? ReactColors.electricBlueBright
+        : SeasonCosmeticLayers.accentForReward(title);
+    final emblemAccent = emblem == null
+        ? ReactColors.electricBlueBright
+        : SeasonCosmeticLayers.accentForReward(emblem);
+    final codeAccent = codeStyle == null
+        ? ReactColors.electricBlueBright
+        : SeasonCosmeticLayers.accentForReward(codeStyle);
+    final codeKey = codeStyle?.rewardKey ?? '';
+
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
       decoration: BoxDecoration(
@@ -546,7 +566,16 @@ class _IdentityHero extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          if (badge != null) ...[
+            const SizedBox(height: 13),
+            _SeasonIdentityPill(
+              icon: _badgeIcon(badge.rewardKey),
+              label: badge.name,
+              color: badgeAccent,
+              rewardKey: badge.rewardKey,
+            ),
+          ] else
+            const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -571,15 +600,104 @@ class _IdentityHero extends StatelessWidget {
               ),
             ],
           ),
-          Text(
-            profile.playerCode,
-            style: const TextStyle(
-              color: ReactColors.electricBlueBright,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.4,
+          if (title != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              title.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: titleAccent,
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.25,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ] else
+            const SizedBox(height: 2),
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: codeStyle == null ? 0 : 10,
+              vertical: codeStyle == null ? 0 : 6,
+            ),
+            decoration: codeStyle == null
+                ? null
+                : BoxDecoration(
+                    color: codeAccent.withValues(
+                      alpha: codeKey.contains('overclock') ? .12 : .075,
+                    ),
+                    borderRadius: BorderRadius.circular(
+                      codeKey.contains('voltage_trace') ? 5 : 12,
+                    ),
+                    border: Border.all(
+                      color: codeAccent.withValues(
+                        alpha: codeKey.contains('overclock') ? .72 : .42,
+                      ),
+                      width: codeKey.contains('overclock') ? 1.6 : 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: codeAccent.withValues(
+                          alpha: codeKey.contains('blue_pulse') ? .20 : .08,
+                        ),
+                        blurRadius: codeKey.contains('blue_pulse') ? 18 : 12,
+                      ),
+                    ],
+                  ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (emblem != null) ...[
+                  Icon(
+                    _emblemIcon(emblem.rewardKey),
+                    color: emblemAccent,
+                    size: 15,
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  profile.playerCode,
+                  style: TextStyle(
+                    color: codeAccent,
+                    fontSize: codeKey.contains('overclock') ? 12 : 11,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: codeKey.contains('voltage_trace') ? 'monospace' : null,
+                    fontStyle: codeKey.contains('current')
+                        ? FontStyle.italic
+                        : FontStyle.normal,
+                    letterSpacing: codeStyle == null
+                        ? 1.4
+                        : codeKey.contains('voltage_trace')
+                            ? 2.2
+                            : 1.8,
+                    shadows: codeStyle == null
+                        ? null
+                        : [
+                            Shadow(
+                              color: codeAccent.withValues(
+                                alpha: codeKey.contains('blue_pulse') ? .65 : .32,
+                              ),
+                              blurRadius: codeKey.contains('blue_pulse') ? 9 : 4,
+                            ),
+                          ],
+                  ),
+                ),
+              ],
             ),
           ),
+          if (emblem != null) ...[
+            const SizedBox(height: 5),
+            Text(
+              emblem.name,
+              style: TextStyle(
+                color: emblemAccent.withValues(alpha: .9),
+                fontSize: 7.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .9,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           _StatusPill(profile: profile),
           if (onRemovePhoto != null) ...[
@@ -594,6 +712,69 @@ class _IdentityHero extends StatelessWidget {
             const SizedBox(height: 8),
             const LinearProgressIndicator(minHeight: 2),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SeasonIdentityPill extends StatelessWidget {
+  const _SeasonIdentityPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.rewardKey,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final String rewardKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final angular = rewardKey.contains('charge') || rewardKey.contains('pressure');
+    final strong = rewardKey.contains('reflex') || rewardKey.contains('overdrive');
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 210),
+      padding: EdgeInsets.symmetric(
+        horizontal: angular ? 11 : 9,
+        vertical: strong ? 6 : 5,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: strong ? .13 : .08),
+        borderRadius: BorderRadius.circular(angular ? 7 : 99),
+        border: Border.all(
+          color: color.withValues(alpha: strong ? .68 : .42),
+          width: strong ? 1.5 : 1,
+        ),
+        boxShadow: strong
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: .16),
+                  blurRadius: 14,
+                ),
+              ]
+            : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 13),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .75,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1170,6 +1351,25 @@ class _AccountCard extends StatelessWidget {
       ),
     );
   }
+}
+
+IconData _badgeIcon(String rewardKey) {
+  if (rewardKey.contains('ignition')) return Icons.local_fire_department_rounded;
+  if (rewardKey.contains('live_wire')) return Icons.electric_bolt_rounded;
+  if (rewardKey.contains('reflex')) return Icons.visibility_rounded;
+  if (rewardKey.contains('charge')) return Icons.battery_charging_full_rounded;
+  if (rewardKey.contains('pressure')) return Icons.speed_rounded;
+  return Icons.workspace_premium_rounded;
+}
+
+IconData _emblemIcon(String rewardKey) {
+  if (rewardKey.contains('reactor')) return Icons.blur_circular_rounded;
+  if (rewardKey.contains('peak_signal')) return Icons.cell_tower_rounded;
+  if (rewardKey.contains('split_second')) return Icons.timer_outlined;
+  if (rewardKey.contains('charge_cell')) return Icons.battery_charging_full_rounded;
+  if (rewardKey.contains('elite')) return Icons.change_history_rounded;
+  if (rewardKey.contains('overdrive')) return Icons.electric_bolt_rounded;
+  return Icons.bolt_rounded;
 }
 
 String _formatDate(DateTime value) {

@@ -11,11 +11,13 @@ import '../../../core/theme/react_colors.dart';
 import '../../../game/react_game.dart';
 import '../../modes/domain/mode_timing_rules.dart';
 import '../../results/presentation/results_screen.dart';
+import '../../season/presentation/season_gameplay_style.dart';
 import '../domain/react_command.dart';
 import '../domain/react_run_result.dart';
 import '../domain/run_command_performance_tracker.dart';
 import 'react_gesture_surface.dart';
 import 'react_run_launch_screen.dart';
+import 'run_meta_hud.dart';
 
 class ReactRunScreen extends StatefulWidget {
   const ReactRunScreen({required this.mode, super.key})
@@ -720,7 +722,12 @@ class _ReactRunScreenState extends State<ReactRunScreen>
                           statusValue: _statusValue,
                           onPause: () => _setPaused(true),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
+                        RunMetaHud(
+                          mode: widget.mode,
+                          currentScore: _score,
+                        ),
+                        const SizedBox(height: 8),
                         Expanded(
                           child: Center(
                             child: ReactGestureSurface(
@@ -830,30 +837,40 @@ Color _themePanelColor() => switch (ReactCosmetics.currentTheme) {
   ReactVisualTheme.mono => const Color(0xFF0A0A0A),
 };
 
-Color _themeArenaSurfaceColor() => switch (ReactCosmetics.currentTheme) {
-  ReactVisualTheme.core => const Color(0xFF050A13),
-  ReactVisualTheme.redline => const Color(0xFF100609),
-  ReactVisualTheme.synthwave => const Color(0xFF090718),
-  ReactVisualTheme.mono => const Color(0xFF050505),
-};
+Color _themeArenaSurfaceColor() {
+  final base = switch (ReactCosmetics.currentTheme) {
+    ReactVisualTheme.core => const Color(0xFF050A13),
+    ReactVisualTheme.redline => const Color(0xFF100609),
+    ReactVisualTheme.synthwave => const Color(0xFF090718),
+    ReactVisualTheme.mono => const Color(0xFF050505),
+  };
+  return SeasonGameplayStyle.arenaSurface(base);
+}
 
 Color _themeBorderColor() => ReactCosmetics.currentTheme == ReactVisualTheme.core
     ? const Color(0xFF243A57)
     : ReactCosmetics.palette.primary.withValues(alpha: .38);
 
-Color _themeInnerBorderColor() =>
-    ReactCosmetics.currentTheme == ReactVisualTheme.core
-    ? const Color(0xFF153B65)
-    : ReactCosmetics.palette.primary.withValues(alpha: .44);
+Color _themeInnerBorderColor() {
+  final base = ReactCosmetics.currentTheme == ReactVisualTheme.core
+      ? const Color(0xFF153B65)
+      : ReactCosmetics.palette.primary.withValues(alpha: .44);
+  return SeasonGameplayStyle.arenaInnerBorder(base);
+}
 
-Color _themeRingBaseColor() => ReactCosmetics.currentTheme == ReactVisualTheme.core
-    ? const Color(0xFF122038)
-    : ReactCosmetics.palette.primary.withValues(alpha: .16);
+Color _themeRingBaseColor() {
+  final base = ReactCosmetics.currentTheme == ReactVisualTheme.core
+      ? const Color(0xFF122038)
+      : ReactCosmetics.palette.primary.withValues(alpha: .16);
+  return SeasonGameplayStyle.arenaRingBase(base);
+}
 
-Color _themeTimerTrackColor() =>
-    ReactCosmetics.currentTheme == ReactVisualTheme.core
-    ? const Color(0xFF10243D)
-    : ReactCosmetics.palette.primary.withValues(alpha: .20);
+Color _themeTimerTrackColor() {
+  final base = ReactCosmetics.currentTheme == ReactVisualTheme.core
+      ? const Color(0xFF10243D)
+      : ReactCosmetics.palette.primary.withValues(alpha: .20);
+  return SeasonGameplayStyle.arenaTimerTrack(base);
+}
 
 class _Header extends StatelessWidget {
   const _Header({
@@ -955,9 +972,12 @@ class _HudCard extends StatelessWidget {
     return Container(
       height: 64,
       decoration: BoxDecoration(
-        color: _themePanelColor(),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _themeBorderColor()),
+        color: SeasonGameplayStyle.hudPanel(_themePanelColor()),
+        borderRadius: BorderRadius.circular(SeasonGameplayStyle.hudRadius),
+        border: Border.all(
+          color: SeasonGameplayStyle.hudBorder(_themeBorderColor()),
+        ),
+        boxShadow: SeasonGameplayStyle.hudShadow,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1007,6 +1027,7 @@ class _Arena extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = ReactCosmetics.palette;
     final seconds = (commandDurationMs * progress / 1000).clamp(0, 9.9);
+    final arenaAccent = SeasonGameplayStyle.arenaPrimary(accent);
 
     return SizedBox.square(
       dimension: size,
@@ -1041,7 +1062,7 @@ class _Arena extends StatelessWidget {
                 const SizedBox(height: 18),
                 Icon(
                   command.icon,
-                  color: accent,
+                  color: arenaAccent,
                   size:
                       command == ReactCommand.pinch ||
                           command == ReactCommand.spread
@@ -1078,7 +1099,9 @@ class _Arena extends StatelessWidget {
                   Text(
                     seconds.toStringAsFixed(2),
                     style: TextStyle(
-                      color: progress < .2 ? palette.failure : accent,
+                      color: progress < .2
+                          ? SeasonGameplayStyle.arenaFailure(palette.failure)
+                          : arenaAccent,
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1114,15 +1137,17 @@ class _RingPainter extends CustomPainter {
     final radius = size.width * .44;
     final base = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 9
+      ..strokeWidth = SeasonGameplayStyle.arenaRingStroke
       ..color = _themeRingBaseColor();
     canvas.drawCircle(center, radius, base);
 
     final deco = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round;
-    deco.color = palette.primary.withValues(alpha: .72);
+      ..strokeWidth = SeasonGameplayStyle.arenaRingStroke - 1
+      ..strokeCap = SeasonGameplayStyle.arenaStrokeCap;
+    deco.color = SeasonGameplayStyle.arenaPrimary(
+      palette.primary,
+    ).withValues(alpha: .72);
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       .8,
@@ -1130,7 +1155,9 @@ class _RingPainter extends CustomPainter {
       false,
       deco,
     );
-    deco.color = palette.secondary.withValues(alpha: .72);
+    deco.color = SeasonGameplayStyle.arenaSecondary(
+      palette.secondary,
+    ).withValues(alpha: .72);
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       3.0,
@@ -1138,7 +1165,9 @@ class _RingPainter extends CustomPainter {
       false,
       deco,
     );
-    deco.color = palette.failure.withValues(alpha: .72);
+    deco.color = SeasonGameplayStyle.arenaFailure(
+      palette.failure,
+    ).withValues(alpha: .72);
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       4.75,
@@ -1150,15 +1179,17 @@ class _RingPainter extends CustomPainter {
     final timerRadius = radius + 14;
     final track = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 12
+      ..strokeWidth = SeasonGameplayStyle.arenaTimerStroke
       ..color = _themeTimerTrackColor();
     canvas.drawCircle(center, timerRadius, track);
 
     final timer = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 12
-      ..strokeCap = StrokeCap.round
-      ..color = progress < .18 ? palette.failure : accent;
+      ..strokeWidth = SeasonGameplayStyle.arenaTimerStroke
+      ..strokeCap = SeasonGameplayStyle.arenaStrokeCap
+      ..color = progress < .18
+          ? SeasonGameplayStyle.arenaFailure(palette.failure)
+          : SeasonGameplayStyle.arenaPrimary(accent);
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: timerRadius),
       -pi / 2,
@@ -1374,7 +1405,9 @@ class _HandoffOverlay extends StatelessWidget {
               color: _themePanelColor(),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: hasLifeLoss ? palette.failure : _visualAccent(ReactGameMode.passIt),
+                color: hasLifeLoss
+                    ? palette.failure
+                    : _visualAccent(ReactGameMode.passIt),
               ),
             ),
             child: Column(

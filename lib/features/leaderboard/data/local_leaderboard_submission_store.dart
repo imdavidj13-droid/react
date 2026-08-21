@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../gameplay/domain/react_run_result.dart';
+import '../../season/data/season_progress_service.dart';
 import '../domain/leaderboard_submission.dart';
 import '../domain/leaderboard_submission_eligibility.dart';
 
@@ -15,10 +16,23 @@ class LocalLeaderboardSubmissionStore {
   static Future<LeaderboardSubmission?> enqueueResult(
     ReactRunResult result, {
     DateTime? completedAt,
+    bool? isPersonalBest,
+    void Function(int chargeEarned)? onSeasonChargeEarned,
   }) async {
     if (result.isDailyDevRun) {
       return null;
     }
+
+    // Seasonal progression is deliberately independent from leaderboard
+    // eligibility so Pass It and other valid completed runs still count toward
+    // CHARGE. Callers that already know the exact PB result can pass it through
+    // so season progression uses the same decision as Results.
+    final chargeEarned = await SeasonProgressService.recordResult(
+      result,
+      isPersonalBest: isPersonalBest,
+    );
+    if (chargeEarned != null) onSeasonChargeEarned?.call(chargeEarned);
+
     if (!LeaderboardSubmissionEligibility.isEligibleResult(result)) {
       return null;
     }

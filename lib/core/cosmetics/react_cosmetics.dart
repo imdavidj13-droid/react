@@ -158,11 +158,13 @@ enum ReactCommandStyle {
 
 enum ReactShareStyle {
   core,
-  pro;
+  pro,
+  overdrive;
 
   String get packId => switch (this) {
     ReactShareStyle.core => 'core_share_cards',
     ReactShareStyle.pro => 'pro_share_cards',
+    ReactShareStyle.overdrive => 'share_style_overdrive',
   };
 
   static ReactShareStyle? fromPackId(String? value) {
@@ -206,10 +208,6 @@ abstract final class ReactCosmetics {
   static ReactCommandStyle currentCommandStyle = ReactCommandStyle.core;
   static ReactShareStyle currentShareStyle = ReactShareStyle.core;
 
-  /// The four newer colour packs deliberately use the neutral MONO surface
-  /// family underneath. Only treat the private override as active while that
-  /// neutral family is still selected. This keeps older code/tests that assign
-  /// [currentTheme] directly fully backward compatible.
   static ReactReactionPack get currentReactionPack {
     final override = _reactionPackOverride;
     if (override != null && currentTheme == ReactVisualTheme.mono) {

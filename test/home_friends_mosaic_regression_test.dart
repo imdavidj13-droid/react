@@ -3,11 +3,20 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('home utility controls stay on the top row', () {
-    final source = File('lib/app/react_app.dart').readAsStringSync();
-    expect(source, contains('right: 62'));
-    expect(source, contains('left: 62'));
-    expect(source, contains('MediaQuery.paddingOf(context).top + 10'));
+  test('Home keeps profile in top chrome and moves utilities into tiles', () {
+    final app = File('lib/app/react_app.dart').readAsStringSync();
+    final home = File(
+      'lib/features/home/presentation/home_screen.dart',
+    ).readAsStringSync();
+
+    expect(app, contains("tooltip: 'Player profile'"));
+    expect(app, contains('right: 12'));
+    expect(app, isNot(contains("tooltip: 'Friends'")));
+    expect(app, isNot(contains("tooltip: 'Locker'")));
+    expect(home, contains("label: 'FRIENDS'"));
+    expect(home, contains("label: 'LOCKER'"));
+    expect(home, contains("label: 'PASS'"));
+    expect(home, contains("label: 'LEADERBOARD'"));
   });
 
   test('Friends exposes a copyable own player code', () {

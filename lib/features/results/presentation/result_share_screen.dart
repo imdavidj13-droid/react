@@ -80,7 +80,9 @@ class _ResultShareScreenState extends State<ResultShareScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pro = ReactCosmetics.currentShareStyle == ReactShareStyle.pro;
+    final shareStyle = ReactCosmetics.currentShareStyle;
+    final overdrive = shareStyle == ReactShareStyle.overdrive;
+    final pro = shareStyle != ReactShareStyle.core;
 
     return Scaffold(
       backgroundColor: ReactColors.background,
@@ -103,7 +105,11 @@ class _ResultShareScreenState extends State<ResultShareScreen> {
                   Expanded(
                     child: Center(
                       child: Text(
-                        pro ? 'PRO SHARE CARD' : 'SHARE RESULT',
+                        overdrive
+                            ? 'OVERDRIVE SHARE'
+                            : pro
+                                ? 'PRO SHARE CARD'
+                                : 'SHARE RESULT',
                         style: const TextStyle(
                           color: ReactColors.textPrimary,
                           fontSize: 17,
@@ -120,9 +126,11 @@ class _ResultShareScreenState extends State<ResultShareScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                pro
-                    ? 'PRO STYLE • THIS CARD WILL BE SHARED AS AN IMAGE'
-                    : 'PREVIEW • THIS CARD WILL BE SHARED AS AN IMAGE',
+                overdrive
+                    ? 'OVERDRIVE STYLE • THIS CARD WILL BE SHARED AS AN IMAGE'
+                    : pro
+                        ? 'PRO STYLE • THIS CARD WILL BE SHARED AS AN IMAGE'
+                        : 'PREVIEW • THIS CARD WILL BE SHARED AS AN IMAGE',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: ReactColors.textSecondary,
@@ -160,9 +168,11 @@ class _ResultShareScreenState extends State<ResultShareScreen> {
                   child: FilledButton.icon(
                     onPressed: _sharing ? null : () => _share(buttonContext),
                     style: FilledButton.styleFrom(
-                      backgroundColor: pro
-                          ? ReactColors.purple
-                          : ReactColors.electricBlueBright,
+                      backgroundColor: overdrive
+                          ? ReactColors.electricBlueBright
+                          : pro
+                              ? ReactColors.purple
+                              : ReactColors.electricBlueBright,
                       foregroundColor: const Color(0xFF020711),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(17),
@@ -212,6 +222,8 @@ class _ShareCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _modeColor(result.mode);
     final medals = earnedRunMedals(result);
+    final overdrive = ReactCosmetics.currentShareStyle == ReactShareStyle.overdrive;
+    final cardAccent = overdrive ? ReactColors.electricBlueBright : color;
 
     return SizedBox(
       width: 360,
@@ -221,33 +233,84 @@ class _ShareCard extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: pro
+            colors: overdrive
                 ? const [
-                    Color(0xFF070510),
-                    Color(0xFF11132A),
-                    Color(0xFF04070E),
+                    Color(0xFF020711),
+                    Color(0xFF06213B),
+                    Color(0xFF160B2A),
+                    Color(0xFF030711),
                   ]
-                : const [
-                    Color(0xFF02060C),
-                    Color(0xFF071628),
-                    Color(0xFF030811),
-                  ],
+                : pro
+                    ? const [
+                        Color(0xFF070510),
+                        Color(0xFF11132A),
+                        Color(0xFF04070E),
+                      ]
+                    : const [
+                        Color(0xFF02060C),
+                        Color(0xFF071628),
+                        Color(0xFF030811),
+                      ],
           ),
-          borderRadius: BorderRadius.circular(pro ? 22 : 30),
+          borderRadius: BorderRadius.circular(overdrive ? 18 : pro ? 22 : 30),
           border: Border.all(
-            color: color.withValues(alpha: pro ? .92 : .76),
-            width: pro ? 2 : 1.4,
+            color: cardAccent.withValues(alpha: overdrive ? 1 : pro ? .92 : .76),
+            width: overdrive ? 2.4 : pro ? 2 : 1.4,
           ),
+          boxShadow: overdrive
+              ? [
+                  BoxShadow(
+                    color: ReactColors.electricBlueBright.withValues(alpha: .24),
+                    blurRadius: 22,
+                  ),
+                  BoxShadow(
+                    color: ReactColors.purple.withValues(alpha: .14),
+                    blurRadius: 34,
+                    spreadRadius: -8,
+                  ),
+                ]
+              : null,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(pro ? 20 : 29),
+          borderRadius: BorderRadius.circular(overdrive ? 16 : pro ? 20 : 29),
           child: Stack(
             children: [
               Positioned.fill(
                 child: CustomPaint(
-                  painter: _GridPainter(color: color, dense: pro),
+                  painter: _GridPainter(color: cardAccent, dense: pro),
                 ),
               ),
+              if (overdrive) ...[
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    height: 4,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          ReactColors.electricBlueBright,
+                          ReactColors.purple,
+                          ReactColors.lime,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: -36,
+                  top: 82,
+                  child: Transform.rotate(
+                    angle: .78,
+                    child: Container(
+                      width: 150,
+                      height: 1,
+                      color: ReactColors.purple.withValues(alpha: .32),
+                    ),
+                  ),
+                ),
+              ],
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   pro ? 22 : 24,
@@ -263,7 +326,7 @@ class _ShareCard extends StatelessWidget {
                     Text(
                       _heroEyebrow(result),
                       style: TextStyle(
-                        color: color,
+                        color: overdrive ? ReactColors.electricBlueBright : color,
                         fontSize: 9,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.8,
@@ -282,16 +345,30 @@ class _ShareCard extends StatelessWidget {
                     Text(
                       '${result.score}',
                       style: TextStyle(
-                        color: pro
-                            ? ReactColors.textPrimary
-                            : ReactColors.lime,
+                        color: overdrive
+                            ? ReactColors.lime
+                            : pro
+                                ? ReactColors.textPrimary
+                                : ReactColors.lime,
                         fontSize: pro ? 72 : 76,
                         height: .92,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -3.2,
+                        shadows: overdrive
+                            ? [
+                                Shadow(
+                                  color: ReactColors.lime.withValues(alpha: .68),
+                                  blurRadius: 18,
+                                ),
+                                Shadow(
+                                  color: ReactColors.electricBlueBright.withValues(alpha: .42),
+                                  blurRadius: 28,
+                                ),
+                              ]
+                            : null,
                       ),
                     ),
-                    if (newBest && result.mode != ReactGameMode.passIt) ...[
+                    if (newBest) ...[
                       const SizedBox(height: 6),
                       _Badge(
                         label: result.mode == ReactGameMode.daily
@@ -308,7 +385,7 @@ class _ShareCard extends StatelessWidget {
                       const SizedBox(height: 9),
                       _ProRunProfile(
                         result: result,
-                        color: color,
+                        color: cardAccent,
                         newBest: newBest,
                         medalCount: medals.length,
                       ),
@@ -316,20 +393,20 @@ class _ShareCard extends StatelessWidget {
                     ] else
                       const Spacer(),
                     if (result.mode == ReactGameMode.daily) ...[
-                      _DailySummary(result: result, color: color, pro: pro),
+                      _DailySummary(result: result, color: cardAccent, pro: pro),
                       const SizedBox(height: 8),
                     ] else if (result.mode == ReactGameMode.passIt) ...[
-                      _PassItSummary(result: result, color: color, pro: pro),
+                      _PassItSummary(result: result, color: cardAccent, pro: pro),
                       const SizedBox(height: 8),
                     ],
                     if (pro) const Spacer(),
                     pro
-                        ? _ProMetrics(result: result, color: color)
+                        ? _ProMetrics(result: result, color: cardAccent)
                         : _Metrics(result: result),
                     const SizedBox(height: 8),
-                    _Outcome(result: result, color: color),
+                    _Outcome(result: result, color: cardAccent),
                     const SizedBox(height: 8),
-                    _Footer(color: color, pro: pro),
+                    _Footer(color: cardAccent, pro: pro),
                   ],
                 ),
               ),
@@ -372,9 +449,11 @@ class _ProRunProfile extends StatelessWidget {
             children: [
               Icon(Icons.analytics_outlined, color: color, size: 14),
               const SizedBox(width: 6),
-              const Text(
-                'RUN PROFILE',
-                style: TextStyle(
+              Text(
+                ReactCosmetics.currentShareStyle == ReactShareStyle.overdrive
+                    ? 'OVERDRIVE RUN PROFILE'
+                    : 'RUN PROFILE',
+                style: const TextStyle(
                   color: ReactColors.textPrimary,
                   fontSize: 7.2,
                   fontWeight: FontWeight.w900,
@@ -509,25 +588,31 @@ class _Header extends StatelessWidget {
   final bool pro;
 
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      const Text(
-        'RE△CT',
-        style: TextStyle(
-          color: ReactColors.textPrimary,
-          fontSize: 24,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 3,
+  Widget build(BuildContext context) {
+    final overdrive = ReactCosmetics.currentShareStyle == ReactShareStyle.overdrive;
+    return Row(
+      children: [
+        const Text(
+          'RE△CT',
+          style: TextStyle(
+            color: ReactColors.textPrimary,
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 3,
+          ),
         ),
-      ),
-      const Spacer(),
-      if (pro) ...[
-        const _Badge(label: 'PRO', color: ReactColors.purple),
-        const SizedBox(width: 6),
+        const Spacer(),
+        if (pro) ...[
+          _Badge(
+            label: overdrive ? 'OVERDRIVE' : 'PRO',
+            color: overdrive ? ReactColors.electricBlueBright : ReactColors.purple,
+          ),
+          const SizedBox(width: 6),
+        ],
+        _Badge(label: mode.label, color: color),
       ],
-      _Badge(label: mode.label, color: color),
-    ],
-  );
+    );
+  }
 }
 
 class _MedalStrip extends StatelessWidget {
@@ -881,32 +966,39 @@ class _Footer extends StatelessWidget {
   final bool pro;
 
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Container(width: 20, height: 2, color: color),
-      const SizedBox(width: 7),
-      Expanded(
-        child: Text(
-          pro ? 'PRO PERFORMANCE CARD • VERIFIED RUN DATA' : 'REACTION • REFLEX • SPEED',
+  Widget build(BuildContext context) {
+    final overdrive = ReactCosmetics.currentShareStyle == ReactShareStyle.overdrive;
+    return Row(
+      children: [
+        Container(width: 20, height: 2, color: color),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Text(
+            overdrive
+                ? 'OVERDRIVE • MAXIMUM SIGNAL • VERIFIED RUN DATA'
+                : pro
+                    ? 'PRO PERFORMANCE CARD • VERIFIED RUN DATA'
+                    : 'REACTION • REFLEX • SPEED',
+            style: const TextStyle(
+              color: ReactColors.textSecondary,
+              fontSize: 6.1,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .7,
+            ),
+          ),
+        ),
+        Text(
+          overdrive ? 'PUSH THE LIMIT.' : pro ? 'BEAT THIS.' : 'CAN YOU BEAT IT?',
           style: const TextStyle(
-            color: ReactColors.textSecondary,
-            fontSize: 6.1,
+            color: ReactColors.textPrimary,
+            fontSize: 6.5,
             fontWeight: FontWeight.w900,
             letterSpacing: .7,
           ),
         ),
-      ),
-      Text(
-        pro ? 'BEAT THIS.' : 'CAN YOU BEAT IT?',
-        style: const TextStyle(
-          color: ReactColors.textPrimary,
-          fontSize: 6.5,
-          fontWeight: FontWeight.w900,
-          letterSpacing: .7,
-        ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class _GridPainter extends CustomPainter {
@@ -916,15 +1008,24 @@ class _GridPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final overdrive = ReactCosmetics.currentShareStyle == ReactShareStyle.overdrive;
     final paint = Paint()
-      ..color = color.withValues(alpha: dense ? .045 : .035)
-      ..strokeWidth = .6;
-    final gap = dense ? 22.0 : 28.0;
+      ..color = color.withValues(alpha: overdrive ? .075 : dense ? .045 : .035)
+      ..strokeWidth = overdrive ? .75 : .6;
+    final gap = overdrive ? 18.0 : dense ? 22.0 : 28.0;
     for (var x = 0.0; x <= size.width; x += gap) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
     for (var y = 0.0; y <= size.height; y += gap) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+    if (overdrive) {
+      final trace = Paint()
+        ..color = ReactColors.purple.withValues(alpha: .12)
+        ..strokeWidth = 1;
+      for (var y = 28.0; y < size.height; y += 72) {
+        canvas.drawLine(Offset(0, y), Offset(size.width, y + 42), trace);
+      }
     }
   }
 
