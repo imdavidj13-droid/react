@@ -19,7 +19,7 @@ void main() {
 
   test('Season 01 cosmetic descriptions state their real destinations', () {
     final migration = File(
-      'supabase/migrations/20260821033519_clarify_season_cosmetic_scope.sql',
+      'supabase/migrations/20260821033552_clarify_season_cosmetic_scope.sql',
     ).readAsStringSync();
 
     expect(migration, contains('Full gameplay colour theme'));
