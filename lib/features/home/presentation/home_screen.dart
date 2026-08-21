@@ -599,11 +599,11 @@ class _HomeNavGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <_HomeNavItem>[
-      _HomeNavItem(
+      const _HomeNavItem(
         icon: Icons.view_in_ar_rounded,
         label: 'MODES',
-        color: const Color(0xFF27D8F6),
-        screen: const ModesScreen(),
+        color: Color(0xFF27D8F6),
+        screen: ModesScreen(),
       ),
       _HomeNavItem(
         icon: Icons.calendar_month_rounded,
