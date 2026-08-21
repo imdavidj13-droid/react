@@ -521,6 +521,7 @@ class _IdentityHero extends StatelessWidget {
     final codeAccent = codeStyle == null
         ? ReactColors.electricBlueBright
         : SeasonCosmeticLayers.accentForReward(codeStyle);
+    final codeKey = codeStyle?.rewardKey ?? '';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
@@ -622,15 +623,24 @@ class _IdentityHero extends StatelessWidget {
             decoration: codeStyle == null
                 ? null
                 : BoxDecoration(
-                    color: codeAccent.withValues(alpha: .075),
-                    borderRadius: BorderRadius.circular(12),
+                    color: codeAccent.withValues(
+                      alpha: codeKey.contains('overclock') ? .12 : .075,
+                    ),
+                    borderRadius: BorderRadius.circular(
+                      codeKey.contains('voltage_trace') ? 5 : 12,
+                    ),
                     border: Border.all(
-                      color: codeAccent.withValues(alpha: .42),
+                      color: codeAccent.withValues(
+                        alpha: codeKey.contains('overclock') ? .72 : .42,
+                      ),
+                      width: codeKey.contains('overclock') ? 1.6 : 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: codeAccent.withValues(alpha: .08),
-                        blurRadius: 12,
+                        color: codeAccent.withValues(
+                          alpha: codeKey.contains('blue_pulse') ? .20 : .08,
+                        ),
+                        blurRadius: codeKey.contains('blue_pulse') ? 18 : 12,
                       ),
                     ],
                   ),
@@ -638,16 +648,38 @@ class _IdentityHero extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (emblem != null) ...[
-                  Icon(Icons.bolt_rounded, color: emblemAccent, size: 15),
+                  Icon(
+                    _emblemIcon(emblem.rewardKey),
+                    color: emblemAccent,
+                    size: 15,
+                  ),
                   const SizedBox(width: 6),
                 ],
                 Text(
                   profile.playerCode,
                   style: TextStyle(
                     color: codeAccent,
-                    fontSize: 11,
+                    fontSize: codeKey.contains('overclock') ? 12 : 11,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: codeStyle == null ? 1.4 : 1.8,
+                    fontFamily: codeKey.contains('voltage_trace') ? 'monospace' : null,
+                    fontStyle: codeKey.contains('current')
+                        ? FontStyle.italic
+                        : FontStyle.normal,
+                    letterSpacing: codeStyle == null
+                        ? 1.4
+                        : codeKey.contains('voltage_trace')
+                            ? 2.2
+                            : 1.8,
+                    shadows: codeStyle == null
+                        ? null
+                        : [
+                            Shadow(
+                              color: codeAccent.withValues(
+                                alpha: codeKey.contains('blue_pulse') ? .65 : .32,
+                              ),
+                              blurRadius: codeKey.contains('blue_pulse') ? 9 : 4,
+                            ),
+                          ],
                   ),
                 ),
               ],
@@ -1300,6 +1332,16 @@ class _AccountCard extends StatelessWidget {
       ),
     );
   }
+}
+
+IconData _emblemIcon(String rewardKey) {
+  if (rewardKey.contains('reactor')) return Icons.blur_circular_rounded;
+  if (rewardKey.contains('peak_signal')) return Icons.cell_tower_rounded;
+  if (rewardKey.contains('split_second')) return Icons.timer_outlined;
+  if (rewardKey.contains('charge_cell')) return Icons.battery_charging_full_rounded;
+  if (rewardKey.contains('elite')) return Icons.change_history_rounded;
+  if (rewardKey.contains('overdrive')) return Icons.electric_bolt_rounded;
+  return Icons.bolt_rounded;
 }
 
 String _formatDate(DateTime value) {
