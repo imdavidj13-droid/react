@@ -7,6 +7,7 @@ import '../../../core/audio/react_audio.dart';
 import '../../../core/cosmetics/react_cosmetics.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../gameplay/domain/react_run_result.dart';
+import '../../gameplay/presentation/run_meta_hud.dart';
 import '../../results/presentation/results_screen.dart';
 import '../domain/dot_sequence_round.dart';
 
@@ -308,7 +309,12 @@ class _DotSequenceScreenState extends State<DotSequenceScreen>
                         _Header(onPause: () => _setPaused(true)),
                         const SizedBox(height: 12),
                         _Hud(score: _score, lives: _lives),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
+                        RunMetaHud(
+                          mode: ReactGameMode.sequence,
+                          currentScore: _score,
+                        ),
+                        const SizedBox(height: 8),
                         Expanded(
                           child: Center(
                             child: _Arena(
@@ -480,10 +486,7 @@ class _HudCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                ' ',
-                style: TextStyle(fontSize: 0),
-              ),
+              const Text(' ', style: TextStyle(fontSize: 0)),
               Text(
                 label,
                 style: const TextStyle(
@@ -532,9 +535,7 @@ class _Arena extends StatelessWidget {
       dimension: size,
       child: Stack(
         children: [
-          Positioned.fill(
-            child: CustomPaint(painter: _ArenaPainter(progress)),
-          ),
+          Positioned.fill(child: CustomPaint(painter: _ArenaPainter(progress))),
           Center(
             child: Container(
               width: size * .69,
@@ -626,12 +627,8 @@ class _Arena extends StatelessWidget {
           ),
           for (var index = 0; index < round.positions.length; index++)
             Positioned(
-              left: centre +
-                  round.positions[index].dx * placementRadius -
-                  dotSize / 2,
-              top: fieldCentreY +
-                  round.positions[index].dy * placementRadius -
-                  dotSize / 2,
+              left: centre + round.positions[index].dx * placementRadius - dotSize / 2,
+              top: fieldCentreY + round.positions[index].dy * placementRadius - dotSize / 2,
               child: _Dot(
                 number: index + 1,
                 size: dotSize,
@@ -735,29 +732,11 @@ class _ArenaPainter extends CustomPainter {
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
     deco.color = palette.primary.withValues(alpha: .72);
-    canvas.drawArc(
-      Rect.fromCircle(center: centre, radius: radius),
-      .8,
-      1.45,
-      false,
-      deco,
-    );
+    canvas.drawArc(Rect.fromCircle(center: centre, radius: radius), .8, 1.45, false, deco);
     deco.color = palette.secondary.withValues(alpha: .72);
-    canvas.drawArc(
-      Rect.fromCircle(center: centre, radius: radius),
-      3.0,
-      1.25,
-      false,
-      deco,
-    );
+    canvas.drawArc(Rect.fromCircle(center: centre, radius: radius), 3.0, 1.25, false, deco);
     deco.color = palette.failure.withValues(alpha: .72);
-    canvas.drawArc(
-      Rect.fromCircle(center: centre, radius: radius),
-      4.75,
-      1.1,
-      false,
-      deco,
-    );
+    canvas.drawArc(Rect.fromCircle(center: centre, radius: radius), 4.75, 1.1, false, deco);
 
     final timerRadius = radius + 14;
     final track = Paint()
@@ -888,11 +867,7 @@ class _Overlay extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.blur_circular_rounded,
-                color: palette.primary,
-                size: 48,
-              ),
+              Icon(Icons.blur_circular_rounded, color: palette.primary, size: 48),
               const SizedBox(height: 12),
               Text(
                 title,
@@ -917,16 +892,10 @@ class _Overlay extends StatelessWidget {
               const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
-                  onPressed: onPrimary,
-                  child: Text(primary),
-                ),
+                child: FilledButton(onPressed: onPrimary, child: Text(primary)),
               ),
               if (secondary != null && onSecondary != null)
-                TextButton(
-                  onPressed: onSecondary,
-                  child: Text(secondary!),
-                ),
+                TextButton(onPressed: onSecondary, child: Text(secondary!)),
             ],
           ),
         ),
