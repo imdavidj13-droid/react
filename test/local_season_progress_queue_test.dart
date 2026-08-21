@@ -9,7 +9,7 @@ void main() {
   });
 
   test('season progress events persist and decode', () async {
-    final completedAt = DateTime.utc(2026, 8, 19, 7, 30);
+    final completedAt = DateTime.now().toUtc();
     final event = SeasonProgressEvent(
       eventId: 'season-classic-12345678-abcd',
       mode: 'classic',
@@ -49,9 +49,10 @@ void main() {
   });
 
   test('legacy queued rows recover mode from event id', () async {
+    final completedAt = DateTime.now().toUtc().toIso8601String();
     SharedPreferences.setMockInitialValues(<String, Object>{
       'season_pending_progress_events': <String>[
-        '{"event_id":"season-passIt-12345678-abcd","score":12,"successful_commands":12,"is_personal_best":true,"is_daily":false,"completed_at":"2026-08-21T01:00:00.000Z"}',
+        '{"event_id":"season-passIt-12345678-abcd","score":12,"successful_commands":12,"is_personal_best":true,"is_daily":false,"completed_at":"$completedAt"}',
       ],
     });
 
