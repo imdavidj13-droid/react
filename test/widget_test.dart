@@ -54,7 +54,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 120));
 
-    expect(find.text('PLAY AGAIN'), findsOneWidget);
+    // The compact four-column tile uses AGAIN rather than the old PLAY AGAIN.
+    expect(find.text('AGAIN'), findsOneWidget);
     expect(find.text('READY'), findsNothing);
   });
 }
