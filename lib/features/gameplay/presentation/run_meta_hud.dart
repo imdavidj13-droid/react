@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
+import '../../daily/domain/daily_challenge.dart';
 import '../../season/data/season_repository.dart';
 import '../data/local_player_stats.dart';
 import '../domain/react_run_result.dart';
@@ -83,7 +84,9 @@ class _RunMetaData {
   final int? charge;
 
   static Future<_RunMetaData> load(ReactGameMode mode) async {
-    final best = await LocalPlayerStats.bestFor(mode);
+    final best = mode == ReactGameMode.daily
+        ? await LocalPlayerStats.dailyBestForModifier(DailyChallenge.today().modifier)
+        : await LocalPlayerStats.bestFor(mode);
     final season = await const SeasonRepository().loadActiveSeason();
     return _RunMetaData(best: best, charge: season?.charge);
   }
