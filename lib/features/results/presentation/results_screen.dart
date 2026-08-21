@@ -58,6 +58,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     if (!_isDailyDevRun) {
       await LocalLeaderboardSubmissionStore.enqueueResult(
         result,
+        isPersonalBest: newBest,
         onSeasonChargeEarned: (value) => chargeEarned = value,
       );
     }
