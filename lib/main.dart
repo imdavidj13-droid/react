@@ -40,6 +40,9 @@ Future<void> main() async {
   }
 
   try {
+    // LocalShopState is retained temporarily as a compatibility adapter for
+    // legacy REDLINE/countdown/audio/command/share save keys. Locker is the
+    // only player-facing cosmetic manager.
     await LocalShopState.load();
     await SeasonCosmeticState.load();
   } catch (error) {
@@ -83,5 +86,7 @@ Future<void> _startOnlineServices() async {
   if (!sessionReady) return;
   await RemoteLeaderboardSubmissionSync.flushPending();
   await SeasonProgressService.flushPending();
-  await const SeasonRepository().loadActiveSeason();
+  const seasons = SeasonRepository();
+  await seasons.loadActiveSeason();
+  await seasons.loadOwnedCosmetics();
 }
