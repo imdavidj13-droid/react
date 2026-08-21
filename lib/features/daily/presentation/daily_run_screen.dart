@@ -16,6 +16,7 @@ import '../../gameplay/presentation/react_gesture_surface.dart';
 import '../../gameplay/presentation/run_meta_hud.dart';
 import '../../modes/domain/mode_timing_rules.dart';
 import '../../results/presentation/results_screen.dart';
+import '../../season/presentation/season_gameplay_style.dart';
 import '../domain/daily_challenge.dart';
 
 class DailyRunScreen extends StatefulWidget {
@@ -532,30 +533,40 @@ Color _dailyPanelColor() => switch (ReactCosmetics.currentTheme) {
   ReactVisualTheme.mono => const Color(0xFF0A0A0A),
 };
 
-Color _dailyArenaSurfaceColor() => switch (ReactCosmetics.currentTheme) {
-  ReactVisualTheme.core => const Color(0xFF050A13),
-  ReactVisualTheme.redline => const Color(0xFF100609),
-  ReactVisualTheme.synthwave => const Color(0xFF090718),
-  ReactVisualTheme.mono => const Color(0xFF050505),
-};
+Color _dailyArenaSurfaceColor() {
+  final base = switch (ReactCosmetics.currentTheme) {
+    ReactVisualTheme.core => const Color(0xFF050A13),
+    ReactVisualTheme.redline => const Color(0xFF100609),
+    ReactVisualTheme.synthwave => const Color(0xFF090718),
+    ReactVisualTheme.mono => const Color(0xFF050505),
+  };
+  return SeasonGameplayStyle.arenaSurface(base);
+}
 
 Color _dailyBorderColor() => ReactCosmetics.currentTheme == ReactVisualTheme.core
     ? const Color(0xFF243A57)
     : ReactCosmetics.palette.primary.withValues(alpha: .38);
 
-Color _dailyInnerBorderColor() =>
-    ReactCosmetics.currentTheme == ReactVisualTheme.core
-    ? const Color(0xFF153B65)
-    : ReactCosmetics.palette.primary.withValues(alpha: .44);
+Color _dailyInnerBorderColor() {
+  final base = ReactCosmetics.currentTheme == ReactVisualTheme.core
+      ? const Color(0xFF153B65)
+      : ReactCosmetics.palette.primary.withValues(alpha: .44);
+  return SeasonGameplayStyle.arenaInnerBorder(base);
+}
 
-Color _dailyRingBaseColor() => ReactCosmetics.currentTheme == ReactVisualTheme.core
-    ? const Color(0xFF122038)
-    : ReactCosmetics.palette.primary.withValues(alpha: .16);
+Color _dailyRingBaseColor() {
+  final base = ReactCosmetics.currentTheme == ReactVisualTheme.core
+      ? const Color(0xFF122038)
+      : ReactCosmetics.palette.primary.withValues(alpha: .16);
+  return SeasonGameplayStyle.arenaRingBase(base);
+}
 
-Color _dailyTimerTrackColor() =>
-    ReactCosmetics.currentTheme == ReactVisualTheme.core
-    ? const Color(0xFF10243D)
-    : ReactCosmetics.palette.primary.withValues(alpha: .20);
+Color _dailyTimerTrackColor() {
+  final base = ReactCosmetics.currentTheme == ReactVisualTheme.core
+      ? const Color(0xFF10243D)
+      : ReactCosmetics.palette.primary.withValues(alpha: .20);
+  return SeasonGameplayStyle.arenaTimerTrack(base);
+}
 
 class _DailyHeader extends StatelessWidget {
   const _DailyHeader({
@@ -652,9 +663,12 @@ class _HudCard extends StatelessWidget {
       height: 62,
       padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
-        color: _dailyPanelColor(),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: _dailyBorderColor()),
+        color: SeasonGameplayStyle.hudPanel(_dailyPanelColor()),
+        borderRadius: BorderRadius.circular(SeasonGameplayStyle.hudRadius),
+        border: Border.all(
+          color: SeasonGameplayStyle.hudBorder(_dailyBorderColor()),
+        ),
+        boxShadow: SeasonGameplayStyle.hudShadow,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -713,7 +727,9 @@ class _DailyArena extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = ReactCosmetics.palette;
     final seconds = (commandDurationMs * progress / 1000).clamp(0, 9.9);
-    final accent = redline ? palette.failure : palette.primary;
+    final accent = redline
+        ? palette.failure
+        : SeasonGameplayStyle.arenaPrimary(palette.primary);
 
     return SizedBox.square(
       dimension: size,
@@ -830,15 +846,17 @@ class _DailyRingPainter extends CustomPainter {
 
     final base = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 9
+      ..strokeWidth = SeasonGameplayStyle.arenaRingStroke
       ..color = _dailyRingBaseColor();
     canvas.drawCircle(center, radius, base);
 
     final deco = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round;
-    deco.color = palette.primary.withValues(alpha: .72);
+      ..strokeWidth = SeasonGameplayStyle.arenaRingStroke - 1
+      ..strokeCap = SeasonGameplayStyle.arenaStrokeCap;
+    deco.color = SeasonGameplayStyle.arenaPrimary(
+      palette.primary,
+    ).withValues(alpha: .72);
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       .8,
@@ -846,7 +864,9 @@ class _DailyRingPainter extends CustomPainter {
       false,
       deco,
     );
-    deco.color = palette.secondary.withValues(alpha: .72);
+    deco.color = SeasonGameplayStyle.arenaSecondary(
+      palette.secondary,
+    ).withValues(alpha: .72);
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       3.0,
@@ -854,7 +874,9 @@ class _DailyRingPainter extends CustomPainter {
       false,
       deco,
     );
-    deco.color = palette.failure.withValues(alpha: .72);
+    deco.color = SeasonGameplayStyle.arenaFailure(
+      palette.failure,
+    ).withValues(alpha: .72);
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       4.75,
@@ -866,15 +888,17 @@ class _DailyRingPainter extends CustomPainter {
     final timerRadius = radius + 14;
     final track = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 12
+      ..strokeWidth = SeasonGameplayStyle.arenaTimerStroke
       ..color = _dailyTimerTrackColor();
     canvas.drawCircle(center, timerRadius, track);
 
     final timer = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 12
-      ..strokeCap = StrokeCap.round
-      ..color = progress < .18 ? palette.failure : accent;
+      ..strokeWidth = SeasonGameplayStyle.arenaTimerStroke
+      ..strokeCap = SeasonGameplayStyle.arenaStrokeCap
+      ..color = progress < .18
+          ? palette.failure
+          : SeasonGameplayStyle.arenaPrimary(accent);
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: timerRadius),
       -pi / 2,

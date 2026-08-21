@@ -9,6 +9,7 @@ import '../../../core/theme/react_colors.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import '../../gameplay/presentation/run_meta_hud.dart';
 import '../../results/presentation/results_screen.dart';
+import '../../season/presentation/season_gameplay_style.dart';
 import '../domain/dot_sequence_round.dart';
 
 enum _SequenceTransition { none, nextRound, results }
@@ -476,9 +477,12 @@ class _HudCard extends StatelessWidget {
         height: 74,
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
         decoration: BoxDecoration(
-          color: _themePanelColor(),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _themeBorderColor()),
+          color: SeasonGameplayStyle.hudPanel(_themePanelColor()),
+          borderRadius: BorderRadius.circular(SeasonGameplayStyle.hudRadius),
+          border: Border.all(
+            color: SeasonGameplayStyle.hudBorder(_themeBorderColor()),
+          ),
+          boxShadow: SeasonGameplayStyle.hudShadow,
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
@@ -723,33 +727,41 @@ class _ArenaPainter extends CustomPainter {
 
     final base = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 9
+      ..strokeWidth = SeasonGameplayStyle.arenaRingStroke
       ..color = _themeRingBaseColor();
     canvas.drawCircle(centre, radius, base);
 
     final deco = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round;
-    deco.color = palette.primary.withValues(alpha: .72);
+      ..strokeWidth = SeasonGameplayStyle.arenaRingStroke - 1
+      ..strokeCap = SeasonGameplayStyle.arenaStrokeCap;
+    deco.color = SeasonGameplayStyle.arenaPrimary(
+      palette.primary,
+    ).withValues(alpha: .72);
     canvas.drawArc(Rect.fromCircle(center: centre, radius: radius), .8, 1.45, false, deco);
-    deco.color = palette.secondary.withValues(alpha: .72);
+    deco.color = SeasonGameplayStyle.arenaSecondary(
+      palette.secondary,
+    ).withValues(alpha: .72);
     canvas.drawArc(Rect.fromCircle(center: centre, radius: radius), 3.0, 1.25, false, deco);
-    deco.color = palette.failure.withValues(alpha: .72);
+    deco.color = SeasonGameplayStyle.arenaFailure(
+      palette.failure,
+    ).withValues(alpha: .72);
     canvas.drawArc(Rect.fromCircle(center: centre, radius: radius), 4.75, 1.1, false, deco);
 
     final timerRadius = radius + 14;
     final track = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 12
+      ..strokeWidth = SeasonGameplayStyle.arenaTimerStroke
       ..color = _themeTimerTrackColor();
     canvas.drawCircle(centre, timerRadius, track);
 
     final timer = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 12
-      ..color = progress < .22 ? palette.failure : palette.primary;
+      ..strokeCap = SeasonGameplayStyle.arenaStrokeCap
+      ..strokeWidth = SeasonGameplayStyle.arenaTimerStroke
+      ..color = progress < .22
+          ? SeasonGameplayStyle.arenaFailure(palette.failure)
+          : SeasonGameplayStyle.arenaPrimary(palette.primary);
     canvas.drawArc(
       Rect.fromCircle(center: centre, radius: timerRadius),
       -pi / 2,
@@ -951,12 +963,15 @@ Color _themePanelColor() => switch (ReactCosmetics.currentTheme) {
       ReactVisualTheme.mono => const Color(0xFF0A0A0A),
     };
 
-Color _themeArenaSurfaceColor() => switch (ReactCosmetics.currentTheme) {
-      ReactVisualTheme.core => const Color(0xFF050A13),
-      ReactVisualTheme.redline => const Color(0xFF100609),
-      ReactVisualTheme.synthwave => const Color(0xFF090718),
-      ReactVisualTheme.mono => const Color(0xFF050505),
-    };
+Color _themeArenaSurfaceColor() {
+  final base = switch (ReactCosmetics.currentTheme) {
+    ReactVisualTheme.core => const Color(0xFF050A13),
+    ReactVisualTheme.redline => const Color(0xFF100609),
+    ReactVisualTheme.synthwave => const Color(0xFF090718),
+    ReactVisualTheme.mono => const Color(0xFF050505),
+  };
+  return SeasonGameplayStyle.arenaSurface(base);
+}
 
 Color _themeDotSurfaceColor() => switch (ReactCosmetics.currentTheme) {
       ReactVisualTheme.core => const Color(0xFF06101D),
@@ -969,14 +984,23 @@ Color _themeBorderColor() => ReactCosmetics.currentTheme == ReactVisualTheme.cor
     ? const Color(0xFF254766)
     : ReactCosmetics.palette.primary.withValues(alpha: .38);
 
-Color _themeInnerBorderColor() => ReactCosmetics.currentTheme == ReactVisualTheme.core
-    ? const Color(0xFF153B65)
-    : ReactCosmetics.palette.primary.withValues(alpha: .44);
+Color _themeInnerBorderColor() {
+  final base = ReactCosmetics.currentTheme == ReactVisualTheme.core
+      ? const Color(0xFF153B65)
+      : ReactCosmetics.palette.primary.withValues(alpha: .44);
+  return SeasonGameplayStyle.arenaInnerBorder(base);
+}
 
-Color _themeRingBaseColor() => ReactCosmetics.currentTheme == ReactVisualTheme.core
-    ? const Color(0xFF122038)
-    : ReactCosmetics.palette.primary.withValues(alpha: .16);
+Color _themeRingBaseColor() {
+  final base = ReactCosmetics.currentTheme == ReactVisualTheme.core
+      ? const Color(0xFF122038)
+      : ReactCosmetics.palette.primary.withValues(alpha: .16);
+  return SeasonGameplayStyle.arenaRingBase(base);
+}
 
-Color _themeTimerTrackColor() => ReactCosmetics.currentTheme == ReactVisualTheme.core
-    ? const Color(0xFF10243D)
-    : ReactCosmetics.palette.primary.withValues(alpha: .20);
+Color _themeTimerTrackColor() {
+  final base = ReactCosmetics.currentTheme == ReactVisualTheme.core
+      ? const Color(0xFF10243D)
+      : ReactCosmetics.palette.primary.withValues(alpha: .20);
+  return SeasonGameplayStyle.arenaTimerTrack(base);
+}
