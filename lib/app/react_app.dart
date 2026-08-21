@@ -5,12 +5,9 @@ import '../core/settings/react_settings.dart';
 import '../core/theme/react_colors.dart';
 import '../core/theme/react_theme.dart';
 import '../features/daily/presentation/daily_dev_screen.dart';
-import '../features/friends/presentation/friends_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/player/presentation/player_profile_screen.dart';
-import '../features/season/presentation/home_season_strip.dart';
 import '../features/season/presentation/season_cosmetic_layers.dart';
-import '../features/season/presentation/season_locker_screen.dart';
 import '../features/tutorial/presentation/how_to_play_screen.dart';
 
 class ReactApp extends StatelessWidget {
@@ -59,12 +56,6 @@ class _FirstRunShellState extends State<_FirstRunShell> {
 class _HomeShell extends StatelessWidget {
   const _HomeShell();
 
-  void _openLocker(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const SeasonLockerScreen()),
-    );
-  }
-
   void _openProfile(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -75,47 +66,11 @@ class _HomeShell extends StatelessWidget {
     );
   }
 
-  void _openFriends(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const SeasonFriendsLayer(
-          child: FriendsScreen(),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        SeasonCosmeticLayers.home(
-          child: const Column(
-            children: [
-              Expanded(child: HomeScreen()),
-              SafeArea(top: false, child: HomeSeasonStrip()),
-            ],
-          ),
-        ),
-        Positioned(
-          left: 12,
-          top: MediaQuery.paddingOf(context).top + 10,
-          child: Material(
-            color: Colors.transparent,
-            child: IconButton(
-              tooltip: 'Locker',
-              onPressed: () => _openLocker(context),
-              style: IconButton.styleFrom(
-                backgroundColor: const Color(0xFF07101E),
-                foregroundColor: ReactColors.electricBlueBright,
-                side: BorderSide(
-                  color: ReactColors.electricBlueBright.withValues(alpha: .75),
-                ),
-              ),
-              icon: const Icon(Icons.inventory_2_outlined, size: 22),
-            ),
-          ),
-        ),
+        SeasonCosmeticLayers.home(child: const HomeScreen()),
         Positioned(
           right: 12,
           top: MediaQuery.paddingOf(context).top + 10,
@@ -135,28 +90,6 @@ class _HomeShell extends StatelessWidget {
             ),
           ),
         ),
-        Positioned(
-          right: 62,
-          top: MediaQuery.paddingOf(context).top + 10,
-          child: Material(
-            color: Colors.transparent,
-            child: IconButton(
-              tooltip: 'Friends',
-              onPressed: () => _openFriends(context),
-              style: IconButton.styleFrom(
-                minimumSize: const Size.square(42),
-                maximumSize: const Size.square(42),
-                padding: EdgeInsets.zero,
-                backgroundColor: const Color(0xFF07111D),
-                foregroundColor: ReactColors.lime,
-                side: BorderSide(
-                  color: ReactColors.lime.withValues(alpha: .72),
-                ),
-              ),
-              icon: const Icon(Icons.group_outlined, size: 20),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -171,7 +104,7 @@ class _DebugHome extends StatelessWidget {
       children: [
         const _HomeShell(),
         Positioned(
-          left: 62,
+          left: 12,
           top: MediaQuery.paddingOf(context).top + 10,
           child: Material(
             color: Colors.transparent,
