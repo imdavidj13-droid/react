@@ -368,7 +368,7 @@ class _ShareCard extends StatelessWidget {
                             : null,
                       ),
                     ),
-                    if (newBest && result.mode != ReactGameMode.passIt) ...[
+                    if (newBest) ...[
                       const SizedBox(height: 6),
                       _Badge(
                         label: result.mode == ReactGameMode.daily
