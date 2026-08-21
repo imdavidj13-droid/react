@@ -23,12 +23,16 @@ void main() {
     });
 
     await tester.pumpWidget(const ReactApp());
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
 
     expect(find.text('PLAY'), findsOneWidget);
     expect(find.text('MODES'), findsOneWidget);
     expect(find.text('DAILY'), findsOneWidget);
-    expect(find.text('SCORES'), findsOneWidget);
+    expect(find.text('LEADERBOARD'), findsOneWidget);
+    expect(find.text('PASS'), findsOneWidget);
+    expect(find.text('LOCKER'), findsOneWidget);
+    expect(find.text('FRIENDS'), findsOneWidget);
     expect(find.text('READY'), findsOneWidget);
 
     expect(find.text('CLASSIC BEST'), findsOneWidget);
@@ -47,7 +51,8 @@ void main() {
     });
 
     await tester.pumpWidget(const ReactApp());
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
 
     expect(find.text('PLAY AGAIN'), findsOneWidget);
     expect(find.text('READY'), findsNothing);
