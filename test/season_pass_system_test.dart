@@ -170,8 +170,8 @@ void main() {
     final screen = File(
       'lib/features/season/presentation/season_screen.dart',
     ).readAsStringSync();
-    final homeStrip = File(
-      'lib/features/season/presentation/home_season_strip.dart',
+    final home = File(
+      'lib/features/home/presentation/home_screen.dart',
     ).readAsStringSync();
 
     expect(screen, contains("Tab(text: 'PASS')"));
@@ -181,8 +181,9 @@ void main() {
     expect(screen, contains('unlock retroactively'));
     expect(screen, contains("title: 'NO PAY-TO-WIN'"));
     expect(screen, contains('SeasonRewardPreview'));
-    expect(homeStrip, contains('CHARGE'));
-    expect(homeStrip, contains('SeasonScreen'));
+    expect(home, contains("label: 'PASS'"));
+    expect(home, contains('SeasonScreen()'));
+    expect(home, contains("label: 'LOCKER'"));
   });
 
   test('all run surfaces expose BEST and CHARGE and results show exact award', () {
