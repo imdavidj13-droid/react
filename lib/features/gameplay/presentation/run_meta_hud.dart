@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
 import '../../daily/domain/daily_challenge.dart';
+import '../../season/data/local_season_snapshot_cache.dart';
 import '../../season/data/season_cosmetic_state.dart';
 import '../../season/data/season_repository.dart';
 import '../../season/presentation/season_cosmetic_layers.dart';
@@ -99,7 +100,8 @@ class _RunMetaData {
         ? await LocalPlayerStats.dailyBestForModifier(DailyChallenge.today().modifier)
         : await LocalPlayerStats.bestFor(mode);
     final season = await const SeasonRepository().loadActiveSeason();
-    return _RunMetaData(best: best, charge: season?.charge);
+    final charge = season?.charge ?? await LocalSeasonSnapshotCache.charge();
+    return _RunMetaData(best: best, charge: charge);
   }
 }
 
