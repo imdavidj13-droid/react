@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:react/features/season/domain/cosmetic_taxonomy.dart';
 
 void main() {
-  test('legacy S01 cosmetic kinds map to canonical families', () {
+  test('legacy S01 cosmetic kinds map to what they actually render', () {
     expect(
       CosmeticTaxonomy.specFor('reaction_pack').canonicalKind,
       'gameplay_theme',
@@ -20,12 +20,16 @@ void main() {
       'share_card',
     );
     expect(
+      CosmeticTaxonomy.specFor('score_effect').canonicalKind,
+      'result_score_style',
+    );
+    expect(
       CosmeticTaxonomy.specFor('success_effect').canonicalKind,
-      'success_reaction',
+      'result_success_style',
     );
     expect(
       CosmeticTaxonomy.specFor('failure_effect').canonicalKind,
-      'failure_reaction',
+      'result_failure_style',
     );
   });
 
@@ -36,6 +40,10 @@ void main() {
     );
     expect(
       CosmeticTaxonomy.tabFor('arena_theme'),
+      CosmeticLockerTab.gameplay,
+    );
+    expect(
+      CosmeticTaxonomy.tabFor('input_reaction_pack'),
       CosmeticLockerTab.gameplay,
     );
     expect(
@@ -63,6 +71,10 @@ void main() {
       CosmeticLockerTab.social,
     );
     expect(
+      CosmeticTaxonomy.tabFor('result_score_style'),
+      CosmeticLockerTab.social,
+    );
+    expect(
       CosmeticTaxonomy.tabFor('result_card_style'),
       CosmeticLockerTab.social,
     );
@@ -75,9 +87,7 @@ void main() {
       'command_pack',
       'countdown_style',
       'sound_pack',
-      'success_reaction',
-      'failure_reaction',
-      'score_effect',
+      'input_reaction_pack',
       'hud_style',
       'particle_pack',
       'home_background',
@@ -88,6 +98,9 @@ void main() {
       'emblem',
       'player_code_style',
       'share_card',
+      'result_score_style',
+      'result_success_style',
+      'result_failure_style',
       'result_card_style',
     ];
 
