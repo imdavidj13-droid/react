@@ -6,9 +6,9 @@ import '../domain/season_models.dart';
 
 /// Local equipment state for season-only cosmetic families.
 ///
-/// Ownership remains server-authoritative. This class only remembers which
-/// already-unlocked cosmetic the player wants equipped and clears stale
-/// selections when a server snapshot no longer contains the entitlement.
+/// Server-awarded unlock rows are permanent. This cache accumulates verified
+/// unlocks so earned cosmetics remain usable offline and across later seasons,
+/// while equipment choices remain local to the device.
 abstract final class SeasonCosmeticState {
   static const _ownedKey = 'season_cosmetics_owned';
   static const _catalogKey = 'season_cosmetics_catalog';
@@ -82,9 +82,7 @@ abstract final class SeasonCosmeticState {
 
   static Future<void> syncSnapshot(SeasonSnapshot snapshot) async {
     final prefs = await SharedPreferences.getInstance();
-    _ownedKeys
-      ..clear()
-      ..addAll(snapshot.unlockedRewardKeys);
+    _ownedKeys.addAll(snapshot.unlockedRewardKeys);
 
     for (final tier in snapshot.tiers) {
       for (final reward in tier.rewards) {
@@ -99,15 +97,6 @@ abstract final class SeasonCosmeticState {
       _catalogKey,
       _catalog.values.map(_encode).toList(growable: false),
     );
-
-    final staleKinds = <String>[];
-    for (final entry in _equippedByKind.entries) {
-      if (!_ownedKeys.contains(entry.value)) staleKinds.add(entry.key);
-    }
-    for (final kind in staleKinds) {
-      _equippedByKind.remove(kind);
-      await prefs.remove('$_equippedPrefix$kind');
-    }
   }
 
   static bool isOwned(String rewardKey) => _ownedKeys.contains(rewardKey);
