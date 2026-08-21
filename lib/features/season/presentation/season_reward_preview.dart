@@ -57,21 +57,29 @@ class _PreviewContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => switch (reward.kind) {
-        'reaction_pack' => _ReactionPreview(accent: accent),
-        'command_style' => _CommandPreview(accent: accent, keyName: reward.rewardKey),
+        'reaction_pack' || 'gameplay_theme' => _ReactionPreview(accent: accent),
+        'arena_theme' => _ArenaPreview(accent: accent, keyName: reward.rewardKey),
+        'command_style' || 'command_pack' =>
+          _CommandPreview(accent: accent, keyName: reward.rewardKey),
         'countdown_style' => _CountdownPreview(accent: accent),
         'sound_pack' => _SoundPreview(accent: accent),
-        'share_style' => _SharePreview(accent: accent),
+        'input_reaction_pack' =>
+          _InputReactionPreview(accent: accent, keyName: reward.rewardKey),
+        'hud_style' => _HudPreview(accent: accent, keyName: reward.rewardKey),
+        'particle_pack' => _ParticlePreview(accent: accent, keyName: reward.rewardKey),
+        'share_style' || 'share_card' => _SharePreview(accent: accent),
         'profile_frame' => _ProfilePreview(accent: accent, frame: true),
         'profile_badge' => _BadgePreview(accent: accent, label: reward.name),
         'player_code_style' => _PlayerCodePreview(accent: accent),
-        'home_theme' => _HomePreview(accent: accent),
-        'score_effect' => _ScorePreview(accent: accent),
-        'success_effect' => _FeedbackPreview(accent: accent, success: true),
-        'failure_effect' => _FeedbackPreview(accent: accent, success: false),
+        'home_theme' || 'home_background' => _HomePreview(accent: accent),
+        'score_effect' || 'result_score_style' => _ScorePreview(accent: accent),
+        'success_effect' || 'result_success_style' =>
+          _FeedbackPreview(accent: accent, success: true),
+        'failure_effect' || 'result_failure_style' =>
+          _FeedbackPreview(accent: accent, success: false),
         'mode_card_skin' => _ModeCardPreview(accent: accent),
         'title' => _TitlePreview(accent: accent, label: reward.name),
-        'emblem' => _EmblemPreview(accent: accent),
+        'emblem' => _EmblemPreview(accent: accent, keyName: reward.rewardKey),
         _ => Center(child: Icon(Icons.auto_awesome_rounded, color: accent, size: 28)),
       };
 }
@@ -124,6 +132,45 @@ class _ReactionPreview extends StatelessWidget {
                 color: accent.withValues(alpha: .16),
               ),
             ),
+          ),
+        ),
+      );
+}
+
+class _ArenaPreview extends StatelessWidget {
+  const _ArenaPreview({required this.accent, required this.keyName});
+  final Color accent;
+  final String keyName;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: SizedBox.square(
+          dimension: 50,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: accent,
+                    width: keyName.contains('thin') ? 2 : 4,
+                  ),
+                  boxShadow: [
+                    BoxShadow(color: accent.withValues(alpha: .3), blurRadius: 10),
+                  ],
+                ),
+              ),
+              Container(
+                width: 31,
+                height: 31,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: accent.withValues(alpha: .07),
+                  border: Border.all(color: accent.withValues(alpha: .52)),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -210,6 +257,101 @@ class _SoundPreview extends StatelessWidget {
           ],
         ],
       );
+}
+
+class _InputReactionPreview extends StatelessWidget {
+  const _InputReactionPreview({required this.accent, required this.keyName});
+  final Color accent;
+  final String keyName;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            for (var i = 0; i < (keyName.contains('echo') ? 3 : 2); i++)
+              Container(
+                width: 24.0 + i * 14,
+                height: 24.0 + i * 14,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: accent.withValues(alpha: .75 - i * .18),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+            Icon(Icons.touch_app_rounded, color: accent, size: 20),
+          ],
+        ),
+      );
+}
+
+class _HudPreview extends StatelessWidget {
+  const _HudPreview({required this.accent, required this.keyName});
+  final Color accent;
+  final String keyName;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (final label in const ['SCORE', 'MODE', 'TIME']) ...[
+            Container(
+              width: 42,
+              height: 30,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: .07),
+                borderRadius: BorderRadius.circular(keyName.contains('rail') ? 4 : 9),
+                border: Border.all(color: accent.withValues(alpha: .48)),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: accent,
+                  fontSize: 5.5,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            if (label != 'TIME') const SizedBox(width: 4),
+          ],
+        ],
+      );
+}
+
+class _ParticlePreview extends StatelessWidget {
+  const _ParticlePreview({required this.accent, required this.keyName});
+  final Color accent;
+  final String keyName;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = keyName.contains('dense') || keyName.contains('storm') ? 16 : 9;
+    return LayoutBuilder(
+      builder: (context, constraints) => Stack(
+        children: [
+          for (var i = 0; i < count; i++)
+            Positioned(
+              left: 8 + ((i * 31) % math.max(12, constraints.maxWidth - 16)),
+              top: 5 + ((i * 17) % math.max(10, constraints.maxHeight - 10)),
+              child: Container(
+                width: 2.5 + (i % 3),
+                height: 2.5 + (i % 3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: accent.withValues(alpha: .45 + (i % 4) * .1),
+                  boxShadow: [
+                    BoxShadow(color: accent.withValues(alpha: .28), blurRadius: 5),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SharePreview extends StatelessWidget {
@@ -454,8 +596,19 @@ class _TitlePreview extends StatelessWidget {
 }
 
 class _EmblemPreview extends StatelessWidget {
-  const _EmblemPreview({required this.accent});
+  const _EmblemPreview({required this.accent, required this.keyName});
   final Color accent;
+  final String keyName;
+
+  IconData get _icon {
+    if (keyName.contains('reactor')) return Icons.blur_circular_rounded;
+    if (keyName.contains('peak_signal')) return Icons.cell_tower_rounded;
+    if (keyName.contains('split_second')) return Icons.timer_outlined;
+    if (keyName.contains('charge_cell')) return Icons.battery_charging_full_rounded;
+    if (keyName.contains('elite')) return Icons.change_history_rounded;
+    if (keyName.contains('overdrive')) return Icons.electric_bolt_rounded;
+    return Icons.bolt_rounded;
+  }
 
   @override
   Widget build(BuildContext context) => Center(
@@ -467,7 +620,7 @@ class _EmblemPreview extends StatelessWidget {
             color: accent.withValues(alpha: .10),
             border: Border.all(color: accent.withValues(alpha: .65)),
           ),
-          child: Icon(Icons.bolt_rounded, color: accent, size: 23),
+          child: Icon(_icon, color: accent, size: 23),
         ),
       );
 }
