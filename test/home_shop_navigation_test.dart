@@ -35,7 +35,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('LOCKER'), findsOneWidget);
+    // Home remains mounted behind the pushed route, so there are now two
+    // LOCKER labels. The Locker-specific subtitle proves the destination won.
+    expect(find.text('LOCKER'), findsNWidgets(2));
     expect(find.text('ALL EARNED COSMETICS • ONE PLACE TO EQUIP'), findsOneWidget);
   });
 }
