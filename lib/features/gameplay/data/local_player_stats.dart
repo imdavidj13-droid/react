@@ -42,7 +42,6 @@ class LocalPlayerStats {
   static const _dailyHistoryLimit = 14;
 
   static Future<int> bestFor(ReactGameMode mode) async {
-    if (mode == ReactGameMode.passIt) return 0;
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_bestKey(mode)) ?? 0;
   }
@@ -270,12 +269,10 @@ class LocalPlayerStats {
     final prefs = await SharedPreferences.getInstance();
     var isNewBest = false;
 
-    if (result.mode != ReactGameMode.passIt) {
-      final currentBest = prefs.getInt(_bestKey(result.mode)) ?? 0;
-      if (result.score > currentBest) {
-        await prefs.setInt(_bestKey(result.mode), result.score);
-        isNewBest = true;
-      }
+    final currentBest = prefs.getInt(_bestKey(result.mode)) ?? 0;
+    if (result.score > currentBest) {
+      await prefs.setInt(_bestKey(result.mode), result.score);
+      isNewBest = true;
     }
 
     if (result.mode == ReactGameMode.sequence) {
