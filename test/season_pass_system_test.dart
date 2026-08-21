@@ -93,6 +93,20 @@ void main() {
     expect(source, isNot(contains("'extra_life'")));
   });
 
+  test('season run hardening validates mode and limits Daily credit', () {
+    final source = File(
+      'supabase/migrations/20260821030630_harden_season_run_awards.sql',
+    ).readAsStringSync();
+
+    expect(source, contains('react_seasons_no_overlap'));
+    expect(source, contains("p_mode not in ('classic','blitz','endless','daily','passIt','sequence')"));
+    expect(source, contains('v_pb_credit := coalesce(p_is_personal_best, false)'));
+    expect(source, contains("e.pb_scope = v_pb_scope"));
+    expect(source, contains("e.mode = 'daily'"));
+    expect(source, contains('daily_credit_awarded'));
+    expect(source, contains("'daily_runs', 1"));
+  });
+
   test('season UI exposes pass missions and season info', () {
     final screen = File(
       'lib/features/season/presentation/season_screen.dart',
@@ -131,7 +145,7 @@ void main() {
       'lib/features/results/presentation/results_screen.dart',
     ).readAsStringSync();
     final awardMigration = File(
-      'supabase/migrations/20260821032800_return_season_run_charge_earned.sql',
+      'supabase/migrations/20260821023844_return_season_run_charge_earned.sql',
     ).readAsStringSync();
 
     expect(hud, contains("label: 'BEST'"));
