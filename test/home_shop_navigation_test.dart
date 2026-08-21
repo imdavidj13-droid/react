@@ -11,16 +11,16 @@ void main() {
     ReactSettings.howToPlayCompleted = true;
   });
 
-  testWidgets('Home exposes Shop and opens the storefront', (tester) async {
+  testWidgets('Home exposes Locker and opens cosmetic collection', (tester) async {
     await tester.pumpWidget(const ReactApp());
     await tester.pumpAndSettle();
 
-    expect(find.byTooltip('Shop'), findsOneWidget);
+    expect(find.byTooltip('Locker'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Shop'));
+    await tester.tap(find.byTooltip('Locker'));
     await tester.pumpAndSettle();
 
-    expect(find.text('SHOP'), findsOneWidget);
-    expect(find.text('MAKE RE△CT YOURS'), findsOneWidget);
+    expect(find.text('LOCKER'), findsOneWidget);
+    expect(find.text('ALL EARNED COSMETICS • ONE PLACE TO EQUIP'), findsOneWidget);
   });
 }
