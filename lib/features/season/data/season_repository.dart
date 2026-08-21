@@ -5,6 +5,16 @@ import '../../shop/data/local_shop_state.dart';
 import '../domain/season_models.dart';
 import 'season_cosmetic_state.dart';
 
+class SeasonRunRecord {
+  const SeasonRunRecord({
+    required this.snapshot,
+    required this.chargeEarned,
+  });
+
+  final SeasonSnapshot snapshot;
+  final int chargeEarned;
+}
+
 class SeasonRepository {
   const SeasonRepository();
 
@@ -38,6 +48,25 @@ class SeasonRepository {
     required bool isDaily,
     required DateTime completedAt,
   }) async {
+    final record = await recordRunWithAward(
+      eventId: eventId,
+      score: score,
+      successfulCommands: successfulCommands,
+      isPersonalBest: isPersonalBest,
+      isDaily: isDaily,
+      completedAt: completedAt,
+    );
+    return record?.snapshot;
+  }
+
+  Future<SeasonRunRecord?> recordRunWithAward({
+    required String eventId,
+    required int score,
+    required int successfulCommands,
+    required bool isPersonalBest,
+    required bool isDaily,
+    required DateTime completedAt,
+  }) async {
     final client = ReactSupabase.client;
     if (client == null || client.auth.currentSession == null) return null;
 
@@ -57,7 +86,10 @@ class SeasonRepository {
       if (data == null) return null;
       final snapshot = _withDebugPremium(_parseSnapshot(data));
       await _syncCosmetics(snapshot);
-      return snapshot;
+      return SeasonRunRecord(
+        snapshot: snapshot,
+        chargeEarned: _asInt(data['charge_earned']),
+      );
     } catch (error) {
       debugPrint('RE△CT season run progress failed: $error');
       return null;
