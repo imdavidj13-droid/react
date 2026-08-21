@@ -15,7 +15,7 @@ class SeasonScreen extends StatefulWidget {
 
 class _SeasonScreenState extends State<SeasonScreen> {
   static const _repository = SeasonRepository();
-  late Future<SeasonSnapshot?> _season;
+  late Future<SeasonLoadResult> _season;
 
   @override
   void initState() {
@@ -23,7 +23,7 @@ class _SeasonScreenState extends State<SeasonScreen> {
     _reload();
   }
 
-  void _reload() => _season = _repository.loadActiveSeason();
+  void _reload() => _season = _repository.loadActiveSeasonState();
 
   Future<void> _refresh() async {
     setState(_reload);
@@ -42,15 +42,17 @@ class _SeasonScreenState extends State<SeasonScreen> {
     return Scaffold(
       backgroundColor: ReactColors.background,
       body: SafeArea(
-        child: FutureBuilder<SeasonSnapshot?>(
+        child: FutureBuilder<SeasonLoadResult>(
           future: _season,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const _LoadingSeason();
             }
-            final season = snapshot.data;
+            final state = snapshot.data ?? const SeasonLoadResult.unavailable();
+            final season = state.snapshot;
             if (season == null) {
               return _NoSeason(
+                offseason: state.status == SeasonLoadStatus.none,
                 onBack: () => Navigator.of(context).pop(),
                 onRetry: () => setState(_reload),
               );
@@ -463,7 +465,7 @@ class _PassIntro extends StatelessWidget {
                     ),
                     SizedBox(height: 3),
                     Text(
-                      'EVERY REWARD NOW SHOWS A LIVE MINI PREVIEW OF WHAT IT CHANGES.',
+                      'EVERY REWARD SHOWS WHAT IT CHANGES BEFORE YOU EQUIP IT.',
                       style: TextStyle(
                         color: ReactColors.textSecondary,
                         fontSize: 7.5,
@@ -933,7 +935,7 @@ class _MissionIntro extends StatelessWidget {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'DAILY, WEEKLY AND SEASON GOALS FEED THE SAME PASS PROGRESSION.',
+                    'DAILY GOALS RESET AT 00:00 UTC. WEEKLY AND SEASON GOALS FEED THE SAME PASS PROGRESSION.',
                     style: TextStyle(
                       color: ReactColors.textSecondary,
                       fontSize: 7.8,
@@ -1131,6 +1133,14 @@ class _SeasonInfoTab extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           const _InfoCard(
+            icon: Icons.schedule_rounded,
+            title: 'DAILY RESET',
+            body:
+                'Season Daily missions, first-play credit, run caps and Daily CHARGE bonuses reset at 00:00 UTC.',
+            color: ReactColors.coral,
+          ),
+          const SizedBox(height: 10),
+          const _InfoCard(
             icon: Icons.workspace_premium_rounded,
             title: 'FREE + PREMIUM',
             body:
@@ -1148,9 +1158,9 @@ class _SeasonInfoTab extends StatelessWidget {
           const SizedBox(height: 10),
           const _InfoCard(
             icon: Icons.visibility_outlined,
-            title: 'VISUAL REWARD PREVIEWS',
+            title: 'COSMETIC SCOPE',
             body:
-                'Pass rewards show an in-app miniature of the cosmetic before you unlock it. The same preview appears again in the Locker when you choose what to equip.',
+                'Each Locker category states exactly what it changes and where it appears. A cosmetic cannot be equipped until its intended renderer is connected.',
             color: ReactColors.coral,
           ),
         ],
@@ -1303,71 +1313,102 @@ class _LoadingSeason extends StatelessWidget {
 }
 
 class _NoSeason extends StatelessWidget {
-  const _NoSeason({required this.onBack, required this.onRetry});
+  const _NoSeason({
+    required this.offseason,
+    required this.onBack,
+    required this.onRetry,
+  });
 
+  final bool offseason;
   final VoidCallback onBack;
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: IconButton(
-                onPressed: onBack,
-                color: ReactColors.textPrimary,
-                icon: const Icon(Icons.arrow_back_rounded),
+  Widget build(BuildContext context) {
+    final color = offseason ? ReactColors.purple : ReactColors.coral;
+    return Padding(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+              onPressed: onBack,
+              color: ReactColors.textPrimary,
+              icon: const Icon(Icons.arrow_back_rounded),
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    offseason
+                        ? Icons.hourglass_empty_rounded
+                        : Icons.cloud_off_outlined,
+                    color: color,
+                    size: 38,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    offseason ? 'NO ACTIVE SEASON' : 'SEASON PASS UNAVAILABLE',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: ReactColors.textPrimary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    offseason
+                        ? 'The next configured season will appear here when it starts.'
+                        : 'Could not reach the season service. Your gameplay and queued CHARGE progress are safe.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: ReactColors.textSecondary,
+                      fontSize: 9,
+                      height: 1.4,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: onRetry,
+                    child: Text(offseason ? 'CHECK AGAIN' : 'RETRY'),
+                  ),
+                ],
               ),
             ),
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.cloud_off_outlined,
-                      color: ReactColors.coral,
-                      size: 38,
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'SEASON PASS UNAVAILABLE',
-                      style: TextStyle(
-                        color: ReactColors.textPrimary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(onPressed: onRetry, child: const Text('RETRY')),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 String _rewardKindLabel(String kind) => switch (kind) {
-      'reaction_pack' => 'REACTION COLOUR',
-      'command_style' => 'COMMAND STYLE',
-      'countdown_style' => 'COUNTDOWN',
-      'sound_pack' => 'SOUND PACK',
-      'share_style' => 'SHARE STYLE',
+      'reaction_pack' || 'gameplay_theme' => 'FULL GAMEPLAY THEME',
+      'arena_theme' => 'ARENA / CIRCLE THEME',
+      'command_style' || 'command_pack' => 'COMMAND TEXT PACK',
+      'countdown_style' => 'COUNTDOWN SCREEN',
+      'sound_pack' => 'SOUND EFFECT PACK',
+      'input_reaction_pack' => 'REACTION PACK',
+      'hud_style' => 'HUD STYLE',
+      'particle_pack' => 'PARTICLE PACK',
+      'share_style' || 'share_card' => 'SHARE CARD',
       'profile_frame' => 'PROFILE FRAME',
       'profile_badge' => 'PROFILE BADGE',
-      'player_code_style' => 'PLAYER CODE',
-      'home_theme' => 'HOME THEME',
-      'score_effect' => 'SCORE EFFECT',
-      'success_effect' => 'SUCCESS EFFECT',
-      'failure_effect' => 'FAILURE EFFECT',
+      'player_code_style' => 'PLAYER CODE STYLE',
+      'home_theme' || 'home_background' => 'HOME BACKGROUND',
+      'score_effect' || 'result_score_style' => 'RESULT SCORE STYLE',
+      'success_effect' || 'result_success_style' => 'RESULT SUCCESS STYLE',
+      'failure_effect' || 'result_failure_style' => 'RESULT FAILURE STYLE',
       'mode_card_skin' => 'MODE CARD SKIN',
       'title' => 'PLAYER TITLE',
-      'emblem' => 'EMBLEM',
+      'emblem' => 'PLAYER EMBLEM',
       _ => kind.replaceAll('_', ' ').toUpperCase(),
     };
 
