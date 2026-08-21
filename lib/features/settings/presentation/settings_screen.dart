@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/settings/react_settings.dart';
 import '../../../core/theme/react_colors.dart';
 import '../../gameplay/data/local_player_stats.dart';
-import '../../shop/presentation/shop_screen.dart';
+import '../../season/presentation/season_locker_screen.dart';
 import '../../tutorial/presentation/how_to_play_screen.dart';
 import 'command_performance_screen.dart';
 import 'milestones_screen.dart';
@@ -54,9 +54,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _openShop() async {
+  Future<void> _openLocker() async {
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ShopScreen()),
+      MaterialPageRoute<void>(builder: (_) => const SeasonLockerScreen()),
     );
   }
 
@@ -136,11 +136,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 10),
               _ActionTile(
-                icon: Icons.shopping_bag_outlined,
-                title: 'SHOP',
-                subtitle: 'Preview cosmetic themes, sound packs and visual styles.',
+                icon: Icons.inventory_2_outlined,
+                title: 'LOCKER',
+                subtitle:
+                    'Browse every cosmetic earned from Season Passes and choose what is equipped.',
                 color: ReactColors.coral,
-                onTap: _openShop,
+                onTap: _openLocker,
               ),
               const SizedBox(height: 18),
               const _SectionLabel('GAME SETTINGS'),
