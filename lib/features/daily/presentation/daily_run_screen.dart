@@ -13,6 +13,7 @@ import '../../gameplay/domain/react_command.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import '../../gameplay/domain/run_command_performance_tracker.dart';
 import '../../gameplay/presentation/react_gesture_surface.dart';
+import '../../gameplay/presentation/run_meta_hud.dart';
 import '../../modes/domain/mode_timing_rules.dart';
 import '../../results/presentation/results_screen.dart';
 import '../domain/daily_challenge.dart';
@@ -454,7 +455,12 @@ class _DailyRunScreenState extends State<DailyRunScreen>
                           modifier: _modifier,
                           onPause: () => _setPaused(true),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
+                        RunMetaHud(
+                          mode: ReactGameMode.daily,
+                          currentScore: _score,
+                        ),
+                        const SizedBox(height: 8),
                         Expanded(
                           child: Center(
                             child: ReactGestureSurface(
