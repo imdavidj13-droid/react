@@ -138,52 +138,142 @@ class _ModePanel extends StatelessWidget {
     final skin = SeasonCosmeticState.equippedReward('mode_card_skin');
     final seasonAccent = skin == null ? null : SeasonCosmeticLayers.accentForReward(skin);
     final borderColor = seasonAccent ?? data.color;
+    final skinKey = skin?.rewardKey ?? '';
+    final ion = skinKey.contains('ion');
+    final gridline = skinKey.contains('gridline');
+    final overdrive = skinKey.contains('overdrive');
+    final radius = ion ? 12.0 : gridline ? 5.0 : 22.0;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: data.onTap,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(radius),
         child: Container(
-          padding: const EdgeInsets.all(13),
+          padding: EdgeInsets.all(gridline ? 11 : 13),
           decoration: BoxDecoration(
             gradient: skin == null
                 ? null
                 : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      seasonAccent!.withValues(alpha: .12),
-                      const Color(0xFF07111D),
-                      seasonAccent.withValues(alpha: .035),
-                    ],
+                    begin: overdrive ? Alignment.bottomLeft : Alignment.topLeft,
+                    end: overdrive ? Alignment.topRight : Alignment.bottomRight,
+                    colors: ion
+                        ? [
+                            seasonAccent!.withValues(alpha: .20),
+                            const Color(0xFF050A13),
+                            seasonAccent.withValues(alpha: .06),
+                          ]
+                        : gridline
+                            ? [
+                                const Color(0xFF050A13),
+                                seasonAccent!.withValues(alpha: .08),
+                                const Color(0xFF050A13),
+                              ]
+                            : [
+                                seasonAccent!.withValues(alpha: .16),
+                                const Color(0xFF07111D),
+                                seasonAccent.withValues(alpha: .035),
+                              ],
                   ),
             color: skin == null ? const Color(0xFF07111D) : null,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: borderColor.withValues(alpha: .68)),
-            boxShadow: [BoxShadow(color: borderColor.withValues(alpha: skin == null ? .05 : .12), blurRadius: skin == null ? 16 : 22)],
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(
+              color: borderColor.withValues(alpha: overdrive ? .92 : .68),
+              width: ion ? 1.8 : gridline ? 1 : overdrive ? 2 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: borderColor.withValues(
+                  alpha: skin == null ? .05 : overdrive ? .20 : .12,
+                ),
+                blurRadius: skin == null ? 16 : overdrive ? 28 : 22,
+              ),
+            ],
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Container(width: 44, height: 44, decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF050A13), border: Border.all(color: borderColor, width: 1.6)), child: Icon(data.icon, color: borderColor, size: 22)),
-              const Spacer(),
-              if (skin != null) ...[
-                Icon(Icons.auto_awesome_rounded, color: seasonAccent, size: 13),
-                const SizedBox(width: 5),
-              ],
-              Flexible(child: _Badge(label: data.badge, color: borderColor)),
-            ]),
-            const SizedBox(height: 10),
-            FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(data.title, maxLines: 1, style: const TextStyle(color: ReactColors.textPrimary, fontSize: 19, fontWeight: FontWeight.w900, letterSpacing: .6))),
-            const SizedBox(height: 4),
-            Expanded(child: Align(alignment: Alignment.topLeft, child: Text(data.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 10, height: 1.25, fontWeight: FontWeight.w600)))),
-            const SizedBox(height: 5),
-            Row(children: [Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(data.detail, maxLines: 1, style: TextStyle(color: borderColor, fontSize: 7.1, fontWeight: FontWeight.w900, letterSpacing: .45)))), const SizedBox(width: 4), Icon(Icons.chevron_right_rounded, color: borderColor, size: 19)]),
-          ]),
+          child: Stack(
+            children: [
+              if (gridline)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: _ModeCardGridPainter(borderColor),
+                    ),
+                  ),
+                ),
+              if (overdrive)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Icon(
+                    Icons.change_history_rounded,
+                    color: borderColor.withValues(alpha: .16),
+                    size: 54,
+                  ),
+                ),
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: ion ? BoxShape.rectangle : BoxShape.circle,
+                      borderRadius: ion ? BorderRadius.circular(10) : null,
+                      color: const Color(0xFF050A13),
+                      border: Border.all(color: borderColor, width: ion ? 2 : 1.6),
+                    ),
+                    child: Icon(data.icon, color: borderColor, size: 22),
+                  ),
+                  const Spacer(),
+                  if (skin != null) ...[
+                    Icon(
+                      ion
+                          ? Icons.blur_on_rounded
+                          : gridline
+                              ? Icons.grid_4x4_rounded
+                              : Icons.auto_awesome_rounded,
+                      color: seasonAccent,
+                      size: 13,
+                    ),
+                    const SizedBox(width: 5),
+                  ],
+                  Flexible(child: _Badge(label: data.badge, color: borderColor)),
+                ]),
+                const SizedBox(height: 10),
+                FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(data.title, maxLines: 1, style: TextStyle(color: ReactColors.textPrimary, fontSize: overdrive ? 20 : 19, fontWeight: FontWeight.w900, letterSpacing: gridline ? 1.1 : .6))),
+                const SizedBox(height: 4),
+                Expanded(child: Align(alignment: Alignment.topLeft, child: Text(data.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: ReactColors.textSecondary, fontSize: 10, height: 1.25, fontWeight: FontWeight.w600)))),
+                const SizedBox(height: 5),
+                Row(children: [Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(data.detail, maxLines: 1, style: TextStyle(color: borderColor, fontSize: 7.1, fontWeight: FontWeight.w900, letterSpacing: .45)))), const SizedBox(width: 4), Icon(Icons.chevron_right_rounded, color: borderColor, size: 19)]),
+              ]),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _ModeCardGridPainter extends CustomPainter {
+  const _ModeCardGridPainter(this.color);
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: .055)
+      ..strokeWidth = .6;
+    const gap = 18.0;
+    for (double x = 0; x <= size.width; x += gap) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y <= size.height; y += gap) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ModeCardGridPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class _Badge extends StatelessWidget {
