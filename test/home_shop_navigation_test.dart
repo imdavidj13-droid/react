@@ -11,13 +11,26 @@ void main() {
     ReactSettings.howToPlayCompleted = true;
   });
 
-  testWidgets('Home exposes Locker and opens cosmetic collection', (tester) async {
+  testWidgets('Home exposes primary navigation tiles and Locker opens', (tester) async {
     await tester.pumpWidget(const ReactApp());
     await tester.pumpAndSettle();
 
-    expect(find.byTooltip('Locker'), findsOneWidget);
+    expect(find.text('MODES'), findsOneWidget);
+    expect(find.text('DAILY'), findsOneWidget);
+    expect(find.text('LEADERBOARD'), findsOneWidget);
+    expect(find.text('PASS'), findsOneWidget);
+    expect(find.text('LOCKER'), findsOneWidget);
+    expect(find.text('FRIENDS'), findsOneWidget);
+    expect(find.text('HOW TO PLAY'), findsOneWidget);
+    expect(find.text('SETTINGS'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Locker'));
+    // Locker and Friends now live in the Home navigation rather than floating
+    // top-chrome buttons. Player Profile remains the single top utility.
+    expect(find.byTooltip('Locker'), findsNothing);
+    expect(find.byTooltip('Friends'), findsNothing);
+    expect(find.byTooltip('Player profile'), findsOneWidget);
+
+    await tester.tap(find.text('LOCKER'));
     await tester.pumpAndSettle();
 
     expect(find.text('LOCKER'), findsOneWidget);
