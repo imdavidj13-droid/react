@@ -143,10 +143,11 @@ abstract final class SeasonCosmeticState {
   static bool isOwned(String rewardKey) => _ownedKeys.contains(rewardKey);
 
   static List<SeasonReward> get ownedRewards {
-    final rewards = <SeasonReward>[
-      for (final key in _ownedKeys)
-        if (_catalog[key] case final reward?) reward,
-    ];
+    final rewards = <SeasonReward>[];
+    for (final key in _ownedKeys) {
+      final reward = _catalog[key];
+      if (reward != null) rewards.add(reward);
+    }
     rewards.sort((a, b) {
       final tierOrder = a.tier.compareTo(b.tier);
       if (tierOrder != 0) return tierOrder;
