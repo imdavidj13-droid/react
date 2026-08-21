@@ -12,7 +12,6 @@ import 'features/player/data/local_player_profile.dart';
 import 'features/season/data/season_cosmetic_state.dart';
 import 'features/season/data/season_progress_service.dart';
 import 'features/season/data/season_repository.dart';
-import 'features/shop/data/local_shop_state.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,10 +39,6 @@ Future<void> main() async {
   }
 
   try {
-    // LocalShopState is retained temporarily as a compatibility adapter for
-    // legacy REDLINE/countdown/audio/command/share save keys. Locker is the
-    // only player-facing cosmetic manager.
-    await LocalShopState.load();
     await SeasonCosmeticState.load();
   } catch (error) {
     debugPrint('RE△CT cosmetics load failed; using defaults: $error');
