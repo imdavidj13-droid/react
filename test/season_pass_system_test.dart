@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:react/features/season/data/season_cosmetic_state.dart';
 import 'package:react/features/season/domain/season_models.dart';
-import 'package:react/features/shop/data/local_shop_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -46,19 +46,48 @@ void main() {
     ]);
   });
 
-  test('season cosmetic entitlement cache keeps only implemented packs', () async {
+  test('season cosmetic ownership is cached in the unified Locker state', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    await LocalShopState.setSeasonOwnedPackIds(<String>[
-      LocalShopState.greenlinePackId,
-      LocalShopState.ringsCountdownPackId,
-      'profile_frame_overdrive',
+    await SeasonCosmeticState.load();
+
+    const greenline = SeasonReward(
+      id: 'greenline',
+      tier: 3,
+      track: SeasonRewardTrack.free,
+      kind: 'reaction_pack',
+      rewardKey: 'greenline',
+      name: 'GREENLINE',
+      description: 'Full gameplay colour theme',
+      milestone: false,
+    );
+    const frame = SeasonReward(
+      id: 'frame',
+      tier: 5,
+      track: SeasonRewardTrack.premium,
+      kind: 'profile_frame',
+      rewardKey: 'frame_overdrive_01',
+      name: 'OVERDRIVE FRAME',
+      description: 'Profile frame',
+      milestone: true,
+    );
+
+    await SeasonCosmeticState.syncOwnedRewards(const <SeasonReward>[
+      greenline,
+      frame,
     ]);
 
+    expect(SeasonCosmeticState.isOwned(greenline.rewardKey), isTrue);
+    expect(SeasonCosmeticState.isOwned(frame.rewardKey), isTrue);
+    expect(
+      SeasonCosmeticState.ownedRewards.map((reward) => reward.rewardKey),
+      containsAll(<String>[greenline.rewardKey, frame.rewardKey]),
+    );
+
     final prefs = await SharedPreferences.getInstance();
-    final cached = prefs.getStringList('shop_season_owned_packs');
-    expect(cached, contains(LocalShopState.greenlinePackId));
-    expect(cached, contains(LocalShopState.ringsCountdownPackId));
-    expect(cached, isNot(contains('profile_frame_overdrive')));
+    expect(
+      prefs.getStringList('season_cosmetics_owned'),
+      containsAll(<String>[greenline.rewardKey, frame.rewardKey]),
+    );
   });
 
   test('season migration is cosmetic only and config driven', () {
@@ -93,6 +122,36 @@ void main() {
     expect(source, isNot(contains("'extra_life'")));
   });
 
+  test('canonical cosmetic migration keeps legacy aliases compatible', () {
+    final source = File(
+      'supabase/migrations/20260821034704_standardize_cosmetic_reward_kinds.sql',
+    ).readAsStringSync();
+
+    for (final kind in <String>[
+      'reaction_pack',
+      'gameplay_theme',
+      'arena_theme',
+      'command_pack',
+      'home_background',
+      'share_card',
+      'result_card_style',
+    ]) {
+      expect(source, contains("'$kind'"), reason: kind);
+    }
+  });
+
+  test('lifetime cosmetic catalog is server rehydratable', () {
+    final source = File(
+      'supabase/migrations/20260821034819_add_lifetime_cosmetic_catalog.sql',
+    ).readAsStringSync();
+
+    expect(source, contains('get_react_owned_cosmetics'));
+    expect(source, contains('react_player_unlocks'));
+    expect(source, contains('react_season_rewards'));
+    expect(source, contains('grant execute'));
+    expect(source, contains('authenticated'));
+  });
+
   test('season run hardening validates mode and limits Daily credit', () {
     final source = File(
       'supabase/migrations/20260821030630_harden_season_run_awards.sql',
@@ -115,8 +174,6 @@ void main() {
       'lib/features/season/presentation/home_season_strip.dart',
     ).readAsStringSync();
 
-    // Assert the stable feature contract rather than exact marketing copy so
-    // harmless visual/copy iterations do not break this regression test.
     expect(screen, contains("Tab(text: 'PASS')"));
     expect(screen, contains("Tab(text: 'MISSIONS')"));
     expect(screen, contains("Tab(text: 'SEASON INFO')"));
