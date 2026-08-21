@@ -42,18 +42,20 @@ class SeasonRepository {
 
   Future<SeasonSnapshot?> recordRun({
     required String eventId,
+    required String mode,
     required int score,
     required int successfulCommands,
     required bool isPersonalBest,
-    required bool isDaily,
+    String? dailyModifier,
     required DateTime completedAt,
   }) async {
     final record = await recordRunWithAward(
       eventId: eventId,
+      mode: mode,
       score: score,
       successfulCommands: successfulCommands,
       isPersonalBest: isPersonalBest,
-      isDaily: isDaily,
+      dailyModifier: dailyModifier,
       completedAt: completedAt,
     );
     return record?.snapshot;
@@ -61,10 +63,11 @@ class SeasonRepository {
 
   Future<SeasonRunRecord?> recordRunWithAward({
     required String eventId,
+    required String mode,
     required int score,
     required int successfulCommands,
     required bool isPersonalBest,
-    required bool isDaily,
+    String? dailyModifier,
     required DateTime completedAt,
   }) async {
     final client = ReactSupabase.client;
@@ -75,10 +78,11 @@ class SeasonRepository {
         'record_react_season_run',
         params: <String, dynamic>{
           'p_event_id': eventId,
+          'p_mode': mode,
           'p_score': score,
           'p_successful_commands': successfulCommands,
           'p_is_personal_best': isPersonalBest,
-          'p_is_daily': isDaily,
+          'p_daily_modifier': dailyModifier,
           'p_completed_at': completedAt.toUtc().toIso8601String(),
         },
       );
