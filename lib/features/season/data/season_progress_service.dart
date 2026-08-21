@@ -12,8 +12,15 @@ class SeasonProgressService {
 
   static const _repository = SeasonRepository();
 
-  static Future<void> recordResult(ReactRunResult result) async {
-    if (result.isDailyDevRun || result.outcome == ReactRunOutcome.quit) return;
+  /// Records one completed run and returns the exact server-awarded CHARGE for
+  /// that run when it can be synchronized immediately.
+  ///
+  /// A null award means progression remains safely queued/offline. The run is
+  /// still preserved and will be retried later.
+  static Future<int?> recordResult(ReactRunResult result) async {
+    if (result.isDailyDevRun || result.outcome == ReactRunOutcome.quit) {
+      return null;
+    }
 
     try {
       final isPersonalBest = await _isNewPersonalBest(result);
@@ -30,21 +37,29 @@ class SeasonProgressService {
       );
 
       await LocalSeasonProgressQueue.enqueue(event);
-      await flushPending();
+      final flush = await _flushPending(targetEventId: event.eventId);
+      return flush.targetChargeEarned;
     } catch (error) {
       // Season progression is additive. A backend failure must never block or
       // alter the completed run, Results, local stats, or leaderboard queue.
       debugPrint('RE△CT season progression unavailable: $error');
+      return null;
     }
   }
 
   static Future<int> flushPending() async {
+    final result = await _flushPending();
+    return result.completedCount;
+  }
+
+  static Future<_SeasonFlushResult> _flushPending({String? targetEventId}) async {
     final pending = await LocalSeasonProgressQueue.pending();
-    if (pending.isEmpty) return 0;
+    if (pending.isEmpty) return const _SeasonFlushResult(completedCount: 0);
 
     final completed = <String>[];
+    int? targetChargeEarned;
     for (final event in pending.reversed) {
-      final snapshot = await _repository.recordRun(
+      final record = await _repository.recordRunWithAward(
         eventId: event.eventId,
         score: event.score,
         successfulCommands: event.successfulCommands,
@@ -52,12 +67,18 @@ class SeasonProgressService {
         isDaily: event.isDaily,
         completedAt: event.completedAt,
       );
-      if (snapshot == null) break;
+      if (record == null) break;
       completed.add(event.eventId);
+      if (event.eventId == targetEventId) {
+        targetChargeEarned = record.chargeEarned;
+      }
     }
 
     await LocalSeasonProgressQueue.remove(completed);
-    return completed.length;
+    return _SeasonFlushResult(
+      completedCount: completed.length,
+      targetChargeEarned: targetChargeEarned,
+    );
   }
 
   static Future<bool> _isNewPersonalBest(ReactRunResult result) async {
@@ -74,4 +95,14 @@ class SeasonProgressService {
         .skip(1);
     return priorModeRuns.every((entry) => entry.score < result.score);
   }
+}
+
+class _SeasonFlushResult {
+  const _SeasonFlushResult({
+    required this.completedCount,
+    this.targetChargeEarned,
+  });
+
+  final int completedCount;
+  final int? targetChargeEarned;
 }
