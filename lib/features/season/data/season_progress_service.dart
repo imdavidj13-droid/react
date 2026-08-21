@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../../daily/domain/daily_challenge.dart';
 import '../../gameplay/data/local_player_stats.dart';
 import '../../gameplay/domain/react_run_result.dart';
 import 'local_season_progress_queue.dart';
@@ -95,12 +96,22 @@ class SeasonProgressService {
   }
 
   static Future<bool> _isNewPersonalBest(ReactRunResult result) async {
+    if (result.score <= 0) return false;
+
+    if (result.mode == ReactGameMode.daily) {
+      final challengeDate = result.dailyDate ?? DateTime.now();
+      final modifier = DailyChallenge.forDate(challengeDate).modifier;
+      final modifierBest = await LocalPlayerStats.dailyBestForModifier(modifier);
+      return result.score == modifierBest;
+    }
+
     final currentBest = await LocalPlayerStats.bestFor(result.mode);
-    if (result.score != currentBest || result.score <= 0) return false;
+    if (result.score != currentBest) return false;
 
     // Results persistence has already inserted the current run at the front of
-    // recent history. This fallback remains for callers that do not pass the
-    // exact PB decision produced by LocalPlayerStats.
+    // recent history. The server independently rejects same-scope ties from
+    // this season, while this retained-history check prevents ordinary local
+    // ties from being submitted as PB claims in the first place.
     final recent = await LocalPlayerStats.recentRuns();
     final priorModeRuns = recent
         .where((entry) => entry.mode == result.mode)
