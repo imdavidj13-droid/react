@@ -58,7 +58,7 @@ abstract final class CosmeticTaxonomy {
     label: 'COMMAND TEXT PACK',
     tab: CosmeticLockerTab.gameplay,
     icon: Icons.text_fields_rounded,
-    effect: 'Changes command wording and typography while leaving timing and rules unchanged.',
+    effect: 'Changes command wording and text format while leaving timing and rules unchanged.',
     destination: 'Command words and hints in gesture-based gameplay modes.',
   );
 
@@ -80,31 +80,15 @@ abstract final class CosmeticTaxonomy {
     destination: 'Gameplay and pre-run sound effects.',
   );
 
-  static const successReaction = CosmeticKindSpec(
-    canonicalKind: 'success_reaction',
-    label: 'SUCCESS REACTION',
+  /// Reserved for a genuine in-run reaction renderer. Do not award this family
+  /// until the input-success/miss surfaces consume it in every gameplay mode.
+  static const reactionPack = CosmeticKindSpec(
+    canonicalKind: 'input_reaction_pack',
+    label: 'REACTION PACK',
     tab: CosmeticLockerTab.gameplay,
-    icon: Icons.check_circle_outline_rounded,
-    effect: 'Changes the visual reaction shown after a successful input.',
-    destination: 'Immediately after successful gameplay inputs.',
-  );
-
-  static const failureReaction = CosmeticKindSpec(
-    canonicalKind: 'failure_reaction',
-    label: 'FAILURE REACTION',
-    tab: CosmeticLockerTab.gameplay,
-    icon: Icons.flash_off_rounded,
-    effect: 'Changes the visual reaction shown after a missed or incorrect input.',
-    destination: 'Immediately after gameplay misses and failures.',
-  );
-
-  static const scoreEffect = CosmeticKindSpec(
-    canonicalKind: 'score_effect',
-    label: 'SCORE EFFECT',
-    tab: CosmeticLockerTab.gameplay,
-    icon: Icons.auto_graph_rounded,
-    effect: 'Changes visual score feedback when score increases.',
-    destination: 'Live score feedback during gameplay.',
+    icon: Icons.burst_mode_outlined,
+    effect: 'Changes the visual burst/shockwave treatment after successful and failed inputs.',
+    destination: 'Immediately after inputs during gameplay.',
   );
 
   static const hudStyle = CosmeticKindSpec(
@@ -145,11 +129,11 @@ abstract final class CosmeticTaxonomy {
 
   static const profileFrame = CosmeticKindSpec(
     canonicalKind: 'profile_frame',
-    label: 'PROFILE FRAME',
+    label: 'PROFILE SCREEN FRAME',
     tab: CosmeticLockerTab.profile,
     icon: Icons.crop_square_rounded,
-    effect: 'Adds an equippable frame to the player identity area.',
-    destination: 'The player identity area on Player Profile.',
+    effect: 'Adds a decorative frame around the Player Profile screen.',
+    destination: 'Around the outer edge of Player Profile.',
   );
 
   static const profileBadge = CosmeticKindSpec(
@@ -197,6 +181,33 @@ abstract final class CosmeticTaxonomy {
     destination: 'The result sharing screen and exported image.',
   );
 
+  static const resultScoreStyle = CosmeticKindSpec(
+    canonicalKind: 'result_score_style',
+    label: 'RESULT SCORE STYLE',
+    tab: CosmeticLockerTab.social,
+    icon: Icons.auto_graph_rounded,
+    effect: 'Restyles the final-score presentation after a run.',
+    destination: 'The final score on Results.',
+  );
+
+  static const resultSuccessStyle = CosmeticKindSpec(
+    canonicalKind: 'result_success_style',
+    label: 'RESULT SUCCESS STYLE',
+    tab: CosmeticLockerTab.social,
+    icon: Icons.check_circle_outline_rounded,
+    effect: 'Restyles the successful/completed outcome treatment after a run.',
+    destination: 'Successful outcome presentation on Results.',
+  );
+
+  static const resultFailureStyle = CosmeticKindSpec(
+    canonicalKind: 'result_failure_style',
+    label: 'RESULT FAILURE STYLE',
+    tab: CosmeticLockerTab.social,
+    icon: Icons.flash_off_rounded,
+    effect: 'Restyles the miss/failure outcome treatment after a run.',
+    destination: 'Failed outcome presentation on Results.',
+  );
+
   static const resultCardStyle = CosmeticKindSpec(
     canonicalKind: 'result_card_style',
     label: 'RESULT CARD STYLE',
@@ -206,18 +217,15 @@ abstract final class CosmeticTaxonomy {
     destination: 'The Results screen after a run.',
   );
 
-  /// Maps legacy S01/backend kinds into the canonical player-facing taxonomy.
-  /// This keeps earned unlocks and old clients compatible while future seasons
-  /// can use the canonical names directly.
+  /// Maps S01 legacy/backend kinds into the canonical player-facing taxonomy.
+  /// The mapping describes what the renderer ACTUALLY does today.
   static CosmeticKindSpec specFor(String kind) => switch (kind) {
         'reaction_pack' || 'gameplay_theme' => gameplayTheme,
         'arena_theme' => arenaTheme,
         'command_style' || 'command_pack' => commandPack,
         'countdown_style' => countdownStyle,
         'sound_pack' => soundPack,
-        'success_effect' || 'success_reaction' => successReaction,
-        'failure_effect' || 'failure_reaction' => failureReaction,
-        'score_effect' => scoreEffect,
+        'input_reaction_pack' || 'success_reaction' || 'failure_reaction' => reactionPack,
         'hud_style' => hudStyle,
         'particle_pack' => particlePack,
         'home_theme' || 'home_background' => homeBackground,
@@ -228,6 +236,9 @@ abstract final class CosmeticTaxonomy {
         'emblem' => emblem,
         'player_code_style' => playerCodeStyle,
         'share_style' || 'share_card' => shareCard,
+        'score_effect' || 'result_score_style' => resultScoreStyle,
+        'success_effect' || 'result_success_style' => resultSuccessStyle,
+        'failure_effect' || 'result_failure_style' => resultFailureStyle,
         'result_card_style' => resultCardStyle,
         _ => CosmeticKindSpec(
             canonicalKind: kind,
