@@ -73,15 +73,26 @@ void main() {
     milestone: false,
   );
 
-  const futureArena = SeasonReward(
-    id: 'future-arena',
-    tier: 1,
+  const ionArena = SeasonReward(
+    id: 'arena-ion',
+    tier: 10,
     track: SeasonRewardTrack.free,
     kind: 'arena_theme',
-    rewardKey: 'arena_future',
-    name: 'FUTURE ARENA',
-    description: 'Not rendered yet',
-    milestone: false,
+    rewardKey: 'arena_ion_ring',
+    name: 'ION ARENA',
+    description: 'Central arena and timer-ring theme.',
+    milestone: true,
+  );
+
+  const railHud = SeasonReward(
+    id: 'hud-rail',
+    tier: 10,
+    track: SeasonRewardTrack.premium,
+    kind: 'hud_style',
+    rewardKey: 'hud_rail',
+    name: 'RAIL HUD',
+    description: 'Gameplay HUD card style.',
+    milestone: true,
   );
 
   setUp(() async {
@@ -94,7 +105,8 @@ void main() {
       arcadeSfx,
       reactionArc,
       ionParticles,
-      futureArena,
+      ionArena,
+      railHud,
     ]);
   });
 
@@ -129,11 +141,26 @@ void main() {
     expect(flame, contains('SeasonGameplayStyle.particleSpeedScale()'));
   });
 
-  test('unsupported future Arena cosmetic cannot claim EQUIPPED', () async {
-    expect(SeasonCosmeticState.isOwned(futureArena.rewardKey), isTrue);
-    expect(SeasonCosmeticState.isEquippable(futureArena), isFalse);
-    expect(await SeasonCosmeticState.equip(futureArena), isFalse);
-    expect(SeasonCosmeticState.isEquipped(futureArena), isFalse);
+  test('Arena and HUD families are live across all gameplay renderers', () async {
+    expect(SeasonCosmeticState.isEquippable(ionArena), isTrue);
+    expect(await SeasonCosmeticState.equip(ionArena), isTrue);
+    expect(SeasonCosmeticState.isEquipped(ionArena), isTrue);
+
+    expect(SeasonCosmeticState.isEquippable(railHud), isTrue);
+    expect(await SeasonCosmeticState.equip(railHud), isTrue);
+    expect(SeasonCosmeticState.isEquipped(railHud), isTrue);
+
+    for (final path in <String>[
+      'lib/features/gameplay/presentation/react_run_screen.dart',
+      'lib/features/daily/presentation/daily_run_screen.dart',
+      'lib/features/dot_sequence/presentation/dot_sequence_screen.dart',
+    ]) {
+      final source = File(path).readAsStringSync();
+      expect(source, contains('SeasonGameplayStyle.arenaSurface'), reason: path);
+      expect(source, contains('SeasonGameplayStyle.arenaRingStroke'), reason: path);
+      expect(source, contains('SeasonGameplayStyle.hudPanel'), reason: path);
+      expect(source, contains('SeasonGameplayStyle.hudBorder'), reason: path);
+    }
   });
 
   test('clearing a legacy family returns its renderer to CORE', () async {
