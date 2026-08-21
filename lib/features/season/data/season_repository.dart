@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../core/backend/react_supabase.dart';
-import '../../shop/data/local_shop_state.dart';
 import '../domain/season_models.dart';
 import 'season_cosmetic_state.dart';
 
@@ -32,7 +31,7 @@ class SeasonRepository {
       final data = _asMap(response);
       if (data == null) return null;
       final snapshot = _withDebugPremium(_parseSnapshot(data));
-      await _syncCosmetics(snapshot);
+      await SeasonCosmeticState.syncSnapshot(snapshot);
       return snapshot;
     } catch (error) {
       debugPrint('RE△CT season load failed: $error');
@@ -60,9 +59,6 @@ class SeasonRepository {
         rewards.add(_parseReward(data));
       }
       await SeasonCosmeticState.syncOwnedRewards(rewards);
-      await LocalShopState.setSeasonOwnedPackIds(
-        rewards.map((reward) => reward.rewardKey),
-      );
       return List<SeasonReward>.unmodifiable(rewards);
     } catch (error) {
       debugPrint('RE△CT lifetime cosmetic load failed: $error');
@@ -119,7 +115,7 @@ class SeasonRepository {
       final data = _asMap(response);
       if (data == null) return null;
       final snapshot = _withDebugPremium(_parseSnapshot(data));
-      await _syncCosmetics(snapshot);
+      await SeasonCosmeticState.syncSnapshot(snapshot);
       return SeasonRunRecord(
         snapshot: snapshot,
         chargeEarned: _asInt(data['charge_earned']),
@@ -128,11 +124,6 @@ class SeasonRepository {
       debugPrint('RE△CT season run progress failed: $error');
       return null;
     }
-  }
-
-  static Future<void> _syncCosmetics(SeasonSnapshot snapshot) async {
-    await LocalShopState.setSeasonOwnedPackIds(snapshot.unlockedRewardKeys);
-    await SeasonCosmeticState.syncSnapshot(snapshot);
   }
 
   /// Debug builds treat Premium as active so the full pass can be tested
