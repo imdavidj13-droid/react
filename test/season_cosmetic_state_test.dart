@@ -103,7 +103,7 @@ void main() {
     await SeasonCosmeticState.load();
   });
 
-  test('server snapshot controls season cosmetic ownership', () async {
+  test('server snapshot adds verified season cosmetic ownership', () async {
     await SeasonCosmeticState.syncSnapshot(
       snapshot(<String>{frame.rewardKey}),
     );
@@ -177,13 +177,27 @@ void main() {
     );
   });
 
-  test('revoked server ownership clears stale equipment', () async {
+  test('earned ownership survives a later season snapshot', () async {
     await SeasonCosmeticState.syncSnapshot(
       snapshot(<String>{frame.rewardKey}),
     );
     await SeasonCosmeticState.equip(frame);
-    await SeasonCosmeticState.syncSnapshot(snapshot(<String>{}));
+    await SeasonCosmeticState.syncSnapshot(snapshot(<String>{badge.rewardKey}));
+
+    expect(SeasonCosmeticState.isOwned(frame.rewardKey), isTrue);
+    expect(SeasonCosmeticState.isOwned(badge.rewardKey), isTrue);
+    expect(SeasonCosmeticState.isEquipped(frame), isTrue);
+  });
+
+  test('load removes stale equipped preferences that are not owned', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'season_cosmetics_equipped_profile_frame': frame.rewardKey,
+    });
+
+    await SeasonCosmeticState.load();
+    final prefs = await SharedPreferences.getInstance();
 
     expect(SeasonCosmeticState.equippedKey('profile_frame'), isNull);
+    expect(prefs.getString('season_cosmetics_equipped_profile_frame'), isNull);
   });
 }
