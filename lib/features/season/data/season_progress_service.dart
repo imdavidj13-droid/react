@@ -82,7 +82,6 @@ class SeasonProgressService {
   }
 
   static Future<bool> _isNewPersonalBest(ReactRunResult result) async {
-    if (result.mode == ReactGameMode.passIt) return false;
     final currentBest = await LocalPlayerStats.bestFor(result.mode);
     if (result.score != currentBest || result.score <= 0) return false;
 
