@@ -17,22 +17,29 @@ class SeasonProgressService {
   ///
   /// A null award means progression remains safely queued/offline. The run is
   /// still preserved and will be retried later.
-  static Future<int?> recordResult(ReactRunResult result) async {
+  static Future<int?> recordResult(
+    ReactRunResult result, {
+    bool? isPersonalBest,
+  }) async {
     if (result.isDailyDevRun || result.outcome == ReactRunOutcome.quit) {
       return null;
     }
 
     try {
-      final isPersonalBest = await _isNewPersonalBest(result);
+      final resolvedPersonalBest =
+          isPersonalBest ?? await _isNewPersonalBest(result);
       final completedAt = DateTime.now().toUtc();
       final random = Random.secure().nextInt(1 << 32).toRadixString(16);
       final event = SeasonProgressEvent(
         eventId:
             'season-${result.mode.name}-${completedAt.microsecondsSinceEpoch}-$random',
+        mode: result.mode.name,
         score: result.score,
         successfulCommands: result.successfulCommands,
-        isPersonalBest: isPersonalBest,
-        isDaily: result.mode == ReactGameMode.daily,
+        isPersonalBest: resolvedPersonalBest,
+        dailyModifier: result.mode == ReactGameMode.daily
+            ? result.dailyModifierLabel
+            : null,
         completedAt: completedAt,
       );
 
@@ -61,13 +68,19 @@ class SeasonProgressService {
     for (final event in pending.reversed) {
       final record = await _repository.recordRunWithAward(
         eventId: event.eventId,
+        mode: event.mode,
         score: event.score,
         successfulCommands: event.successfulCommands,
         isPersonalBest: event.isPersonalBest,
-        isDaily: event.isDaily,
+        dailyModifier: event.dailyModifier,
         completedAt: event.completedAt,
       );
-      if (record == null) break;
+      if (record == null) {
+        // A permanently invalid or gap-between-seasons event must not poison
+        // every newer queued run. Leave it queued for retention cleanup and
+        // continue so independent events can still synchronize.
+        continue;
+      }
       completed.add(event.eventId);
       if (event.eventId == targetEventId) {
         targetChargeEarned = record.chargeEarned;
@@ -86,8 +99,8 @@ class SeasonProgressService {
     if (result.score != currentBest || result.score <= 0) return false;
 
     // Results persistence has already inserted the current run at the front of
-    // recent history. If an earlier retained run already reached this score,
-    // this is a tie rather than a new PB.
+    // recent history. This fallback remains for callers that do not pass the
+    // exact PB decision produced by LocalPlayerStats.
     final recent = await LocalPlayerStats.recentRuns();
     final priorModeRuns = recent
         .where((entry) => entry.mode == result.mode)
