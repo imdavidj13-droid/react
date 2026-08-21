@@ -20,8 +20,8 @@ abstract final class SeasonCosmeticState {
   static final Map<String, String> _equippedByKind = <String, String>{};
 
   /// Only season-native families with a real connected renderer belong here.
-  /// Arena themes and full HUD skins remain intentionally blocked until every
-  /// intended gameplay renderer (including Sequence) consumes them.
+  /// A kind is added only after every destination promised by its taxonomy is
+  /// wired, so Locker can never claim EQUIPPED for a visually inert reward.
   static const Set<String> _seasonNativeKinds = <String>{
     'profile_frame',
     'profile_badge',
@@ -37,6 +37,8 @@ abstract final class SeasonCosmeticState {
     'mode_card_skin',
     'title',
     'emblem',
+    'arena_theme',
+    'hud_style',
     'input_reaction_pack',
     'particle_pack',
   };
