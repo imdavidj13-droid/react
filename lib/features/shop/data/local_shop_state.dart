@@ -6,8 +6,9 @@ import '../../../core/cosmetics/react_cosmetics.dart';
 /// Local cosmetic ownership/equipment state.
 ///
 /// CORE is always owned. Verified seasonal unlocks are cached locally so an
-/// earned cosmetic remains usable offline. Debug builds deliberately unlock
-/// every implemented cosmetic so packs can still be tested end-to-end.
+/// earned cosmetic remains usable offline and across later seasons. Debug
+/// builds deliberately unlock every implemented cosmetic so packs can still be
+/// tested end-to-end.
 abstract final class LocalShopState {
   static const corePackId = 'core';
   static const redlinePackId = 'redline';
@@ -108,7 +109,7 @@ abstract final class LocalShopState {
   }
 
   static Future<void> setSeasonOwnedPackIds(Iterable<String> packIds) async {
-    _seasonOwnedPackIds = packIds.where(isImplemented).toSet();
+    _seasonOwnedPackIds.addAll(packIds.where(isImplemented));
     final prefs = await SharedPreferences.getInstance();
     final sorted = _seasonOwnedPackIds.toList()..sort();
     await prefs.setStringList(_seasonOwnedPacksKey, sorted);
