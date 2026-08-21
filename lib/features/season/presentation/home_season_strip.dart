@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
+import '../data/season_progress_service.dart';
 import '../data/season_repository.dart';
 import '../domain/season_models.dart';
 import 'season_locker_screen.dart';
@@ -21,10 +22,22 @@ class _HomeSeasonStripState extends State<HomeSeasonStrip> {
   void initState() {
     super.initState();
     _reload();
+    SeasonProgressService.progressRevision.addListener(_onProgressChanged);
+  }
+
+  @override
+  void dispose() {
+    SeasonProgressService.progressRevision.removeListener(_onProgressChanged);
+    super.dispose();
   }
 
   void _reload() {
     _season = _repository.loadActiveSeason();
+  }
+
+  void _onProgressChanged() {
+    if (!mounted) return;
+    setState(_reload);
   }
 
   void _retry() => setState(_reload);
