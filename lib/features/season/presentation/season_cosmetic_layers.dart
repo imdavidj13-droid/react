@@ -12,26 +12,7 @@ import '../domain/season_models.dart';
 /// season switch statement, so later seasons can add rewards without adding
 /// another hardcoded UI branch.
 abstract final class SeasonCosmeticLayers {
-  static Widget home({required Widget child}) {
-    final theme = SeasonCosmeticState.equippedReward('home_theme');
-    if (theme == null) return child;
-    final accent = accentForReward(theme);
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        child,
-        IgnorePointer(
-          child: CustomPaint(
-            painter: _SeasonHomePainter(
-              accent: accent,
-              rewardKey: theme.rewardKey,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  static Widget home({required Widget child}) => SeasonHomeLayer(child: child);
 
   static Color accentForReward(SeasonReward reward) {
     final hash = reward.rewardKey.codeUnits.fold<int>(0, (value, unit) {
@@ -46,6 +27,80 @@ abstract final class SeasonCosmeticLayers {
       Color(0xFF42F5C8),
     ];
     return palette[hash % palette.length];
+  }
+}
+
+/// Animated Home-only cosmetic layer. It never changes Home content/layout or
+/// any gameplay surface. Reduced-animation accessibility settings freeze the
+/// treatment at a stable frame.
+class SeasonHomeLayer extends StatefulWidget {
+  const SeasonHomeLayer({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  State<SeasonHomeLayer> createState() => _SeasonHomeLayerState();
+}
+
+class _SeasonHomeLayerState extends State<SeasonHomeLayer>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  bool? _animationsDisabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 12),
+    )..repeat();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final disabled = MediaQuery.disableAnimationsOf(context);
+    if (_animationsDisabled == disabled) return;
+    _animationsDisabled = disabled;
+    if (disabled) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = SeasonCosmeticState.equippedReward('home_theme') ??
+        SeasonCosmeticState.equippedReward('home_background');
+    if (theme == null) return widget.child;
+    final accent = SeasonCosmeticLayers.accentForReward(theme);
+    final frozen = _animationsDisabled == true;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        widget.child,
+        IgnorePointer(
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) => CustomPaint(
+              painter: _SeasonHomePainter(
+                accent: accent,
+                rewardKey: theme.rewardKey,
+                phase: frozen ? 0 : _controller.value,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -188,10 +243,15 @@ class _ProfileFramePainter extends CustomPainter {
 }
 
 class _SeasonHomePainter extends CustomPainter {
-  const _SeasonHomePainter({required this.accent, required this.rewardKey});
+  const _SeasonHomePainter({
+    required this.accent,
+    required this.rewardKey,
+    required this.phase,
+  });
 
   final Color accent;
   final String rewardKey;
+  final double phase;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -203,12 +263,16 @@ class _SeasonHomePainter extends CustomPainter {
       _paintOverdrive(canvas, size);
     }
 
+    final glowCenter = Offset(
+      size.width * (.50 + math.sin(phase * math.pi * 2) * .07),
+      size.height * (.42 + math.cos(phase * math.pi * 2) * .025),
+    );
     final glow = Paint()
       ..shader = RadialGradient(
         colors: [accent.withValues(alpha: .10), Colors.transparent],
       ).createShader(
         Rect.fromCircle(
-          center: Offset(size.width * .5, size.height * .42),
+          center: glowCenter,
           radius: math.max(size.width, size.height) * .48,
         ),
       );
@@ -220,7 +284,10 @@ class _SeasonHomePainter extends CustomPainter {
       ..color = accent.withValues(alpha: .055)
       ..strokeWidth = 1;
     const gap = 46.0;
-    for (double x = -size.height; x < size.width + size.height; x += gap) {
+    final shift = phase * gap;
+    for (double x = -size.height - gap + shift;
+        x < size.width + size.height + gap;
+        x += gap) {
       canvas.drawLine(
         Offset(x, size.height),
         Offset(x + size.height, 0),
@@ -234,15 +301,24 @@ class _SeasonHomePainter extends CustomPainter {
       ..color = accent.withValues(alpha: .065)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
-    final center = Offset(size.width * .5, size.height * .42);
+    final center = Offset(
+      size.width * .5,
+      size.height * (.42 + math.sin(phase * math.pi * 2) * .012),
+    );
+    final pulse = 1 + math.sin(phase * math.pi * 2) * .025;
     for (final scale in const <double>[.20, .32, .44]) {
-      canvas.drawCircle(center, size.width * scale, paint);
+      canvas.drawCircle(center, size.width * scale * pulse, paint);
     }
     canvas.drawLine(
       Offset(0, center.dy),
       Offset(size.width, center.dy),
       paint,
     );
+    final sweep = Paint()
+      ..color = accent.withValues(alpha: .045)
+      ..strokeWidth = 2;
+    final sweepY = (phase * size.height) % math.max(1, size.height);
+    canvas.drawLine(Offset(0, sweepY), Offset(size.width, sweepY), sweep);
   }
 
   void _paintRails(Canvas canvas, Size size) {
@@ -253,7 +329,8 @@ class _SeasonHomePainter extends CustomPainter {
       ..color = accent.withValues(alpha: .025)
       ..strokeWidth = 10;
     const gap = 54.0;
-    for (double x = 26; x < size.width; x += gap) {
+    final shift = phase * gap;
+    for (double x = 26 - gap + shift; x < size.width + gap; x += gap) {
       canvas
         ..drawLine(Offset(x, 0), Offset(x, size.height), glow)
         ..drawLine(Offset(x, 0), Offset(x, size.height), rail);
@@ -262,5 +339,7 @@ class _SeasonHomePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SeasonHomePainter oldDelegate) =>
-      oldDelegate.accent != accent || oldDelegate.rewardKey != rewardKey;
+      oldDelegate.accent != accent ||
+      oldDelegate.rewardKey != rewardKey ||
+      oldDelegate.phase != phase;
 }
