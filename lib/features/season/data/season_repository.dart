@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/backend/react_supabase.dart';
 import '../domain/season_models.dart';
+import 'local_season_snapshot_cache.dart';
 import 'season_cosmetic_state.dart';
 
 class SeasonRunRecord {
@@ -32,6 +33,7 @@ class SeasonRepository {
       if (data == null) return null;
       final snapshot = _withDebugPremium(_parseSnapshot(data));
       await SeasonCosmeticState.syncSnapshot(snapshot);
+      await LocalSeasonSnapshotCache.save(snapshot);
       return snapshot;
     } catch (error) {
       debugPrint('RE△CT season load failed: $error');
@@ -116,6 +118,7 @@ class SeasonRepository {
       if (data == null) return null;
       final snapshot = _withDebugPremium(_parseSnapshot(data));
       await SeasonCosmeticState.syncSnapshot(snapshot);
+      await LocalSeasonSnapshotCache.save(snapshot);
       return SeasonRunRecord(
         snapshot: snapshot,
         chargeEarned: _asInt(data['charge_earned']),
