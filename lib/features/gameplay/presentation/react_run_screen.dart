@@ -16,6 +16,7 @@ import '../domain/react_run_result.dart';
 import '../domain/run_command_performance_tracker.dart';
 import 'react_gesture_surface.dart';
 import 'react_run_launch_screen.dart';
+import 'run_meta_hud.dart';
 
 class ReactRunScreen extends StatefulWidget {
   const ReactRunScreen({required this.mode, super.key})
@@ -720,7 +721,12 @@ class _ReactRunScreenState extends State<ReactRunScreen>
                           statusValue: _statusValue,
                           onPause: () => _setPaused(true),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
+                        RunMetaHud(
+                          mode: widget.mode,
+                          currentScore: _score,
+                        ),
+                        const SizedBox(height: 8),
                         Expanded(
                           child: Center(
                             child: ReactGestureSurface(
@@ -1374,7 +1380,9 @@ class _HandoffOverlay extends StatelessWidget {
               color: _themePanelColor(),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: hasLifeLoss ? palette.failure : _visualAccent(ReactGameMode.passIt),
+                color: hasLifeLoss
+                    ? palette.failure
+                    : _visualAccent(ReactGameMode.passIt),
               ),
             ),
             child: Column(
