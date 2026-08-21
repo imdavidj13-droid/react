@@ -13,6 +13,11 @@ class SeasonProgressService {
 
   static const _repository = SeasonRepository();
 
+  /// Increments after one or more queued season events synchronize. Surfaces
+  /// that display server-owned CHARGE can listen to this without coupling
+  /// themselves to Results navigation or individual gameplay routes.
+  static final ValueNotifier<int> progressRevision = ValueNotifier<int>(0);
+
   /// Records one completed run and returns the exact server-awarded CHARGE for
   /// that run when it can be synchronized immediately.
   ///
@@ -89,6 +94,9 @@ class SeasonProgressService {
     }
 
     await LocalSeasonProgressQueue.remove(completed);
+    if (completed.isNotEmpty) {
+      progressRevision.value = progressRevision.value + 1;
+    }
     return _SeasonFlushResult(
       completedCount: completed.length,
       targetChargeEarned: targetChargeEarned,
