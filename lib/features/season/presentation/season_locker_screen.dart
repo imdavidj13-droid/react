@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/react_colors.dart';
-import '../../shop/data/local_shop_state.dart';
 import '../data/season_cosmetic_state.dart';
 import '../data/season_repository.dart';
 import '../domain/cosmetic_taxonomy.dart';
@@ -33,11 +32,7 @@ class _SeasonLockerScreenState extends State<SeasonLockerScreen> {
     if (_busyKey != null) return;
     setState(() => _busyKey = reward.rewardKey);
     try {
-      if (SeasonCosmeticState.isEquippable(reward)) {
-        await SeasonCosmeticState.equip(reward);
-      } else if (LocalShopState.isImplemented(reward.rewardKey)) {
-        await LocalShopState.equip(reward.rewardKey);
-      }
+      await SeasonCosmeticState.equip(reward);
       if (mounted) setState(_reload);
     } finally {
       if (mounted) setState(() => _busyKey = null);
@@ -268,19 +263,15 @@ class _LockerList extends StatelessWidget {
       separatorBuilder: (_, _) => const SizedBox(height: 9),
       itemBuilder: (context, index) {
         final reward = rewards[index];
-        final seasonEquippable = SeasonCosmeticState.isEquippable(reward);
-        final legacyImplemented = LocalShopState.isImplemented(reward.rewardKey);
-        final equipped = seasonEquippable
-            ? SeasonCosmeticState.isEquipped(reward)
-            : data.equippedPackIds.contains(reward.rewardKey);
-        final usable = seasonEquippable || legacyImplemented;
+        final usable = SeasonCosmeticState.isEquippable(reward);
+        final equipped = usable && SeasonCosmeticState.isEquipped(reward);
         return _LockerRewardCard(
           reward: reward,
           equipped: equipped,
           usable: usable,
           busy: busyKey == reward.rewardKey,
           onEquip: () => onEquip(reward),
-          onClear: equipped && seasonEquippable ? () => onClear(reward) : null,
+          onClear: equipped ? () => onClear(reward) : null,
         );
       },
     );
@@ -288,17 +279,16 @@ class _LockerList extends StatelessWidget {
 }
 
 class _LockerData {
-  const _LockerData({required this.rewards, required this.equippedPackIds});
+  const _LockerData({required this.rewards});
 
   final List<SeasonReward> rewards;
-  final Set<String> equippedPackIds;
 
-  List<SeasonReward> get equippedRewards => rewards.where((reward) {
-        if (SeasonCosmeticState.isEquippable(reward)) {
-          return SeasonCosmeticState.isEquipped(reward);
-        }
-        return equippedPackIds.contains(reward.rewardKey);
-      }).toList(growable: false);
+  List<SeasonReward> get equippedRewards => rewards
+      .where(
+        (reward) => SeasonCosmeticState.isEquippable(reward) &&
+            SeasonCosmeticState.isEquipped(reward),
+      )
+      .toList(growable: false);
 
   int countFor(CosmeticLockerTab tab) => forTab(tab).length;
 
@@ -311,15 +301,17 @@ class _LockerData {
 
   static Future<_LockerData> load() async {
     await SeasonCosmeticState.load();
-    await LocalShopState.load();
+    const repository = SeasonRepository();
 
-    // Refresh current-season ownership/catalog when online. Failure is fine:
-    // the lifetime cached Locker remains available offline.
+    // Current season refreshes newly reached/debug entitlements. Lifetime RPC
+    // restores historical ownership on a clean install/new device.
     try {
-      await const SeasonRepository().loadActiveSeason();
-    } catch (_) {}
+      await repository.loadActiveSeason();
+      await repository.loadOwnedCosmetics();
+    } catch (_) {
+      // Cached lifetime Locker remains usable offline.
+    }
 
-    final equipped = await LocalShopState.equippedPackIds();
     final rewards = SeasonCosmeticState.ownedRewards.toList(growable: true)
       ..sort((a, b) {
         final tabOrder = CosmeticTaxonomy.tabFor(a.kind).index
@@ -331,10 +323,7 @@ class _LockerData {
         return a.tier.compareTo(b.tier);
       });
 
-    return _LockerData(
-      rewards: List<SeasonReward>.unmodifiable(rewards),
-      equippedPackIds: equipped,
-    );
+    return _LockerData(rewards: List<SeasonReward>.unmodifiable(rewards));
   }
 }
 
