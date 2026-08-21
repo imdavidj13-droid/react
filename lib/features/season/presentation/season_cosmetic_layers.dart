@@ -52,10 +52,10 @@ abstract final class SeasonCosmeticLayers {
 /// Screen-level profile cosmetics belong here only when they genuinely affect
 /// the whole Player Profile surface.
 ///
-/// Player-code styles are deliberately NOT rendered here: they are scoped to
-/// the RX code inside [PlayerProfileScreen]. Previously they also drew traces
-/// and a floating label across the complete Profile/Friends screens, which was
-/// much broader than a "player code style" implies.
+/// Player-code styles are deliberately not rendered here: they are scoped to
+/// the RX code inside the profile identity card. Previously they also drew
+/// traces and a floating label across the complete Profile/Friends screens,
+/// which was much broader than a player-code style implies.
 class SeasonProfileLayer extends StatelessWidget {
   const SeasonProfileLayer({required this.child, super.key});
 
@@ -73,21 +73,10 @@ class SeasonProfileLayer extends StatelessWidget {
         child,
         IgnorePointer(
           child: SafeArea(
-            child: Container(
-              margin: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: accent.withValues(alpha: .75),
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: .12),
-                    blurRadius: 18,
-                    spreadRadius: 1,
-                  ),
-                ],
+            child: CustomPaint(
+              painter: _ProfileFramePainter(
+                accent: accent,
+                rewardKey: frame.rewardKey,
               ),
             ),
           ),
@@ -107,6 +96,95 @@ class SeasonFriendsLayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => child;
+}
+
+class _ProfileFramePainter extends CustomPainter {
+  const _ProfileFramePainter({required this.accent, required this.rewardKey});
+
+  final Color accent;
+  final String rewardKey;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outer = RRect.fromRectAndRadius(
+      Rect.fromLTWH(5, 5, size.width - 10, size.height - 10),
+      const Radius.circular(24),
+    );
+
+    if (rewardKey.contains('ion_ring')) {
+      final soft = Paint()
+        ..color = accent.withValues(alpha: .12)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 7;
+      final line = Paint()
+        ..color = accent.withValues(alpha: .82)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.7;
+      canvas
+        ..drawRRect(outer, soft)
+        ..drawRRect(outer, line);
+      final corner = Paint()
+        ..color = accent.withValues(alpha: .95)
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round;
+      const length = 34.0;
+      canvas
+        ..drawLine(const Offset(18, 8), const Offset(18 + length, 8), corner)
+        ..drawLine(
+          Offset(size.width - 18 - length, size.height - 8),
+          Offset(size.width - 18, size.height - 8),
+          corner,
+        );
+      return;
+    }
+
+    if (rewardKey.contains('frame_current')) {
+      final rail = Paint()
+        ..color = accent.withValues(alpha: .78)
+        ..strokeWidth = 2;
+      final glow = Paint()
+        ..color = accent.withValues(alpha: .11)
+        ..strokeWidth = 8;
+      for (final x in <double>[7, size.width - 7]) {
+        canvas
+          ..drawLine(Offset(x, 26), Offset(x, size.height - 26), glow)
+          ..drawLine(Offset(x, 26), Offset(x, size.height - 26), rail);
+      }
+      final faint = Paint()
+        ..color = accent.withValues(alpha: .28)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1;
+      canvas.drawRRect(outer, faint);
+      return;
+    }
+
+    final glow = Paint()
+      ..color = accent.withValues(alpha: .12)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8;
+    final border = Paint()
+      ..color = accent.withValues(alpha: .78)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    final inner = RRect.fromRectAndRadius(
+      Rect.fromLTWH(10, 10, size.width - 20, size.height - 20),
+      const Radius.circular(20),
+    );
+    canvas
+      ..drawRRect(outer, glow)
+      ..drawRRect(outer, border)
+      ..drawRRect(
+        inner,
+        Paint()
+          ..color = accent.withValues(alpha: .18)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1,
+      );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ProfileFramePainter oldDelegate) =>
+      oldDelegate.accent != accent || oldDelegate.rewardKey != rewardKey;
 }
 
 class _SeasonHomePainter extends CustomPainter {
