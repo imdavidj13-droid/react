@@ -40,6 +40,36 @@ class SeasonRepository {
     }
   }
 
+  /// Downloads every permanent cosmetic unlock across historical seasons.
+  /// This makes Locker reconstructable on a clean install or new device.
+  Future<List<SeasonReward>> loadOwnedCosmetics() async {
+    final client = ReactSupabase.client;
+    if (client == null) return const <SeasonReward>[];
+
+    if (client.auth.currentSession == null) {
+      final ready = await ReactSupabase.ensurePlayerSession();
+      if (!ready) return const <SeasonReward>[];
+    }
+
+    try {
+      final response = await client.rpc('get_react_owned_cosmetics');
+      final rewards = <SeasonReward>[];
+      for (final raw in _asList(response)) {
+        final data = _asMap(raw);
+        if (data == null) continue;
+        rewards.add(_parseReward(data));
+      }
+      await SeasonCosmeticState.syncOwnedRewards(rewards);
+      await LocalShopState.setSeasonOwnedPackIds(
+        rewards.map((reward) => reward.rewardKey),
+      );
+      return List<SeasonReward>.unmodifiable(rewards);
+    } catch (error) {
+      debugPrint('RE△CT lifetime cosmetic load failed: $error');
+      return const <SeasonReward>[];
+    }
+  }
+
   Future<SeasonSnapshot?> recordRun({
     required String eventId,
     required String mode,
@@ -144,6 +174,20 @@ class SeasonRepository {
     return null;
   }
 
+  static SeasonReward _parseReward(Map<String, dynamic> reward) => SeasonReward(
+        id: '${reward['id']}',
+        tier: _asInt(reward['tier']),
+        track: '${reward['track']}' == 'premium'
+            ? SeasonRewardTrack.premium
+            : SeasonRewardTrack.free,
+        kind: '${reward['kind']}',
+        rewardKey: '${reward['reward_key']}',
+        name: '${reward['name']}',
+        description: '${reward['description'] ?? ''}',
+        milestone: reward['milestone'] == true,
+        payload: _asMap(reward['payload']) ?? const <String, dynamic>{},
+      );
+
   static SeasonSnapshot _parseSnapshot(Map<String, dynamic> json) {
     final tiers = <SeasonTier>[];
     for (final rawTier in _asList(json['tiers'])) {
@@ -153,21 +197,7 @@ class SeasonRepository {
       for (final rawReward in _asList(tier['rewards'])) {
         final reward = _asMap(rawReward);
         if (reward == null) continue;
-        rewards.add(
-          SeasonReward(
-            id: '${reward['id']}',
-            tier: _asInt(reward['tier']),
-            track: '${reward['track']}' == 'premium'
-                ? SeasonRewardTrack.premium
-                : SeasonRewardTrack.free,
-            kind: '${reward['kind']}',
-            rewardKey: '${reward['reward_key']}',
-            name: '${reward['name']}',
-            description: '${reward['description'] ?? ''}',
-            milestone: reward['milestone'] == true,
-            payload: _asMap(reward['payload']) ?? const <String, dynamic>{},
-          ),
-        );
+        rewards.add(_parseReward(reward));
       }
       tiers.add(
         SeasonTier(
