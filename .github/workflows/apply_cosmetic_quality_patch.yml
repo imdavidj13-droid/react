@@ -1,0 +1,33 @@
+name: Apply cosmetic quality patch
+
+on:
+  push:
+    branches:
+      - seasonal-battle-pass
+    paths:
+      - .github/scripts/apply_cosmetic_quality_patch.py
+      - .github/workflows/apply_cosmetic_quality_patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: seasonal-battle-pass
+          fetch-depth: 0
+      - name: Apply exact quality edits
+        run: python .github/scripts/apply_cosmetic_quality_patch.py
+      - name: Commit quality edits
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/features/player/presentation/player_profile_screen.dart \
+                  lib/features/results/presentation/results_screen.dart \
+                  lib/features/season/presentation/season_reward_preview.dart
+          git diff --cached --quiet && exit 0
+          git commit -m "Strengthen cosmetic identity and Results treatments"
+          git push origin HEAD:seasonal-battle-pass
