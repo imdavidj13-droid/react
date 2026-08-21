@@ -16,7 +16,7 @@ class LocalLeaderboardSubmissionStore {
   static Future<LeaderboardSubmission?> enqueueResult(
     ReactRunResult result, {
     DateTime? completedAt,
-    bool isPersonalBest = false,
+    bool? isPersonalBest,
     void Function(int chargeEarned)? onSeasonChargeEarned,
   }) async {
     if (result.isDailyDevRun) {
@@ -25,9 +25,8 @@ class LocalLeaderboardSubmissionStore {
 
     // Seasonal progression is deliberately independent from leaderboard
     // eligibility so Pass It and other valid completed runs still count toward
-    // CHARGE. Results supplies the PB decision produced by LocalPlayerStats so
-    // Daily modifier records and lifetime ties use the exact same semantics in
-    // the UI and season progression.
+    // CHARGE. Callers that already know the exact PB result can pass it through
+    // so season progression uses the same decision as Results.
     final chargeEarned = await SeasonProgressService.recordResult(
       result,
       isPersonalBest: isPersonalBest,
