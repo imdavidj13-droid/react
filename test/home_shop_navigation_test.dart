@@ -13,7 +13,8 @@ void main() {
 
   testWidgets('Home exposes primary navigation tiles and Locker opens', (tester) async {
     await tester.pumpWidget(const ReactApp());
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
 
     expect(find.text('MODES'), findsOneWidget);
     expect(find.text('DAILY'), findsOneWidget);
@@ -31,7 +32,8 @@ void main() {
     expect(find.byTooltip('Player profile'), findsOneWidget);
 
     await tester.tap(find.text('LOCKER'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('LOCKER'), findsOneWidget);
     expect(find.text('ALL EARNED COSMETICS • ONE PLACE TO EQUIP'), findsOneWidget);
