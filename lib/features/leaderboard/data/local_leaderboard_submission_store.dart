@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +16,7 @@ class LocalLeaderboardSubmissionStore {
   static Future<LeaderboardSubmission?> enqueueResult(
     ReactRunResult result, {
     DateTime? completedAt,
+    void Function(int chargeEarned)? onSeasonChargeEarned,
   }) async {
     if (result.isDailyDevRun) {
       return null;
@@ -24,8 +24,10 @@ class LocalLeaderboardSubmissionStore {
 
     // Seasonal progression is deliberately independent from leaderboard
     // eligibility so Pass It and other valid completed runs still count toward
-    // CHARGE. It is fire-and-forget and cannot block the existing Results flow.
-    unawaited(SeasonProgressService.recordResult(result));
+    // CHARGE. Awaiting this here also lets Results show the exact award while
+    // the queue still preserves progression safely when offline.
+    final chargeEarned = await SeasonProgressService.recordResult(result);
+    if (chargeEarned != null) onSeasonChargeEarned?.call(chargeEarned);
 
     if (!LeaderboardSubmissionEligibility.isEligibleResult(result)) {
       return null;
