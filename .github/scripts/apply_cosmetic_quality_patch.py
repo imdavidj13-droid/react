@@ -11,6 +11,7 @@ def replace_once(text: str, old: str, new: str, label: str) -> str:
 def patch_profile() -> None:
     path = Path('lib/features/player/presentation/player_profile_screen.dart')
     text = path.read_text()
+
     text = replace_once(
         text,
         """            _SeasonIdentityPill(
@@ -28,6 +29,7 @@ def patch_profile() -> None:
 """,
         'badge call',
     )
+
     text = replace_once(
         text,
         """class _SeasonIdentityPill extends StatelessWidget {
@@ -94,9 +96,10 @@ def patch_profile() -> None:
 """,
         'badge component',
     )
-    insert_before = "IconData _emblemIcon(String rewardKey) => switch (rewardKey) {"
-    if insert_before not in text:
-        raise RuntimeError('emblem helper anchor missing')
+
+    anchor = "IconData _emblemIcon(String rewardKey) {"
+    if text.count(anchor) != 1:
+        raise RuntimeError(f"emblem helper anchor: expected exactly one match, found {text.count(anchor)}")
     badge_helper = """IconData _badgeIcon(String rewardKey) {
   if (rewardKey.contains('ignition')) return Icons.local_fire_department_rounded;
   if (rewardKey.contains('live_wire')) return Icons.electric_bolt_rounded;
@@ -107,13 +110,14 @@ def patch_profile() -> None:
 }
 
 """
-    text = text.replace(insert_before, badge_helper + insert_before, 1)
+    text = text.replace(anchor, badge_helper + anchor, 1)
     path.write_text(text)
 
 
 def patch_results() -> None:
     path = Path('lib/features/results/presentation/results_screen.dart')
     text = path.read_text()
+
     text = replace_once(
         text,
         """    final scoreAccent = scoreEffect == null
@@ -148,6 +152,7 @@ def patch_results() -> None:
 """,
         'score style vars',
     )
+
     text = replace_once(
         text,
         """                  borderRadius: BorderRadius.circular(20),
@@ -201,6 +206,7 @@ def patch_results() -> None:
 """,
         'score decoration',
     )
+
     text = replace_once(
         text,
         """    final accent = effect == null
@@ -242,6 +248,7 @@ def patch_results() -> None:
 """,
         'outcome style vars',
     )
+
     text = replace_once(
         text,
         """        borderRadius: BorderRadius.circular(18),
@@ -284,6 +291,7 @@ def patch_results() -> None:
 """,
         'outcome outer decoration',
     )
+
     text = replace_once(
         text,
         """            decoration: BoxDecoration(
