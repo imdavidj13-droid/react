@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('S01 late tiers add completed cosmetic families without touching earned rows', () {
     final source = File(
-      'supabase/migrations/20260821050000_rebalance_s01_cosmetic_mix.sql',
+      'supabase/migrations/20260821061642_rebalance_s01_cosmetic_mix.sql',
     ).readAsStringSync();
 
     for (final kind in <String>[
