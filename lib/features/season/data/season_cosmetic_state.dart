@@ -43,21 +43,31 @@ abstract final class SeasonCosmeticState {
       ..addAll(prefs.getStringList(_ownedKey) ?? const <String>[]);
 
     _catalog.clear();
-    for (final raw in prefs.getStringList(_catalogKey) ?? const <String>[]) {
+    final rawCatalog = prefs.getStringList(_catalogKey) ?? const <String>[];
+    final validCatalog = <String>[];
+    for (final raw in rawCatalog) {
       try {
         final json = jsonDecode(raw) as Map<String, dynamic>;
         final reward = _fromJson(json);
         _catalog[reward.rewardKey] = reward;
+        validCatalog.add(raw);
       } catch (_) {
-        // Ignore corrupt cached cosmetic rows individually.
+        // Corrupt cached cosmetic rows are dropped individually.
       }
+    }
+    if (validCatalog.length != rawCatalog.length) {
+      await prefs.setStringList(_catalogKey, validCatalog);
     }
 
     _equippedByKind.clear();
     for (final kind in equippableKinds) {
-      final value = prefs.getString('$_equippedPrefix$kind');
-      if (value != null && _ownedKeys.contains(value)) {
+      final key = '$_equippedPrefix$kind';
+      final value = prefs.getString(key);
+      if (value == null) continue;
+      if (_ownedKeys.contains(value)) {
         _equippedByKind[kind] = value;
+      } else {
+        await prefs.remove(key);
       }
     }
 
