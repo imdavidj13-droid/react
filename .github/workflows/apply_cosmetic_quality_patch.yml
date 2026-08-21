@@ -20,15 +20,34 @@ jobs:
           ref: seasonal-battle-pass
           fetch-depth: 0
       - name: Apply exact quality edits
-        run: python .github/scripts/apply_cosmetic_quality_patch.py
-      - name: Commit quality edits
+        id: patch
+        shell: bash
+        run: |
+          set +e
+          python .github/scripts/apply_cosmetic_quality_patch.py > /tmp/quality-patch.log 2>&1
+          status=$?
+          cat /tmp/quality-patch.log
+          if [ $status -ne 0 ]; then
+            cp /tmp/quality-patch.log .github/quality_patch_error.log
+            echo "failed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "failed=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit 0
+      - name: Commit patch or diagnostic
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ "${{ steps.patch.outputs.failed }}" = "true" ]; then
+            git add .github/quality_patch_error.log
+            git commit -m "Capture cosmetic quality patch mismatch"
+            git push origin HEAD:seasonal-battle-pass
+            exit 0
+          fi
           git add lib/features/player/presentation/player_profile_screen.dart \
                   lib/features/results/presentation/results_screen.dart \
                   lib/features/season/presentation/season_reward_preview.dart
           git diff --cached --quiet && exit 0
           git commit -m "Strengthen cosmetic identity and Results treatments"
           git push origin HEAD:seasonal-battle-pass
-      # One-shot maintenance workflow; removed after the renderer commit lands.
