@@ -113,4 +113,62 @@ void main() {
     expect(homeStrip, contains('CHARGE'));
     expect(homeStrip, contains('SeasonScreen'));
   });
+
+  test('all run surfaces expose BEST and CHARGE and results show exact award', () {
+    final hud = File(
+      'lib/features/gameplay/presentation/run_meta_hud.dart',
+    ).readAsStringSync();
+    final coreRun = File(
+      'lib/features/gameplay/presentation/react_run_screen.dart',
+    ).readAsStringSync();
+    final dailyRun = File(
+      'lib/features/daily/presentation/daily_run_screen.dart',
+    ).readAsStringSync();
+    final sequenceRun = File(
+      'lib/features/dot_sequence/presentation/dot_sequence_screen.dart',
+    ).readAsStringSync();
+    final results = File(
+      'lib/features/results/presentation/results_screen.dart',
+    ).readAsStringSync();
+    final awardMigration = File(
+      'supabase/migrations/20260821032800_return_season_run_charge_earned.sql',
+    ).readAsStringSync();
+
+    expect(hud, contains("label: 'BEST'"));
+    expect(hud, contains("label: 'CHARGE'"));
+    expect(coreRun, contains('RunMetaHud('));
+    expect(dailyRun, contains('RunMetaHud('));
+    expect(sequenceRun, contains('RunMetaHud('));
+    expect(results, contains('onSeasonChargeEarned'));
+    expect(results, contains('CHARGE EARNED'));
+    expect(awardMigration, contains('charge_earned'));
+    expect(awardMigration, contains("jsonb_build_object('charge_earned'"));
+  });
+
+  test('season result effects and OVERDRIVE share have live renderers', () {
+    final cosmeticState = File(
+      'lib/features/season/data/season_cosmetic_state.dart',
+    ).readAsStringSync();
+    final results = File(
+      'lib/features/results/presentation/results_screen.dart',
+    ).readAsStringSync();
+    final share = File(
+      'lib/features/results/presentation/result_share_screen.dart',
+    ).readAsStringSync();
+    final stats = File(
+      'lib/features/gameplay/data/local_player_stats.dart',
+    ).readAsStringSync();
+
+    for (final kind in <String>[
+      'score_effect',
+      'success_effect',
+      'failure_effect',
+    ]) {
+      expect(cosmeticState, contains("'$kind'"), reason: kind);
+      expect(results, contains("equippedReward('$kind')"), reason: kind);
+    }
+    expect(share, contains('ReactShareStyle.overdrive'));
+    expect(share, contains('OVERDRIVE SHARE'));
+    expect(stats, isNot(contains('if (mode == ReactGameMode.passIt) return 0')));
+  });
 }
