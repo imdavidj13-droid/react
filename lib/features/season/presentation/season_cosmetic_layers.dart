@@ -23,7 +23,10 @@ abstract final class SeasonCosmeticLayers {
         child,
         IgnorePointer(
           child: CustomPaint(
-            painter: _SeasonGridPainter(accent: accent),
+            painter: _SeasonHomePainter(
+              accent: accent,
+              rewardKey: theme.rewardKey,
+            ),
           ),
         ),
       ],
@@ -47,7 +50,12 @@ abstract final class SeasonCosmeticLayers {
 }
 
 /// Screen-level profile cosmetics belong here only when they genuinely affect
-/// the player identity surface.
+/// the whole Player Profile surface.
+///
+/// Player-code styles are deliberately NOT rendered here: they are scoped to
+/// the RX code inside [PlayerProfileScreen]. Previously they also drew traces
+/// and a floating label across the complete Profile/Friends screens, which was
+/// much broader than a "player code style" implies.
 class SeasonProfileLayer extends StatelessWidget {
   const SeasonProfileLayer({required this.child, super.key});
 
@@ -56,57 +64,31 @@ class SeasonProfileLayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final frame = SeasonCosmeticState.equippedReward('profile_frame');
-    final codeStyle = SeasonCosmeticState.equippedReward('player_code_style');
-    if (frame == null && codeStyle == null) return child;
+    if (frame == null) return child;
 
-    final frameAccent = frame == null
-        ? null
-        : SeasonCosmeticLayers.accentForReward(frame);
-    final codeAccent = codeStyle == null
-        ? null
-        : SeasonCosmeticLayers.accentForReward(codeStyle);
-
+    final accent = SeasonCosmeticLayers.accentForReward(frame);
     return Stack(
       fit: StackFit.expand,
       children: [
         child,
         IgnorePointer(
           child: SafeArea(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (frameAccent != null)
-                  Container(
-                    margin: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: frameAccent.withValues(alpha: .75),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: frameAccent.withValues(alpha: .12),
-                          blurRadius: 18,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                  ),
-                if (codeStyle != null && codeAccent != null) ...[
-                  CustomPaint(
-                    painter: _PlayerCodeTracePainter(accent: codeAccent),
-                  ),
-                  Positioned(
-                    left: 14,
-                    bottom: 14,
-                    child: _CodeStylePill(
-                      reward: codeStyle,
-                      accent: codeAccent,
-                    ),
+            child: Container(
+              margin: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: accent.withValues(alpha: .75),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(alpha: .12),
+                    blurRadius: 18,
+                    spreadRadius: 1,
                   ),
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -115,103 +97,32 @@ class SeasonProfileLayer extends StatelessWidget {
   }
 }
 
-/// Makes an equipped player-code cosmetic visibly affect the Friends surface.
-///
-/// The treatment is deliberately limited to the local player's networking
-/// screen so another player's identity never inherits this device's cosmetic.
+/// Player-code cosmetics are local identity cosmetics, not a Friends-screen
+/// theme. Keep this wrapper for API compatibility but intentionally leave the
+/// Friends surface untouched.
 class SeasonFriendsLayer extends StatelessWidget {
   const SeasonFriendsLayer({required this.child, super.key});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    final style = SeasonCosmeticState.equippedReward('player_code_style');
-    if (style == null) return child;
-
-    final accent = SeasonCosmeticLayers.accentForReward(style);
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        child,
-        IgnorePointer(
-          child: SafeArea(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CustomPaint(
-                  painter: _PlayerCodeTracePainter(accent: accent),
-                ),
-                Positioned(
-                  right: 14,
-                  top: 72,
-                  child: _CodeStylePill(reward: style, accent: accent),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => child;
 }
 
-class _CodeStylePill extends StatelessWidget {
-  const _CodeStylePill({required this.reward, required this.accent});
-
-  final SeasonReward reward;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-        decoration: BoxDecoration(
-          color: const Color(0xFF040914).withValues(alpha: .88),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: accent.withValues(alpha: .58)),
-          boxShadow: [
-            BoxShadow(
-              color: accent.withValues(alpha: .12),
-              blurRadius: 14,
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.memory_rounded, color: accent, size: 12),
-            const SizedBox(width: 5),
-            Text(
-              reward.name.toUpperCase(),
-              style: TextStyle(
-                color: accent,
-                fontSize: 6.8,
-                fontWeight: FontWeight.w900,
-                letterSpacing: .8,
-              ),
-            ),
-          ],
-        ),
-      );
-}
-
-class _SeasonGridPainter extends CustomPainter {
-  const _SeasonGridPainter({required this.accent});
+class _SeasonHomePainter extends CustomPainter {
+  const _SeasonHomePainter({required this.accent, required this.rewardKey});
 
   final Color accent;
+  final String rewardKey;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = accent.withValues(alpha: .055)
-      ..strokeWidth = 1;
-    const gap = 46.0;
-    for (double x = -size.height; x < size.width + size.height; x += gap) {
-      canvas.drawLine(
-        Offset(x, size.height),
-        Offset(x + size.height, 0),
-        paint,
-      );
+    if (rewardKey.contains('neon_rail')) {
+      _paintRails(canvas, size);
+    } else if (rewardKey.endsWith('_grid')) {
+      _paintGrid(canvas, size);
+    } else {
+      _paintOverdrive(canvas, size);
     }
 
     final glow = Paint()
@@ -226,60 +137,52 @@ class _SeasonGridPainter extends CustomPainter {
     canvas.drawRect(Offset.zero & size, glow);
   }
 
-  @override
-  bool shouldRepaint(covariant _SeasonGridPainter oldDelegate) =>
-      oldDelegate.accent != accent;
-}
+  void _paintGrid(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = accent.withValues(alpha: .055)
+      ..strokeWidth = 1;
+    const gap = 46.0;
+    for (double x = -size.height; x < size.width + size.height; x += gap) {
+      canvas.drawLine(
+        Offset(x, size.height),
+        Offset(x + size.height, 0),
+        paint,
+      );
+    }
+  }
 
-class _PlayerCodeTracePainter extends CustomPainter {
-  const _PlayerCodeTracePainter({required this.accent});
-
-  final Color accent;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final trace = Paint()
-      ..color = accent.withValues(alpha: .19)
+  void _paintOverdrive(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = accent.withValues(alpha: .065)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
+    final center = Offset(size.width * .5, size.height * .42);
+    for (final scale in const <double>[.20, .32, .44]) {
+      canvas.drawCircle(center, size.width * scale, paint);
+    }
+    canvas.drawLine(
+      Offset(0, center.dy),
+      Offset(size.width, center.dy),
+      paint,
+    );
+  }
+
+  void _paintRails(Canvas canvas, Size size) {
+    final rail = Paint()
+      ..color = accent.withValues(alpha: .075)
+      ..strokeWidth = 2;
     final glow = Paint()
-      ..color = accent.withValues(alpha: .08)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 5;
-
-    final left = Path()
-      ..moveTo(8, 118)
-      ..lineTo(24, 118)
-      ..lineTo(34, 128)
-      ..lineTo(34, size.height * .42)
-      ..lineTo(18, size.height * .42)
-      ..lineTo(8, size.height * .42 + 10);
-    final right = Path()
-      ..moveTo(size.width - 8, size.height * .60)
-      ..lineTo(size.width - 24, size.height * .60)
-      ..lineTo(size.width - 34, size.height * .60 + 10)
-      ..lineTo(size.width - 34, size.height - 78)
-      ..lineTo(size.width - 18, size.height - 78)
-      ..lineTo(size.width - 8, size.height - 68);
-
-    canvas
-      ..drawPath(left, glow)
-      ..drawPath(right, glow)
-      ..drawPath(left, trace)
-      ..drawPath(right, trace);
-
-    final node = Paint()..color = accent.withValues(alpha: .68);
-    for (final point in <Offset>[
-      const Offset(24, 118),
-      Offset(34, size.height * .42),
-      Offset(size.width - 24, size.height * .60),
-      Offset(size.width - 34, size.height - 78),
-    ]) {
-      canvas.drawCircle(point, 2.2, node);
+      ..color = accent.withValues(alpha: .025)
+      ..strokeWidth = 10;
+    const gap = 54.0;
+    for (double x = 26; x < size.width; x += gap) {
+      canvas
+        ..drawLine(Offset(x, 0), Offset(x, size.height), glow)
+        ..drawLine(Offset(x, 0), Offset(x, size.height), rail);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _PlayerCodeTracePainter oldDelegate) =>
-      oldDelegate.accent != accent;
+  bool shouldRepaint(covariant _SeasonHomePainter oldDelegate) =>
+      oldDelegate.accent != accent || oldDelegate.rewardKey != rewardKey;
 }
