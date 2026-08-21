@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../core/cosmetics/react_cosmetics.dart';
 import '../core/settings/react_settings.dart';
 import '../core/theme/react_colors.dart';
+import '../features/season/presentation/season_gameplay_style.dart';
 
 class ReactGame extends FlameGame {
   ReactGame();
@@ -18,6 +19,14 @@ class ReactGame extends FlameGame {
 
   Color get accent => ReactCosmetics.effectAccentFor(modeAccent);
   Color get failureAccent => ReactCosmetics.palette.failure;
+  Color get successReactionAccent => SeasonGameplayStyle.reactionAccent(
+        success: true,
+        fallback: accent,
+      );
+  Color get failureReactionAccent => SeasonGameplayStyle.reactionAccent(
+        success: false,
+        fallback: failureAccent,
+      );
 
   bool get effectsEnabled => ReactSettings.visualEffectsEnabled;
   double get effectiveIntensity {
@@ -67,25 +76,33 @@ class ReactGame extends FlameGame {
         : isEndless
             ? intensity * 80
             : 0.0;
+    final baseParticles = 22 + (intensity * 16).round() + particleBoost;
+    final baseSpeed = 115 + (intensity * 105) + speedBoost;
+    final reactionColor = successReactionAccent;
 
     add(
       _ReactionBurst(
         game: this,
-        color: accent,
-        particleCount: 22 + (intensity * 16).round() + particleBoost,
-        speed: 115 + (intensity * 105) + speedBoost,
+        color: reactionColor,
+        particleCount: SeasonGameplayStyle.reactionParticleCount(
+          baseParticles,
+          success: true,
+        ),
+        speed: SeasonGameplayStyle.reactionSpeed(baseSpeed),
       ),
     );
 
-    add(
-      _PulseRing(
-        game: this,
-        color: accent,
-        lifetime: isBlitz ? .22 : .32,
-        maxRadiusFactor: .32 + intensity * .11,
-        strokeWidth: isBlitz ? 4.5 : 3.5,
-      ),
-    );
+    for (var ring = 0; ring < SeasonGameplayStyle.reactionRingCount; ring++) {
+      add(
+        _PulseRing(
+          game: this,
+          color: reactionColor,
+          lifetime: (isBlitz ? .22 : .32) + ring * .07,
+          maxRadiusFactor: .32 + intensity * .11 + ring * .08,
+          strokeWidth: max(1.8, (isBlitz ? 4.5 : 3.5) - ring * .7),
+        ),
+      );
+    }
 
     if (isEndless && intensity >= .62) {
       add(
@@ -119,31 +136,40 @@ class ReactGame extends FlameGame {
   void triggerMiss() {
     if (!effectsEnabled) return;
 
+    final baseParticles = isEndless ? 44 : 32;
+    final baseSpeed = isEndless ? 230.0 : 180.0;
+    final reactionColor = failureReactionAccent;
+
     add(
       _ReactionBurst(
         game: this,
-        color: failureAccent,
-        particleCount: isEndless ? 44 : 32,
-        speed: isEndless ? 230 : 180,
+        color: reactionColor,
+        particleCount: SeasonGameplayStyle.reactionParticleCount(
+          baseParticles,
+          success: false,
+        ),
+        speed: SeasonGameplayStyle.reactionSpeed(baseSpeed),
         outwardBias: isEndless ? 1.4 : 1.2,
       ),
     );
 
-    add(
-      _PulseRing(
-        game: this,
-        color: failureAccent,
-        lifetime: isBlitz ? .28 : .46,
-        maxRadiusFactor: isEndless ? .58 : .46,
-        strokeWidth: isEndless ? 6.5 : 5.5,
-      ),
-    );
+    for (var ring = 0; ring < SeasonGameplayStyle.reactionRingCount; ring++) {
+      add(
+        _PulseRing(
+          game: this,
+          color: reactionColor,
+          lifetime: (isBlitz ? .28 : .46) + ring * .06,
+          maxRadiusFactor: (isEndless ? .58 : .46) + ring * .08,
+          strokeWidth: max(2.0, (isEndless ? 6.5 : 5.5) - ring * .8),
+        ),
+      );
+    }
 
     if (isBlitz) {
       add(
         _PulseRing(
           game: this,
-          color: failureAccent,
+          color: reactionColor,
           lifetime: .20,
           maxRadiusFactor: .62,
           strokeWidth: 2.8,
@@ -185,7 +211,8 @@ class _AmbientParticleField extends Component {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    for (var i = 0; i < 48; i++) {
+    final count = SeasonGameplayStyle.particleCount(48);
+    for (var i = 0; i < count; i++) {
       _particles.add(_newParticle(initial: true));
     }
   }
@@ -207,7 +234,9 @@ class _AmbientParticleField extends Component {
     super.update(dt);
     if (!game.effectsEnabled || game.size.x <= 0 || game.size.y <= 0) return;
 
-    final speedMultiplier = .8 + game.effectiveIntensity * 2.4;
+    final speedMultiplier =
+        (.8 + game.effectiveIntensity * 2.4) *
+        SeasonGameplayStyle.particleSpeedScale();
     for (var i = 0; i < _particles.length; i++) {
       final particle = _particles[i];
       particle.phase += dt * (1.3 + game.effectiveIntensity * 3.3);
@@ -226,12 +255,15 @@ class _AmbientParticleField extends Component {
   void render(Canvas canvas) {
     super.render(canvas);
     if (!game.effectsEnabled) return;
-    final baseAlpha = .08 + game.effectiveIntensity * .10;
+    final baseAlpha =
+        (.08 + game.effectiveIntensity * .10) *
+        SeasonGameplayStyle.particleAlphaScale();
+    final particleColor = SeasonGameplayStyle.particleAccent(game.accent);
 
     for (final particle in _particles) {
       final shimmer = .70 + sin(particle.phase) * .30;
-      final alpha = (baseAlpha * shimmer).clamp(0.0, .24).toDouble();
-      final paint = Paint()..color = game.accent.withValues(alpha: alpha);
+      final alpha = (baseAlpha * shimmer).clamp(0.0, .32).toDouble();
+      final paint = Paint()..color = particleColor.withValues(alpha: alpha);
       canvas.drawCircle(
         Offset(particle.x, particle.y),
         particle.radius,
