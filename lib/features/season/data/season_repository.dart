@@ -5,6 +5,23 @@ import '../domain/season_models.dart';
 import 'local_season_snapshot_cache.dart';
 import 'season_cosmetic_state.dart';
 
+enum SeasonLoadStatus { active, none, unavailable }
+
+class SeasonLoadResult {
+  const SeasonLoadResult._(this.status, this.snapshot);
+
+  const SeasonLoadResult.active(SeasonSnapshot snapshot)
+      : this._(SeasonLoadStatus.active, snapshot);
+  const SeasonLoadResult.none() : this._(SeasonLoadStatus.none, null);
+  const SeasonLoadResult.unavailable()
+      : this._(SeasonLoadStatus.unavailable, null);
+
+  final SeasonLoadStatus status;
+  final SeasonSnapshot? snapshot;
+
+  bool get hasActiveSeason => status == SeasonLoadStatus.active && snapshot != null;
+}
+
 class SeasonRunRecord {
   const SeasonRunRecord({
     required this.snapshot,
@@ -18,26 +35,32 @@ class SeasonRunRecord {
 class SeasonRepository {
   const SeasonRepository();
 
-  Future<SeasonSnapshot?> loadActiveSeason() async {
+  Future<SeasonSnapshot?> loadActiveSeason() async =>
+      (await loadActiveSeasonState()).snapshot;
+
+  /// Returns an explicit state so UI can distinguish a genuine offseason from
+  /// a network/auth/backend failure instead of showing the same message for
+  /// both conditions.
+  Future<SeasonLoadResult> loadActiveSeasonState() async {
     final client = ReactSupabase.client;
-    if (client == null) return null;
+    if (client == null) return const SeasonLoadResult.unavailable();
 
     if (client.auth.currentSession == null) {
       final ready = await ReactSupabase.ensurePlayerSession();
-      if (!ready) return null;
+      if (!ready) return const SeasonLoadResult.unavailable();
     }
 
     try {
       final response = await client.rpc('get_react_active_season');
       final data = _asMap(response);
-      if (data == null) return null;
+      if (data == null) return const SeasonLoadResult.none();
       final snapshot = _withDebugPremium(_parseSnapshot(data));
       await SeasonCosmeticState.syncSnapshot(snapshot);
       await LocalSeasonSnapshotCache.save(snapshot);
-      return snapshot;
+      return SeasonLoadResult.active(snapshot);
     } catch (error) {
       debugPrint('RE△CT season load failed: $error');
-      return null;
+      return const SeasonLoadResult.unavailable();
     }
   }
 
