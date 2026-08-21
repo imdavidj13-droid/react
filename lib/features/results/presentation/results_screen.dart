@@ -315,6 +315,24 @@ class _ScoreHero extends StatelessWidget {
     final scoreAccent = scoreEffect == null
         ? ReactColors.lime
         : SeasonCosmeticLayers.accentForReward(scoreEffect);
+    final scoreKey = scoreEffect?.rewardKey ?? '';
+    final scoreRadius = scoreKey.contains('arc')
+        ? 8.0
+        : scoreKey.contains('streak')
+            ? 999.0
+            : scoreKey.contains('overload')
+                ? 4.0
+                : 20.0;
+    final scoreBorderWidth = scoreKey.contains('overload')
+        ? 2.2
+        : scoreKey.contains('arc')
+            ? 1.7
+            : 1.0;
+    final scoreGlow = scoreKey.contains('overload')
+        ? 34.0
+        : scoreKey.contains('streak')
+            ? 26.0
+            : 22.0;
 
     return Column(
       children: [
@@ -353,19 +371,36 @@ class _ScoreHero extends StatelessWidget {
           decoration: scoreEffect == null
               ? null
               : BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(scoreRadius),
                   gradient: LinearGradient(
+                    begin: scoreKey.contains('arc')
+                        ? Alignment.centerLeft
+                        : Alignment.topLeft,
+                    end: scoreKey.contains('arc')
+                        ? Alignment.centerRight
+                        : Alignment.bottomRight,
                     colors: [
-                      scoreAccent.withValues(alpha: .12),
-                      scoreAccent.withValues(alpha: .025),
+                      scoreAccent.withValues(
+                        alpha: scoreKey.contains('overload') ? .20 : .12,
+                      ),
+                      scoreAccent.withValues(
+                        alpha: scoreKey.contains('streak') ? .06 : .025,
+                      ),
                     ],
                   ),
-                  border: Border.all(color: scoreAccent.withValues(alpha: .42)),
+                  border: Border.all(
+                    color: scoreAccent.withValues(
+                      alpha: scoreKey.contains('overload') ? .78 : .42,
+                    ),
+                    width: scoreBorderWidth,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: scoreAccent.withValues(alpha: .18),
-                      blurRadius: 22,
-                      spreadRadius: 1,
+                      color: scoreAccent.withValues(
+                        alpha: scoreKey.contains('overload') ? .30 : .18,
+                      ),
+                      blurRadius: scoreGlow,
+                      spreadRadius: scoreKey.contains('overload') ? 3 : 1,
                     ),
                   ],
                 ),
@@ -645,6 +680,31 @@ class _OutcomeCard extends StatelessWidget {
     final accent = effect == null
         ? color
         : SeasonCosmeticLayers.accentForReward(effect);
+    final effectKey = effect?.rewardKey ?? '';
+    final effectRadius = effectKey.contains('shatter')
+        ? 6.0
+        : effectKey.contains('blackout')
+            ? 2.0
+            : effectKey.contains('red_arc')
+                ? 12.0
+                : effectKey.contains('flash')
+                    ? 28.0
+                    : effectKey.contains('overdrive')
+                        ? 8.0
+                        : 18.0;
+    final effectBorderWidth = effectKey.contains('blackout') ||
+            effectKey.contains('overdrive')
+        ? 2.0
+        : effectKey.contains('shatter')
+            ? 1.7
+            : 1.5;
+    final effectGlow = effectKey.contains('flash')
+        ? 30.0
+        : effectKey.contains('blackout')
+            ? 8.0
+            : effectKey.contains('overdrive')
+                ? 26.0
+                : 20.0;
 
     return Container(
       width: double.infinity,
@@ -662,18 +722,26 @@ class _OutcomeCard extends StatelessWidget {
                 ],
               ),
         color: effect == null ? const Color(0xFF0A0D18) : null,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(effect == null ? 18 : effectRadius),
         border: Border.all(
-          color: accent.withValues(alpha: effect == null ? .62 : .78),
-          width: effect == null ? 1 : 1.5,
+          color: accent.withValues(
+            alpha: effect == null
+                ? .62
+                : effectKey.contains('blackout')
+                    ? .38
+                    : .78,
+          ),
+          width: effect == null ? 1 : effectBorderWidth,
         ),
         boxShadow: effect == null
             ? null
             : [
                 BoxShadow(
-                  color: accent.withValues(alpha: .14),
-                  blurRadius: 20,
-                  spreadRadius: 1,
+                  color: accent.withValues(
+                    alpha: effectKey.contains('blackout') ? .08 : .18,
+                  ),
+                  blurRadius: effectGlow,
+                  spreadRadius: effectKey.contains('overdrive') ? 2 : 1,
                 ),
               ],
       ),
@@ -683,9 +751,23 @@ class _OutcomeCard extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: accent.withValues(alpha: .08),
-              border: Border.all(color: accent.withValues(alpha: .32)),
+              color: accent.withValues(
+                alpha: effectKey.contains('blackout') ? .03 : .08,
+              ),
+              borderRadius: BorderRadius.circular(
+                effect == null
+                    ? 99
+                    : effectKey.contains('shatter')
+                        ? 5
+                        : effectKey.contains('overdrive')
+                            ? 9
+                            : 99,
+              ),
+              border: Border.all(
+                color: accent.withValues(
+                  alpha: effectKey.contains('blackout') ? .18 : .32,
+                ),
+              ),
               boxShadow: effect == null
                   ? null
                   : [

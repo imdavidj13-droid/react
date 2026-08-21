@@ -569,9 +569,10 @@ class _IdentityHero extends StatelessWidget {
           if (badge != null) ...[
             const SizedBox(height: 13),
             _SeasonIdentityPill(
-              icon: Icons.workspace_premium_rounded,
+              icon: _badgeIcon(badge.rewardKey),
               label: badge.name,
               color: badgeAccent,
+              rewardKey: badge.rewardKey,
             ),
           ] else
             const SizedBox(height: 16),
@@ -722,21 +723,39 @@ class _SeasonIdentityPill extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.color,
+    required this.rewardKey,
   });
 
   final IconData icon;
   final String label;
   final Color color;
+  final String rewardKey;
 
   @override
   Widget build(BuildContext context) {
+    final angular = rewardKey.contains('charge') || rewardKey.contains('pressure');
+    final strong = rewardKey.contains('reflex') || rewardKey.contains('overdrive');
     return Container(
       constraints: const BoxConstraints(maxWidth: 210),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: EdgeInsets.symmetric(
+        horizontal: angular ? 11 : 9,
+        vertical: strong ? 6 : 5,
+      ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: .08),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: color.withValues(alpha: .42)),
+        color: color.withValues(alpha: strong ? .13 : .08),
+        borderRadius: BorderRadius.circular(angular ? 7 : 99),
+        border: Border.all(
+          color: color.withValues(alpha: strong ? .68 : .42),
+          width: strong ? 1.5 : 1,
+        ),
+        boxShadow: strong
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: .16),
+                  blurRadius: 14,
+                ),
+              ]
+            : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1332,6 +1351,15 @@ class _AccountCard extends StatelessWidget {
       ),
     );
   }
+}
+
+IconData _badgeIcon(String rewardKey) {
+  if (rewardKey.contains('ignition')) return Icons.local_fire_department_rounded;
+  if (rewardKey.contains('live_wire')) return Icons.electric_bolt_rounded;
+  if (rewardKey.contains('reflex')) return Icons.visibility_rounded;
+  if (rewardKey.contains('charge')) return Icons.battery_charging_full_rounded;
+  if (rewardKey.contains('pressure')) return Icons.speed_rounded;
+  return Icons.workspace_premium_rounded;
 }
 
 IconData _emblemIcon(String rewardKey) {

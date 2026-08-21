@@ -193,8 +193,6 @@ class _CommandPreview extends StatelessWidget {
             color: accent,
             fontSize: impact ? 22 : 18,
             fontWeight: FontWeight.w900,
-            fontFamily: terminal ? 'monospace' : null,
-            fontStyle: keyName.contains('glitch') ? FontStyle.italic : null,
             letterSpacing: terminal ? 1.5 : .8,
             shadows: [Shadow(color: accent.withValues(alpha: .55), blurRadius: 8)],
           ),
