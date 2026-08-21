@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  contents: write
-
 concurrency:
   group: flutter-ci-${{ github.ref }}
   cancel-in-progress: true
@@ -21,26 +18,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
-          fetch-depth: 0
-
-      - name: Apply guarded cosmetic quality patch once
-        if: github.event_name == 'pull_request' && github.head_ref == 'seasonal-battle-pass'
-        shell: bash
-        run: |
-          if grep -q "icon: Icons.workspace_premium_rounded" lib/features/player/presentation/player_profile_screen.dart; then
-            python .github/scripts/apply_cosmetic_quality_patch.py
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add lib/features/player/presentation/player_profile_screen.dart \
-                    lib/features/results/presentation/results_screen.dart \
-                    lib/features/season/presentation/season_reward_preview.dart
-            git commit -m "Strengthen cosmetic identity and Results treatments"
-            git push origin HEAD:seasonal-battle-pass
-          else
-            echo "Cosmetic quality patch already applied; skipping."
-          fi
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
