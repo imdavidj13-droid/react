@@ -23,7 +23,8 @@ void main() {
     ReactSettings.howToPlayCompleted = true;
 
     await tester.pumpWidget(const ReactApp());
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
 
     expect(find.text('HOW TO PLAY'), findsNothing);
     expect(find.textContaining('FOLLOW THE COMMAND'), findsOneWidget);
