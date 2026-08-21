@@ -80,15 +80,13 @@ abstract final class CosmeticTaxonomy {
     destination: 'Gameplay and pre-run sound effects.',
   );
 
-  /// Reserved for a genuine in-run reaction renderer. Do not award this family
-  /// until the input-success/miss surfaces consume it in every gameplay mode.
   static const reactionPack = CosmeticKindSpec(
     canonicalKind: 'input_reaction_pack',
     label: 'REACTION PACK',
     tab: CosmeticLockerTab.gameplay,
     icon: Icons.burst_mode_outlined,
-    effect: 'Changes the visual burst/shockwave treatment after successful and failed inputs.',
-    destination: 'Immediately after inputs during gameplay.',
+    effect: 'Changes success/miss burst colours, particle density, burst speed and shockwave count without changing the arena or full theme.',
+    destination: 'Input feedback in Classic, Blitz, Endless, Daily and Pass It.',
   );
 
   static const hudStyle = CosmeticKindSpec(
@@ -105,8 +103,8 @@ abstract final class CosmeticTaxonomy {
     label: 'PARTICLE PACK',
     tab: CosmeticLockerTab.gameplay,
     icon: Icons.auto_awesome_rounded,
-    effect: 'Changes ambient gameplay particles independently from the full gameplay theme.',
-    destination: 'Behind gameplay surfaces during a run.',
+    effect: 'Changes ambient particle colour, density, drift speed and visibility independently from the full gameplay theme.',
+    destination: 'Behind Classic, Blitz, Endless, Daily and Pass It runs.',
   );
 
   static const homeBackground = CosmeticKindSpec(
